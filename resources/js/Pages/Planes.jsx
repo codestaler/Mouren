@@ -11,7 +11,7 @@ const planesData = [
         titulo: 'Descanso Sereno',
         precioIndividual: 5000,
         enfoque: 'Un servicio digno, esencial y respetuoso. Diseñado para brindar tranquilidad inmediata y un respaldo sólido en los momentos que más se necesita la guía experta.',
-        mouri: '/images/planes/tarjetas/descanso_sereno.gif',
+        mouri: '/images/planes/tarjetas/logo_descanso_sereno.gif',
         tipoNombre: 'Esencial',
         unidad: 'persona',
         detalles: [
