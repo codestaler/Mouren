@@ -45,3 +45,4 @@ Route::get('/quienes-somos', function () {
 Route::get('/planes', function () {
     return Inertia::render('Planes');
 })->name('planes');
+

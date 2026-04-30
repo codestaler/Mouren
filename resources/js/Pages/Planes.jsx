@@ -11,7 +11,7 @@ const planesData = [
         titulo: 'Descanso Sereno',
         precioIndividual: 5000,
         enfoque: 'Un servicio digno, esencial y respetuoso. Diseñado para brindar tranquilidad inmediata y un respaldo sólido en los momentos que más se necesita la guía experta.',
-        mouri: '/images/planes/tarjetas/logo_descanso_sereno.gif',
+        mouri: '/images/planes/tarjetas/sereno/logo_descanso_sereno.gif',
         tipoNombre: 'Esencial',
         unidad: 'persona',
         detalles: [
@@ -25,7 +25,7 @@ const planesData = [
         titulo: 'Legado Eterno',
         precioIndividual: 7500,
         enfoque: 'Honrar la historia de vida con detalles que perduran. Un homenaje profundo que resalta los valores y el camino recorrido por nuestros seres queridos.',
-        mouri: '/images/planes/mouri_legado.png',
+        mouri: '/images/planes/tarjetas/legado/logo_legado_eterno.gif',
         tipoNombre: 'Historia',
         unidad: 'persona',
         detalles: [
@@ -40,7 +40,7 @@ const planesData = [
         titulo: 'Tributo a la Vida',
         precioIndividual: 10000,
         enfoque: 'Una celebración emotiva, personal y de alta gama. Para quienes desean transformar el adiós en un evento memorable lleno de luz, música y detalles únicos.',
-        mouri: '/images/planes/mouri_tributo.png',
+        mouri: '/images/planes/tarjetas/tributo/logo_tributo.gif',
         tipoNombre: 'Tributo',
         unidad: 'persona',
         detalles: [
@@ -55,7 +55,7 @@ const planesData = [
         titulo: 'Huella Eterna',
         precioIndividual: 13000,
         enfoque: 'Amor y respeto infinito para los compañeros que dejan su marca en el alma. Un adiós digno para nuestras mascotas, tratándolas como los miembros de familia que son.',
-        mouri: '/images/planes/mouri_mascota.png',
+        mouri: '/images/planes/tarjetas/huella/logo_huella_eterna.gif',
         tipoNombre: 'Mascotas',
         unidad: 'mascota',
         detalles: [
@@ -146,17 +146,17 @@ export default function Planes() {
                             <div className="w-full h-40 bg-[#5D4E3F] rounded-2xl p-4 mb-4 border border-white/10 shadow-inner flex items-center justify-center overflow-hidden">
                                 <img src={plan.mouri} alt="Plan" className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-700" />
                             </div>
-                            
+
                             <h3 className="text-white text-lg font-bold mb-1 italic">{plan.titulo}</h3>
                             <div className="bg-[#A68966] text-white text-[8px] font-bold px-3 py-1 rounded-full mb-5 tracking-widest ">
                                 {plan.tipoNombre}
                             </div>
-                            
+
                             <div className="w-full bg-black/20 rounded-xl p-3 text-white text-[10px] mb-6 space-y-2">
                                 <div className="flex justify-between items-center border-b border-white/10 pb-2">
                                     <span className="opacity-70 italic font-light tracking-tight">Valor inversión</span>
                                     <span className="font-bold text-[#FFC600] text-sm">
-                                        ${plan.precioIndividual.toLocaleString()} 
+                                        ${plan.precioIndividual.toLocaleString()}
                                         <span className="text-[8px] opacity-60">/{plan.unidad === 'persona' ? 'p' : 'm'}</span>
                                     </span>
                                 </div>
@@ -164,11 +164,11 @@ export default function Planes() {
                                     {plan.enfoque}
                                 </p>
                             </div>
-                            
+
                             <button onClick={() => setPlanActivo(plan)} className="w-full bg-[#F4EDE6] hover:bg-[#FFC600] text-[#5D4E3F] font-black py-2.5 rounded-lg transition-all text-[9px] tracking-wider shadow-lg  mb-2 active:scale-95">
                                 🔍 Ver especificaciones
                             </button>
-                            
+
                             <button className="w-full bg-[#A68966] hover:bg-white hover:text-[#5D4E3F] text-white font-black py-2.5 rounded-lg transition-all text-[9px] tracking-wider shadow-lg  active:scale-95">
                                 ✍️ Iniciar afiliación
                             </button>
@@ -181,7 +181,7 @@ export default function Planes() {
             {planActivo && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#F4EDE6]/90 backdrop-blur-md animate-fade-in">
                     <div className="bg-white w-full max-w-6xl h-[85vh] overflow-hidden rounded-[40px] shadow-3xl relative border-8 border-[#5D4E3F] flex flex-col md:flex-row animate-scale-up">
-                        
+
                         <button onClick={() => setPlanActivo(null)} className="absolute top-4 right-6 text-5xl font-light hover:text-red-500 z-[110] transition-transform hover:rotate-90">&times;</button>
 
                         <div className="md:w-1/3 bg-[#5D4E3F] p-8 flex flex-col items-center justify-center text-center">
@@ -214,7 +214,11 @@ export default function Planes() {
                                 {planActivo.detalles.map((seccion, idx) => (
                                     <div key={idx} className="flex gap-6 items-start bg-[#F4EDE6]/20 p-6 rounded-3xl border border-[#5D4E3F]/5 hover:bg-white hover:shadow-lg transition-all duration-300">
                                         <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shrink-0 border border-[#5D4E3F]/10 shadow-inner">
-                                            <span className="text-[8px] font-bold opacity-20 italic text-center px-1">Visual Mouren {idx + 1}</span>
+                                            <img
+                                                src={`/images/planes/tarjetas/${planActivo.id}/imagen_${idx + 1}.jpg`}
+                                                alt="Visual del servicio"
+                                                className="w-full h-full object-cover rounded-xl"
+                                            />
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-black text-[#A68966] uppercase text-xs mb-3 tracking-widest flex items-center gap-2">
@@ -237,10 +241,10 @@ export default function Planes() {
 
                         {/* --- BOTÓN DE CONTACTO FLOTANTE --- */}
                         <div className="fixed bottom-10 right-10 flex flex-col items-center group z-[120]">
-                            <div className="w-14 h-14 bg-[#4f81bd] border-2 border-[#FFB200] rounded-full flex items-center justify-center shadow-2xl hover:rotate-6 hover:scale-110 transition-all cursor-pointer">
+                            <div className="w-14 h-14 bg-[#FFC600] border-2 border-[#FFC600] rounded-full flex items-center justify-center shadow-2xl hover:rotate-6 hover:scale-110 transition-all cursor-pointer">
                                 <img src="/images/planes/tarjetas/mouri_sac.png" alt="SAC" className="w-10 h-10 object-contain" />
                             </div>
-                            <span className="text-[8px] font-black text-[#5D4E3F] uppercase text-center mt-2 leading-tight bg-white px-2 py-1 rounded-lg border border-[#A68966]/20 shadow-md group-hover:bg-[#FFC600] transition-colors">
+                            <span className="text-[8px] font-black text-[#5D4E3F] uppercase text-center mt-2 leading-tight bg-white px-2 py-1 rounded-lg border border-[#FFC600]/20 shadow-md group-hover:bg-[#FFC600] transition-colors">
                                 ¿Dudas? Habla<br />con un asesor
                             </span>
                         </div>
@@ -249,6 +253,61 @@ export default function Planes() {
             )}
 
             <MusicAlbum />
+            {/* --- SECCIÓN DE VIDEO Y GUÍA DE DUELO --- */}
+            <section className=" bg-[#F4EDE6] flex flex-col md:flex-row items-stretch overflow-hidden border-[#A68966]/20">
+
+                {/* LADO IZQUIERDO: MOURI EN EL PARQUE (GIF) */}
+                <div className="md:w-1/2 relative bg-[#E9DCC9] flex items-center justify-center p-10 min-h-[400px] ">
+                    {/* Fondo sutil de textura o patrón si lo deseas */}
+                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#5D4E3F 1px, transparent 1px)', size: '20px 20px' }}></div>
+
+                    <img
+                        src="/images/planes/mouri_sentando.gif"
+                        alt="Mouri en el parque"
+                        className="relative z-10 w-full max-w-md h-auto drop-shadow-2xl animate-fade-in"
+                    />
+
+                    {/* Adorno visual de estrella/brillo como en la imagen */}
+                    <div className="absolute bottom-6 right-6 text-[#5D4E3F] opacity-30 text-2xl">✦</div>
+                </div>
+
+                {/* LADO DERECHO: CONTENIDO Y VIDEO */}
+                <div className="md:w-2/3 bg-[#5D4E3F] p-12 md:p-20 flex flex-col justify-center text-white">
+                    <h2 className="text-2xl md:text-4xl font-black mb-6 tracking-tighter leading-tight">
+                        Espacio para un video
+                    </h2>
+
+                    <p className="text-sm md:text-base opacity-80 mb-10 font-light leading-relaxed max-w-lg">
+                        Acompañamos tu proceso con material educativo y momentos de reflexión.
+                        Nuestros videos están diseñados para brindarte serenidad y las herramientas
+                        necesarias para honrar la memoria de quienes siempre vivirán en nuestro corazón.
+                    </p>
+
+                    {/* CONTENEDOR DEL VIDEO (Proporción 16:9) */}
+                    <div className="relative w-full aspect-video bg-white/10 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl mb-10 group">
+                        <iframe
+                            className="w-full h-full"
+                            src="https://www.youtube.com/embed/TU_ID_DE_VIDEO"
+                            title="Video informativo Mouren"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        ></iframe>
+                    </div>
+
+                    {/* ENLACE DE DESCARGA PDF */}
+                    <a
+                        href="/downloads/guia_duelo_mouren.pdf"
+                        download
+                        className="flex items-center gap-3 text-[#FFC600] font-black uppercase tracking-[3px] text-xs hover:gap-5 transition-all group w-fit"
+                    >
+                        <span className="border-b-2 border-[#FFC600] pb-1 group-hover:border-white transition-colors">
+                            Descargar guía de duelo (PDF)
+                        </span>
+                        <span className="text-lg">→</span>
+                    </a>
+                </div>
+            </section>
             <RecuerdosCarousel />
             <Footer />
 
