@@ -8,14 +8,14 @@ use Inertia\Middleware;
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * The root template that is loaded on the first page visit.
+     * El template raíz que se carga en la primera visita.
      *
      * @var string
      */
     protected $rootView = 'app';
 
     /**
-     * Determine the current asset version.
+     * Determina la versión actual de los assets.
      */
     public function version(Request $request): ?string
     {
@@ -23,7 +23,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
+     * Define las propiedades que se comparten por defecto con React.
      *
      * @return array<string, mixed>
      */
@@ -31,8 +31,17 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            
+            // Datos de autenticación
             'auth' => [
                 'user' => $request->user(),
+            ],
+
+            // ✅ ESTA ES LA SECCIÓN CLAVE PARA LOS MENSAJES:
+            // Compartimos los datos "flash" de la sesión para que aparezcan en props.flash
+            'flash' => [
+                'message' => fn () => $request->session()->get('message'),
+                'error'   => fn () => $request->session()->get('error'),
             ],
         ];
     }

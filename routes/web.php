@@ -3,21 +3,52 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use App\Models\TipoDocumento; 
+use App\Models\Genero;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Clientes\ClienteDashboardController; // Importante añadirlo
 use Inertia\Inertia;
 
-// Por esto:
-Route::get('/', function () {
-    return Inertia::render('Home'); // O el nombre de tu archivo de inicio de Mouren
-});
+/*
+|--------------------------------------------------------------------------
+| RUTAS PÚBLICAS DE MOUREN
+|--------------------------------------------------------------------------
+*/
 
-// Rutas de Autenticación (Login y Registro)
-// Laravel suele agrupar estas en 'auth.php', pero puedes verlas o definirlas así:
+Route::get('/', function () {
+    return Inertia::render('Home'); 
+})->name('home');
+
+Route::get('/contactos', function () {
+    return Inertia::render('Contactos');
+})->name('contactos');
+
+Route::get('/quienes-somos', function () {
+    return Inertia::render('QuienesSomos');
+})->name('quienes-somos');
+
+Route::get('/planes', function () {
+    return Inertia::render('Planes');
+})->name('planes');
+
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE AUTENTICACIÓN (Invitados)
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('guest')->group(function () {
-    // Vista de Registro
-    Route::get('register', function () {
-        return Inertia::render('Auth/Register');
+    // Vista de Registro con datos de BD
+    Route::get('/register', function () {
+        return Inertia::render('Auth/Register', [
+            'tiposDocumento' => TipoDocumento::all(), 
+            'generos' => Genero::all(),
+        ]);
     })->name('register');
+
+    // Procesar el registro
+    Route::post('/register', [UserController::class, 'store'])->name('register.store');
 
     // Vista de Login
     Route::get('login', function () {
@@ -25,24 +56,33 @@ Route::middleware('guest')->group(function () {
     })->name('login');
 });
 
-// Ruta del Dashboard (Solo para usuarios logueados)
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
+/*
+|--------------------------------------------------------------------------
+| RUTAS PROTEGIDAS (Solo Usuarios Logueados)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // Dashboard Genérico (opcional, por si Breeze lo usa)
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
+
+    /* --- SECCIÓN ESPECÍFICA DE CLIENTES MOUREN --- */
+    Route::prefix('cliente')->group(function () {
+        Route::get('/mi-plan', [ClienteDashboardController::class, 'index'])
+            ->name('cliente.dashboard');
+            
+        // Aquí puedes añadir más rutas para el menú lateral (Detalles, Pagos, etc.)
+    });
+
+    // Rutas de Perfil
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Carga las rutas adicionales de Breeze (password reset, etc.)
 require __DIR__.'/auth.php';
-
-// En routes/web.php
-Route::get('/contactos', function () {
-    return Inertia::render('Contactos');
-})->name('contactos'); // <-- Este nombre es la clave
-
-Route::get('/quienes-somos', function () {
-    return Inertia::render('QuienesSomos');
-})->name('quienes-somos');
-
-// Ruta para la sección de Planes Funerarios (Humanos y Mascotas)
-Route::get('/planes', function () {
-    return Inertia::render('Planes');
-})->name('planes');
-

@@ -9,12 +9,25 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up() {
+public function up(): void 
+{
     Schema::create('users', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('persona_id')->constrained('personas');
+        
+        // --- Campos que venían de Personas ---
+        $table->string('nombre', 100);
+        $table->string('cedula', 20)->unique();
+        $table->foreignId('tipo_documento_id')->constrained('tipos_documento');
+        $table->date('fecha_nacimiento');
+        $table->foreignId('genero_id')->constrained('generos');
+        $table->string('telefono', 20);
+
+        // --- Campos originales de Users ---
         $table->string('email')->unique();
         $table->string('password');
+        $table->foreignId('estado_id')->constrained('estados_usuario');
+        $table->foreignId('tipo_usuario_id')->constrained('tipos_usuario');
+        
         $table->timestamps();
     });
 

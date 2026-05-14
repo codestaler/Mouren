@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Persona extends Model
+class Genero extends Model
 {
-    //
+    protected $fillable = ['nombre'];
 }

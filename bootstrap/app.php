@@ -17,7 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // --- ESTO ES LO QUE DEBES AGREGAR ---
+        $middleware->redirectTo(
+            guests: '/login',           // Si no está logueado, va al login
+            users: '/cliente/mi-plan',  // SI YA SE LOGUEÓ, VA AL DASHBOARD DE CLIENTE
+        );
+        // ------------------------------------
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -9,12 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up() {
-    Schema::create('servicios', function (Blueprint $table) {
+    public function up(): void {
+    Schema::create('especies', function (Blueprint $table) {
         $table->id();
-        $table->string('nombre', 100);
-        $table->text('descripcion');
-        $table->decimal('precio', 10, 2);
+        $table->string('nombre', 50); // Ej: Perro, Gato, Ave
         $table->timestamps();
     });
 }
@@ -24,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('servicios');
+        Schema::dropIfExists('especies');
     }
 };
