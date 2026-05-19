@@ -19,4 +19,14 @@ class Plan extends Model {
         'max_afiliados', 
         'activo'
     ];
+
+    public function servicios()
+    {
+        // 'plan_servicio' es el nombre de tu tabla intermedia
+        return $this->belongsToMany(Servicio::class, 'plan_servicio', 'plan_id', 'servicio_id')
+                    ->withPivot('cantidad') // Por si quieres usar la columna cantidad
+                    ->withTimestamps();
+    }
+
+    
 }

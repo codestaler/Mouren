@@ -15,6 +15,7 @@ return new class extends Migration
     $table->foreignId('suscripcion_id')->constrained('suscripciones');
     // Ahora debe apuntar a 'users'
         $table->foreignId('user_id')->constrained('users');
+    $table->string('nombre');
     $table->string('parentesco', 50);
     $table->string('estado', 50);
     $table->date('fecha_fallecimiento')->nullable();

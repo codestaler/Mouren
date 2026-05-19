@@ -19,13 +19,44 @@ class Suscripcion extends Model
         'cuota_mensual'
     ];
 
-    // Relación con el usuario (quien paga)
+    // --- RELACIONES EXISTENTES ---
+
     public function usuario() {
         return $this->belongsTo(User::class, 'usuario_id');
     }
 
-    // Relación con el plan elegido
     public function plan() {
         return $this->belongsTo(Plan::class, 'plan_id');
+    }
+
+    // --- NUEVAS RELACIONES NECESARIAS ---
+
+    /**
+     * Relación con los servicios adicionales de la suscripción.
+     * Esta es la que permite usar ->servicios()->attach() en el controlador.
+     */
+    public function servicios()
+    {
+        // 'suscripcion_servicio' es el nombre de tu tabla intermedia
+        return $this->belongsToMany(Servicio::class, 'suscripcion_servicio', 'suscripcion_id', 'servicio_id')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Relación con los afiliados (protegidos) de esta suscripción.
+     */
+    public function afiliados()
+    {
+        return $this->hasMany(Afiliado::class, 'suscripcion_id');
+    }
+
+    /**
+     * Relación con los recuerdos seleccionados.
+     */
+    public function recuerdos()
+    {
+        return $this->belongsToMany(Recuerdo::class, 'suscripcion_recuerdos')
+                    ->withPivot('costo_unitario')
+                    ->withTimestamps();
     }
 }

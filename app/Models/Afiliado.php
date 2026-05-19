@@ -14,20 +14,31 @@ class Afiliado extends Model
     protected $fillable = [
         'suscripcion_id',
         'user_id',
+        'nombre', // Este campo es vital para guardar lo que escribes en el formulario
         'parentesco',
         'estado',
         'fecha_fallecimiento'
     ];
 
-    // Relación con el Usuario (quien es el afiliado)
+    /**
+     * Relación con el Usuario (Titular de la cuenta)
+     */
     public function usuario()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relación con la Suscripción
+    /**
+     * Relación con la Suscripción a la que pertenece este afiliado
+     */
     public function suscripcion()
     {
         return $this->belongsTo(Suscripcion::class, 'suscripcion_id');
     }
+
+    public function servicioFunerario()
+{
+    // Un afiliado tiene un servicio funerario vinculado
+    return $this->hasOne(ServicioFunerario::class, 'afiliado_id');
+}
 }

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useForm, Head, Link, usePage } from '@inertiajs/react';
+// Importamos iconos sencillos (si no tienes Lucide, puedes usar texto o emojis como hice abajo)
+import { Eye, EyeOff, Flower } from 'lucide-react'; 
 
 export default function Register({ tiposDocumento, generos }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -24,18 +26,31 @@ export default function Register({ tiposDocumento, generos }) {
 
     const handleInput = (e, field, type) => {
         let value = e.target.value;
-        if (type === 'no-special') value = value.replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚ ]/g, '');
-        if (type === 'no-spaces') value = value.replace(/\s/g, '');
+
+        // 1. Quitar espacios vacíos en todos los campos
+        value = value.replace(/\s/g, '');
+
+        if (type === 'no-special') {
+            // Permite letras y números, quita caracteres especiales
+            value = value.replace(/[^a-zA-Z0-9ñÑáéíóúÁÉÍÓÚ]/g, '');
+            
+            // Formato: Primera Mayúscula, resto minúscula
+            if (value.length > 0) {
+                value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            }
+        }
+
         if (type === 'numbers') {
             value = value.replace(/\D/g, '');
             if (field === 'telefono' && value.length > 10) return;
         }
+
         setData(field, value);
     };
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('register'), {
+        post('/register-store', {
             onFinish: () => reset('password', 'password_confirmation'),
         });
     };
@@ -47,45 +62,36 @@ export default function Register({ tiposDocumento, generos }) {
         <div className="relative h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-hidden">
             <Head title="Registro - Mouren" />
 
-            {/* --- ALERTA FLOTANTE EN LA ESQUINA --- */}
-            {(hasErrors || isSuccess) && (
-                <div className="fixed top-6 right-6 z-50 animate-bounce-in w-[400px]">
-                    <div className={`flex items-center p-6 rounded-2xl border-l-8 shadow-2xl backdrop-blur-md ${
-                        hasErrors 
-                        ? 'bg-red-50/95 border-[#5D4E3F] text-red-900' 
-                        : 'bg-green-50/95 border-[#5D4E3F] text-green-900'
-                    }`}>
-                        {/* Círculo con el Cuervo (Más grande) */}
-                        <div className="flex-shrink-0 w-20 h-20 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg mr-5">
-                            <img 
-                                src={hasErrors ? "/images/login/mouri_registro_exitoso.png" : "/images/login/mouri_registro_exitoso.png"} 
-                                className="w-full h-full object-contain p-1"
-                                alt="Estado Cuervo"
-                            />
+            {/* --- MODAL DE ÉXITO --- */}
+            {isSuccess && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+                    <div className="relative flex items-center">
+                        <div className="z-10 -mr-16">
+                            <img src="/images/login/mouri_registro_exitoso.gif" className="w-64 h-64 drop-shadow-2xl" alt="Mouri" />
                         </div>
-                        
-                        <div className="flex-1">
-                            <p className="font-bold text-xl mb-1 tracking-tight">
-                                {hasErrors ? "¡Revisa los datos!" : "¡Registro Exitoso!"}
+                        <div className="bg-[#5D4E3F] text-white p-10 pl-20 rounded-[40px] shadow-2xl max-w-md border-2 border-[#A68966]">
+                            <h2 className="text-[#FFC600] text-4xl font-black italic mb-2">¡Felicidades!</h2>
+                            <p className="text-lg font-medium leading-tight mb-8 lowercase">
+                                <span className="text-[#EBE3CB] font-bold">{data.nombre1}</span>, ya tienes cuenta. inicia sesión para continuar.
                             </p>
-                            <div className="text-base font-medium opacity-90">
-                                {hasErrors ? (
-                                    <ul className="list-disc list-inside">
-                                        {Object.values(errors).map((err, i) => <li key={i}>{err}</li>)}
-                                        {data.telefono.length !== 10 && data.telefono.length > 0 && <li>10 dígitos para el teléfono.</li>}
-                                    </ul>
-                                ) : (
-                                    <div>
-                                        <p className="mb-3">{flash.message}</p>
-                                        <Link 
-                                            href="/login" 
-                                            className="inline-block bg-[#5D4E3F] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#A68966] transition-colors"
-                                        >
-                                            IR AL LOGIN AHORA
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
+                            <Link href="/login" className="block w-full bg-[#A68966] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all shadow-lg text-xl lowercase">
+                                inicia sesión ahora
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- ALERTA DE ERRORES --- */}
+            {hasErrors && (
+                <div className="fixed top-6 right-6 z-50 animate-bounce-in w-[400px]">
+                    <div className="flex items-center p-5 rounded-2xl border-l-8 bg-red-50 border-red-700 text-red-900 shadow-2xl">
+                        <img src="/images/login/mouri_error.png" className="w-20 h-20 mr-4" alt="Error" />
+                        <div>
+                            <p className="font-bold text-lg italic lowercase">¡alto ahí!</p>
+                            <ul className="text-xs list-disc list-inside opacity-80 lowercase">
+                                {Object.values(errors).map((err, i) => <li key={i}>{err}</li>)}
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -96,195 +102,136 @@ export default function Register({ tiposDocumento, generos }) {
                 <img src="/images/login/visual_fondo_registro.gif" className="w-full h-full object-cover" alt="" />
             </div>
 
-            {/* Logos */}
-            <div className="absolute top-0 left-0 z-20 pointer-events-none">
+            {/* Logo Fijo */}
+            <div className="absolute top-0 left-0 z-20">
                 <img src="/images/esquina-decorativa.png" className="w-52 opacity-80" alt="" />
-                <img src="/images/logo.png" className="absolute top-4 left-4 h-10 pointer-events-auto" alt="Logo" />
+                <Link href="/" className="absolute top-4 left-4">
+                    <img src="/images/logo.png" className="h-10" alt="Logo" />
+                </Link>
             </div>
 
-            <div className="relative z-10 w-full flex">
-                <div className="w-1/2 flex justify-start pl-52 pt-2">
-                    <div className="w-full max-w-xl max-h-[85vh] overflow-y-auto pr-4 text-[#5D4E3F]">
-                        <h2 className="text-3xl font-bold mb-6">Crea tu cuenta de Mouren</h2>
+            <div className="relative z-10 w-full flex h-full">
+                <div className="w-1/2 flex flex-col justify-start pl-52 pt-20">
+                    
+                    {/* TÍTULO ESTÁTICO (No se mueve con el scroll del form) */}
+                    <div className="mb-6">
+                        <h2 className="text-4xl font-black text-[#5D4E3F] lowercase tracking-tighter">únete a nuestra familia</h2>
+                        <div className="h-1 w-20 bg-[#A68966] mt-2"></div>
+                    </div>
 
-                        <form onSubmit={submit} className="grid grid-cols-2 gap-x-8 gap-y-4 text-base pb-10">
-                            {/* Inputs del formulario (se mantienen iguales) */}
+                    {/* FORMULARIO CON SCROLL */}
+                    <div className="w-full max-w-xl overflow-y-auto pr-4 text-[#5D4E3F] custom-scrollbar pb-20">
+                        <form onSubmit={submit} className="grid grid-cols-2 gap-x-8 gap-y-6 text-base">
+                            
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Tipo de documento</label>
-                                <select 
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.tipo_documento_id}
-                                    onChange={e => setData('tipo_documento_id', e.target.value)}
-                                >
-                                    <option value="">Seleccione...</option>
-                                    {tiposDocumento?.map((tipo) => (
-                                        <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                                    ))}
+                                <label className="block font-bold mb-1 text-xs lowercase">tipo de documento</label>
+                                <select required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966] transition-colors"
+                                    value={data.tipo_documento_id} onChange={e => setData('tipo_documento_id', e.target.value)}>
+                                    <option value="">seleccione...</option>
+                                    {tiposDocumento?.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>)}
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Número de documento</label>
-                                <input 
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.cedula}
-                                    onChange={e => handleInput(e, 'cedula', 'numbers')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">número de documento</label>
+                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.cedula} onChange={e => handleInput(e, 'cedula', 'numbers')} />
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Primer nombre *</label>
-                                <input 
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.nombre1}
-                                    onChange={e => handleInput(e, 'nombre1', 'no-special')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">primer nombre *</label>
+                                <input required placeholder="ej: Juan" className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.nombre1} onChange={e => handleInput(e, 'nombre1', 'no-special')} />
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Segundo nombre</label>
-                                <input 
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.nombre2}
-                                    onChange={e => handleInput(e, 'nombre2', 'no-special')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">segundo nombre</label>
+                                <input className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.nombre2} onChange={e => handleInput(e, 'nombre2', 'no-special')} />
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Primer apellido *</label>
-                                <input 
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.apellido1}
-                                    onChange={e => handleInput(e, 'apellido1', 'no-special')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">primer apellido *</label>
+                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.apellido1} onChange={e => handleInput(e, 'apellido1', 'no-special')} />
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Segundo apellido</label>
-                                <input 
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.apellido2}
-                                    onChange={e => handleInput(e, 'apellido2', 'no-special')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">segundo apellido</label>
+                                <input className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.apellido2} onChange={e => handleInput(e, 'apellido2', 'no-special')} />
                             </div>
 
                             <div className="col-span-2">
-                                <label className="block font-semibold mb-1 text-sm">Fecha de nacimiento</label>
-                                <input 
-                                    type="date"
-                                    max={today}
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.fecha_nacimiento}
-                                    onChange={e => setData('fecha_nacimiento', e.target.value)}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">fecha de nacimiento</label>
+                                <input type="date" max={today} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.fecha_nacimiento} onChange={e => setData('fecha_nacimiento', e.target.value)} />
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm">Género</label>
-                                <select 
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.genero_id}
-                                    onChange={e => setData('genero_id', e.target.value)}
-                                >
-                                    <option value="">Seleccione...</option>
-                                    {generos?.map((gen) => (
-                                        <option key={gen.id} value={gen.id}>{gen.nombre}</option>
-                                    ))}
+                                <label className="block font-bold mb-1 text-xs lowercase">género</label>
+                                <select required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.genero_id} onChange={e => setData('genero_id', e.target.value)}>
+                                    <option value="">seleccione...</option>
+                                    {generos?.map((gen) => <option key={gen.id} value={gen.id}>{gen.nombre}</option>)}
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block font-semibold mb-1 text-sm text-[#A68966]">Teléfono (10 dígitos)</label>
-                                <input 
-                                    required
-                                    placeholder="3001234567"
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.telefono}
-                                    onChange={e => handleInput(e, 'telefono', 'numbers')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">teléfono</label>
+                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.telefono} onChange={e => handleInput(e, 'telefono', 'numbers')} />
                             </div>
 
                             <div className="col-span-2">
-                                <label className="block font-semibold mb-1 text-sm">Correo electrónico</label>
-                                <input 
-                                    type="email"
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.email}
-                                    onChange={e => handleInput(e, 'email', 'no-spaces')}
-                                />
+                                <label className="block font-bold mb-1 text-xs lowercase">correo electrónico</label>
+                                <input type="email" required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.email} onChange={e => handleInput(e, 'email', 'no-spaces')} />
                             </div>
 
                             <div className="relative">
-                                <label className="block font-semibold mb-1 text-sm">Contraseña</label>
-                                <input 
-                                    type={showPassword ? "text" : "password"}
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F] pr-12"
-                                    value={data.password}
-                                    onChange={e => handleInput(e, 'password', 'no-spaces')}
-                                />
-                                <button 
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-2 bottom-2 text-xs font-bold text-[#A68966] hover:text-[#5D4E3F]"
-                                >
-                                    {showPassword ? "Ocultar" : "Ver"}
+                                <label className="block font-bold mb-1 text-xs lowercase">contraseña</label>
+                                <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none pr-12 focus:border-[#A68966]"
+                                    value={data.password} onChange={e => setData('password', e.target.value)} />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 bottom-2 text-[#A68966] hover:scale-110 transition-transform">
+                                    {showPassword ? '🌸' : '👁️'}
                                 </button>
                             </div>
 
-                            <div>
-                                <label className="block font-semibold mb-1 text-sm">Confirmar contraseña</label>
-                                <input 
-                                    type={showPassword ? "text" : "password"}
-                                    required
-                                    className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#5D4E3F]"
-                                    value={data.password_confirmation}
-                                    onChange={e => handleInput(e, 'password_confirmation', 'no-spaces')}
-                                />
+                            <div className="relative">
+                                <label className="block font-bold mb-1 text-xs lowercase">confirmar contraseña</label>
+                                <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                    value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} />
                             </div>
 
-                            <div className="col-span-2 mt-8">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="w-full bg-[#5D4E3F] text-white py-4 rounded-md font-bold hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all transform active:scale-95 disabled:opacity-50 shadow-lg"
-                                >
-                                    {processing ? 'Creando tu cuenta...' : 'REGISTRARME EN MOUREN'}
+                            <div className="col-span-2 mt-4">
+                                <button type="submit" disabled={processing} className="w-full bg-[#5D4E3F] text-white py-4 rounded-2xl font-bold hover:bg-[#A68966] transition-all transform active:scale-95 disabled:opacity-50 shadow-xl lowercase tracking-widest">
+                                    {processing ? 'procesando...' : 'finalizar registro'}
                                 </button>
                             </div>
 
-                            <div className="col-span-2 text-center mt-2">
-                                <Link href="/login" className="text-sm font-semibold underline decoration-[#A68966] underline-offset-4 hover:text-[#A68966]">
-                                    ¿Ya tienes cuenta? Inicia sesión aquí
+                            <div className="col-span-2 text-center">
+                                <Link href="/login" className="text-sm font-medium hover:text-[#A68966] transition-colors lowercase">
+                                    ¿ya tienes cuenta? <span className="font-bold underline">inicia sesión aquí</span>
                                 </Link>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <div className="w-1/2 flex justify-end items-end pt-10 pr-10 pb-4">
-                    <Link href="/" className="bg-[#A68966]/90 backdrop-blur-sm text-white px-8 py-2 rounded-full font-semibold hover:bg-[#5D4E3F] transition shadow-md">
-                        Volver al inicio
+                <div className="w-1/2 flex justify-end items-end p-10">
+                    <Link href="/" className="bg-[#A68966]/90 backdrop-blur-md text-white px-10 py-3 rounded-full font-bold hover:bg-[#5D4E3F] transition shadow-2xl active:scale-95 lowercase">
+                        volver al inicio
                     </Link>
                 </div>
             </div>
 
             <style>{`
-                div::-webkit-scrollbar { width: 6px; }
-                div::-webkit-scrollbar-thumb { background: #A68966; border-radius: 10px; }
-                div::-webkit-scrollbar-track { background: transparent; }
-                
-                .animate-bounce-in {
-                    animation: bounceInRight 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-                }
-
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #A68966; border-radius: 10px; }
+                .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+                .animate-bounce-in { animation: bounceInRight 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes bounceInRight {
                     0% { opacity: 0; transform: translateX(200px); }
                     60% { opacity: 1; transform: translateX(-20px); }

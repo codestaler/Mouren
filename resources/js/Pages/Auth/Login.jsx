@@ -87,11 +87,11 @@ export default function Login() {
                 {/* ZONA DERECHA (Formulario) */}
                 <div className="w-1/2 flex flex-col justify-center items-center pr-20">
                     <div className="w-full max-w-sm bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-white/30 shadow-2xl text-[#5D4E3F]">
-                        <h2 className="text-3xl font-bold mb-8 text-center tracking-tight uppercase">Inicia Sesión</h2>
+                        <h2 className="text-3xl font-bold mb-8 text-center tracking-tight ">Inicia Sesión</h2>
                         
                         <form onSubmit={submit} className="flex flex-col gap-6">
                             <div className="group">
-                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors uppercase tracking-widest">Correo electrónico</label>
+                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors  tracking-widest">Correo electrónico</label>
                                 <input 
                                     type="email"
                                     className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-1 focus:border-[#A68966] outline-none text-lg transition-all duration-300"
@@ -102,7 +102,7 @@ export default function Login() {
                             </div>
 
                             <div className="group">
-                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors uppercase tracking-widest">Contraseña</label>
+                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors  tracking-widest">Contraseña</label>
                                 <input 
                                     type="password"
                                     className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-1 focus:border-[#A68966] outline-none text-lg transition-all duration-300"
@@ -118,7 +118,7 @@ export default function Login() {
                                     disabled={processing}
                                     className="w-full bg-[#5D4E3F] text-white py-3 rounded-xl hover:bg-[#A68966] transition-all duration-500 font-bold shadow-lg hover:shadow-[#A68966]/40 transform hover:-translate-y-1 active:scale-95 disabled:opacity-50"
                                 >
-                                    {processing ? 'COMPROBANDO...' : '¡YA ESTOY LISTO!'}
+                                    {processing ? 'COMPROBANDO...' : '¡Ya Estoy Listo!'}
                                 </button>
                                 
                                 <Link href={route('password.request')} className="text-xs hover:text-[#A68966] underline decoration-[#A68966]/30 transition-all">
@@ -128,13 +128,13 @@ export default function Login() {
 
                             <div className="relative flex items-center py-2">
                                 <div className="flex-grow border-t border-[#5D4E3F]/20"></div>
-                                <span className="flex-shrink mx-4 text-xs font-bold opacity-50 uppercase">O</span>
+                                <span className="flex-shrink mx-4 text-xs font-bold opacity-50 ">O</span>
                                 <div className="flex-grow border-t border-[#5D4E3F]/20"></div>
                             </div>
 
                             <Link 
                                 href="/register" 
-                                className="text-center font-bold text-[#A68966] hover:text-[#5D4E3F] transition-colors text-sm uppercase tracking-tighter"
+                                className="text-center font-bold text-[#A68966] hover:text-[#5D4E3F] transition-colors text-sm  tracking-tighter"
                             >
                                 ¿No tienes cuenta aún? Regístrate
                             </Link>
