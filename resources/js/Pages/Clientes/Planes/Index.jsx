@@ -18,8 +18,8 @@ export default function PlanesIndex({ planes }) {
             <main className={`flex-1 transition-all duration-500 ease-in-out p-4 md:p-10 overflow-y-auto h-screen custom-scrollbar ${isSidebarOpen ? 'md:ml-72' : 'md:ml-20'}`}>
                 
                 <header className="mb-8 mt-2 max-w-4xl">
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter lowercase text-[#5D4E3F] leading-tight">
-                        nuestros planes de <span className="text-[#A68966]">previsión</span>
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-[#5D4E3F] leading-tight">
+                        Nuestros planes de <span className="text-[#A68966]">previsión</span>
                     </h1>
                     <div className="h-1 w-12 bg-[#A68966] mt-3 mb-3 rounded-full"></div>
                     <p className="text-[12px] md:text-sm italic opacity-60 max-w-md">

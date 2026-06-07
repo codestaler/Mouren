@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm, Head, Link, usePage } from '@inertiajs/react';
 // Importamos iconos sencillos (si no tienes Lucide, puedes usar texto o emojis como hice abajo)
-import { Eye, EyeOff, Flower } from 'lucide-react'; 
+import { Eye, EyeOff, Flower } from 'lucide-react';
 
 export default function Register({ tiposDocumento, generos }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -9,7 +9,7 @@ export default function Register({ tiposDocumento, generos }) {
 
     const { data, setData, post, processing, errors, reset } = useForm({
         tipo_documento_id: '',
-        cedula: '', 
+        cedula: '',
         nombre1: '',
         nombre2: '',
         apellido1: '',
@@ -33,7 +33,7 @@ export default function Register({ tiposDocumento, generos }) {
         if (type === 'no-special') {
             // Permite letras y números, quita caracteres especiales
             value = value.replace(/[^a-zA-Z0-9ñÑáéíóúÁÉÍÓÚ]/g, '');
-            
+
             // Formato: Primera Mayúscula, resto minúscula
             if (value.length > 0) {
                 value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
@@ -42,7 +42,12 @@ export default function Register({ tiposDocumento, generos }) {
 
         if (type === 'numbers') {
             value = value.replace(/\D/g, '');
+
+            // TELÉFONO: máximo 10 números
             if (field === 'telefono' && value.length > 10) return;
+
+            // CÉDULA: mínimo 6 y máximo 12
+            if (field === 'cedula' && value.length > 12) return;
         }
 
         setData(field, value);
@@ -50,6 +55,53 @@ export default function Register({ tiposDocumento, generos }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        // VALIDAR CAMPOS VACÍOS
+        for (const key in data) {
+            if (
+                key !== 'nombre2' &&
+                key !== 'apellido2' &&
+                data[key].trim() === ''
+            ) {
+                alert('Todos los campos obligatorios deben estar llenos');
+                return;
+            }
+        }
+
+        // VALIDAR CÉDULA
+        if (data.cedula.length < 6 || data.cedula.length > 12) {
+            alert('La cédula debe tener entre 6 y 12 números');
+            return;
+        }
+
+        // VALIDAR TELÉFONO
+        if (!data.telefono.startsWith('3')) {
+            alert('El número de celular debe comenzar por 3');
+            return;
+        }
+
+        if (data.telefono.length !== 10) {
+            alert('El celular debe tener 10 números');
+            return;
+        }
+
+        // VALIDAR CONTRASEÑA
+        const passwordRegex =
+            /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-])[A-Za-z\d@$!%*?&.#_-]{8,}$/;
+
+        if (!passwordRegex.test(data.password)) {
+            alert(
+                'La contraseña debe tener mínimo 8 caracteres, una mayúscula, un número y un carácter especial'
+            );
+            return;
+        }
+
+        // CONFIRMAR CONTRASEÑAS
+        if (data.password !== data.password_confirmation) {
+            alert('Las contraseñas no coinciden');
+            return;
+        }
+
         post('/register-store', {
             onFinish: () => reset('password', 'password_confirmation'),
         });
@@ -112,7 +164,7 @@ export default function Register({ tiposDocumento, generos }) {
 
             <div className="relative z-10 w-full flex h-full">
                 <div className="w-1/2 flex flex-col justify-start pl-52 pt-20">
-                    
+
                     {/* TÍTULO ESTÁTICO (No se mueve con el scroll del form) */}
                     <div className="mb-6">
                         <h2 className="text-4xl font-black text-[#5D4E3F] lowercase tracking-tighter">únete a nuestra familia</h2>
@@ -122,7 +174,7 @@ export default function Register({ tiposDocumento, generos }) {
                     {/* FORMULARIO CON SCROLL */}
                     <div className="w-full max-w-xl overflow-y-auto pr-4 text-[#5D4E3F] custom-scrollbar pb-20">
                         <form onSubmit={submit} className="grid grid-cols-2 gap-x-8 gap-y-6 text-base">
-                            
+
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">tipo de documento</label>
                                 <select required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966] transition-colors"
@@ -134,8 +186,9 @@ export default function Register({ tiposDocumento, generos }) {
 
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">número de documento</label>
-                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966] "
                                     value={data.cedula} onChange={e => handleInput(e, 'cedula', 'numbers')} />
+                                <span className="block text-[10px] text-[#A68966] mt-1 lowercase">debe tener entre 6 y 12 números</span>
                             </div>
 
                             <div>
@@ -181,6 +234,7 @@ export default function Register({ tiposDocumento, generos }) {
                                 <label className="block font-bold mb-1 text-xs lowercase">teléfono</label>
                                 <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.telefono} onChange={e => handleInput(e, 'telefono', 'numbers')} />
+                                <span className="block text-[10px] text-[#A68966] mt-1 lowercase">10 dígitos, debe iniciar con el número 3</span>
                             </div>
 
                             <div className="col-span-2">
@@ -189,19 +243,24 @@ export default function Register({ tiposDocumento, generos }) {
                                     value={data.email} onChange={e => handleInput(e, 'email', 'no-spaces')} />
                             </div>
 
-                            <div className="relative">
+                            {/* --- SECCIÓN CONTRASEÑA CORREGIDA --- */}
+                            <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">contraseña</label>
-                                <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none pr-12 focus:border-[#A68966]"
-                                    value={data.password} onChange={e => setData('password', e.target.value)} />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 bottom-2 text-[#A68966] hover:scale-110 transition-transform">
-                                    {showPassword ? '🌸' : '👁️'}
-                                </button>
+                                <div className="relative flex items-center">
+                                    <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none pr-8 focus:border-[#A68966]"
+                                        value={data.password} onChange={e => setData('password', e.target.value.replace(/\s/g, ''))} />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 text-[#A68966] hover:scale-110 transition-transform text-lg">
+                                        {showPassword ? '🌸' : '👁️'}
+                                    </button>
+                                </div>
+                                <span className="block text-[10px] text-[#A68966] mt-1 lowercase leading-tight">mínimo 8 caracteres, una mayúscula, un número y un carácter especial (@$!%*?&.#_-)</span>
                             </div>
 
-                            <div className="relative">
+                            <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">confirmar contraseña</label>
                                 <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
-                                    value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} />
+                                    value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value.replace(/\s/g, ''))} />
+                                <span className="block text-[10px] text-[#A68966] mt-1 lowercase">las contraseñas deben ser idénticas</span>
                             </div>
 
                             <div className="col-span-2 mt-4">

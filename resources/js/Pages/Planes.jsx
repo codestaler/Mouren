@@ -254,26 +254,32 @@ export default function Planes() {
 
             <MusicAlbum />
             {/* --- SECCIÓN DE VIDEO Y GUÍA DE DUELO --- */}
-            <section className=" bg-[#F4EDE6] flex flex-col md:flex-row items-stretch overflow-hidden border-[#A68966]/20">
+            <section className="bg-[#F4EDE6] flex flex-col md:flex-row items-stretch overflow-hidden border-[#A68966]/20 h-auto md:h-[600px]">
 
-                {/* LADO IZQUIERDO: MOURI EN EL PARQUE (GIF) */}
-                <div className="md:w-1/2 relative bg-[#E9DCC9] flex items-center justify-center p-10 min-h-[400px] ">
-                    {/* Fondo sutil de textura o patrón si lo deseas */}
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#5D4E3F 1px, transparent 1px)', size: '20px 20px' }}></div>
+                {/* LADO IZQUIERDO: MOURI EN EL PARQUE (GIF COMO FONDO COMPLETO CON CAPA NEGRA Y DIFUSIÓN) */}
+                <div className="md:w-1/2 relative bg-[#E9DCC9] flex items-center justify-center min-h-[350px] md:min-h-full overflow-hidden">
 
+                    {/* El GIF ocupando todo el ancho y alto disponible */}
                     <img
                         src="/images/planes/mouri_sentando.gif"
                         alt="Mouri en el parque"
-                        className="relative z-10 w-full max-w-md h-auto drop-shadow-2xl animate-fade-in"
+                        className="absolute inset-0 w-full h-full object-cover animate-fade-in"
                     />
 
-                    {/* Adorno visual de estrella/brillo como en la imagen */}
-                    <div className="absolute bottom-6 right-6 text-[#5D4E3F] opacity-30 text-2xl">✦</div>
+                    {/* NUEVA CAPA NEGRA UNIFORME CON EFECTO DE DIFUSIÓN (BACKDROP-BLUR) */}
+                    {/* Usamos bg-black con una opacidad y un efecto de desenfoque de fondo para lograr la difusión. */}
+                    <div className="absolute inset-0 bg-black/40 z-10 backdrop-blur-sm" />
+
+                    {/* Fondo sutil de textura (opcional, ahora por encima de la capa negra si se quiere integrar) */}
+                    <div className="absolute inset-0 opacity-10 z-20" style={{ backgroundImage: 'radial-gradient(#5D4E3F 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+
+                    {/* Adorno visual de estrella/brillo - ajustado para que sea visible */}
+                    <div className="absolute bottom-6 right-6 text-white md:text-[#FFC600] opacity-70 text-2xl z-20">✦</div>
                 </div>
 
-                {/* LADO DERECHO: CONTENIDO Y VIDEO */}
-                <div className="md:w-2/3 bg-[#5D4E3F] p-12 md:p-20 flex flex-col justify-center text-white">
-                    <h2 className="text-2xl md:text-4xl font-black mb-6 tracking-tighter leading-tight">
+                {/* LADO DERECHO: CONTENIDO Y VIDEO (SE MANTIENE LA MISMA ALTURA) */}
+                <div className="md:w-1/2 bg-[#5D4E3F] p-12 md:p-20 flex flex-col justify-center text-white z-20 h-auto md:h-full">
+                    <h2 className="text-2xl md:text-3xl font-black mb-6 tracking-tighter leading-tight">
                         Espacio para un video
                     </h2>
 
@@ -283,7 +289,7 @@ export default function Planes() {
                         necesarias para honrar la memoria de quienes siempre vivirán en nuestro corazón.
                     </p>
 
-                    {/* CONTENEDOR DEL VIDEO (Proporción 16:9) */}
+                    {/* CONTENEDOR DEL VIDEO (Proporción 16:9, compacto) */}
                     <div className="relative w-full aspect-video bg-white/10 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl mb-10 group">
                         <iframe
                             className="w-full h-full"

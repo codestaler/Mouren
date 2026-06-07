@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;    // 👈 IMPORTANTE: Añadimos esto para enviar correos
+use Illuminate\Support\Facades\Session; // 👈 IMPORTANTE: Añadimos esto para guardar el token temporal
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -69,48 +71,79 @@ class UserController extends Controller
                 'telefono' => $request->telefono,
             ]);
 
-            // IMPORTANTE: NO usamos Auth::login($user) aquí para que el usuario
-            // no sea redirigido al dashboard por los middlewares de Laravel
-            // y pueda ver el mensaje de éxito de Mouri en el Registro.
-
             // 4. Retorno a la página anterior con mensaje flash
             return redirect()->back()->with('message', '¡registro exitoso! mouri te da la bienvenida.');
 
         } catch (\Exception $e) {
-            // Si algo falla, volvemos atrás con el error para que Mouri se ponga triste
             return back()->withErrors(['error' => 'no pudimos procesar tu registro: ' . $e->getMessage()]);
         }
     }
 
     /**
-     * Actualizar datos del usuario.
+     * Generar y enviar el código por correo.
      */
-    public function update(Request $request, $id) {
-        $user = User::find($id);
-        if (!$user) return back()->withErrors(['mensaje' => 'usuario no encontrado']);
-
+    public function enviarCodigoVerificacion(Request $request)
+    {
         $request->validate([
-            'email' => 'unique:users,email,' . $id,
-            'cedula' => 'unique:users,cedula,' . $id,
+            'email' => 'required|email',
         ]);
 
-        $data = $request->all();
+        // Generar un código aleatorio de 6 dígitos
+        $codigo = rand(100000, 999999);
 
-        if ($request->has('nombre1') || $request->has('apellido1')) {
-            $data['nombre'] = collect([
-                $request->nombre1, $request->nombre2, $request->apellido1, $request->apellido2
-            ])->filter()->implode(' ');
-        }
+        // Guardar el código en la sesión del usuario (expira en 10 minutos)
+        Session::put('codigo_verificacion', $codigo);
+        Session::put('email_verificacion', $request->email);
 
-        if ($request->has('password') && !empty($request->password)) {
-            $data['password'] = Hash::make($request->password);
-        } else {
-            unset($data['password']);
-        }
+        // Enviar el correo electrónico usando Mail
+        Mail::raw("Tu código de seguridad para actualizar tus datos en Mouren es: {$codigo}", function ($message) use ($request) {
+            $message->to($request->email)
+                    ->subject('Código de Verificación - Mouren');
+        });
 
-        $user->update($data);
+        return response()->json(['success' => true, 'message' => 'Código enviado con éxito.']);
+    }
+
+    /**
+     * Actualizar datos del usuario tras validar código.
+     */
+    public function update(Request $request, $id)
+    {
+        // Validar que el código que viene del formulario coincida con el de la sesión
+        $codigoSesion = Session::get('codigo_verificacion');
         
-        return back()->with('message', 'datos actualizados correctamente.');
+        if (!$codigoSesion || $request->codigo_ingresado != $codigoSesion) {
+            return back()->withErrors(['codigo' => 'El código de verificación es incorrecto o ha expirado.']);
+        }
+
+        // Si el código es correcto, limpiamos la sesión para que no se use de nuevo
+        Session::forget('codigo_verificacion');
+
+        // Construir también aquí el nombre completo por si cambia de apellidos o nombres
+        $nombreCompleto = collect([
+            $request->nombre1, 
+            $request->nombre2, 
+            $request->apellido1, 
+            $request->apellido2
+        ])->filter()->implode(' ');
+
+        $user = User::findOrFail($id);
+        $user->update([
+            'nombre'    => $nombreCompleto, // Mantenemos la consistencia de tu DB
+            'nombre1'   => $request->nombre1,
+            'nombre2'   => $request->nombre2,
+            'apellido1' => $request->apellido1,
+            'apellido2' => $request->apellido2,
+            'telefono'  => $request->telefono,
+            'email'     => $request->email,
+        ]);
+
+        if ($request->filled('password')) {
+            $user->update(['password' => Hash::make($request->password)]);
+        }
+
+        // 💡 OJO AQUÍ: Tu ruta de renderizado de formulario en web.php se llama 'datos.edit', no 'user.datos'
+        return redirect()->route('datos.edit')->with('message', 'Tus datos se han actualizado correctamente.');
     }
 
     /**

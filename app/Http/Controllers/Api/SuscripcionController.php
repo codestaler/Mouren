@@ -12,107 +12,143 @@ use App\Models\Servicio;
 use App\Models\Cancion;
 use App\Models\Recuerdo;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class SuscripcionController extends Controller
 {
-    /**
-     * NUEVO: Muestra la vista "Mi Plan" con todos los datos vinculados.
-     */
     public function miPlan()
     {
-        // Buscamos la suscripción activa del usuario logueado
-        $suscripcion = Suscripcion::with([
-            'plan', 
-            'afiliados', 
-            'recuerdos',
-            'afiliados.servicioFunerario.cancion' // Traemos la canción desde el servicio del afiliado
-        ])
-        ->where('usuario_id', auth()->id())
-        ->where('estado', 'activo')
-        ->first();
+        $suscripcion = Suscripcion::with(['plan', 'afiliados', 'recuerdos', 'serviciosExtras'])
+            ->where('usuario_id', auth()->id())
+            ->where('estado', 'activo')
+            ->first();
 
-        return Inertia::render('Clientes/MiPlan', [
-            'suscripcion' => $suscripcion
-        ]);
+        // Lógica de canción para el front
+        if ($suscripcion && $suscripcion->afiliados->count() > 0) {
+            $primerAfiliadoId = $suscripcion->afiliados->first()->id;
+            $servicioFunerario = DB::table('servicios_funerarios')
+                ->where('afiliado_id', $primerAfiliadoId)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($servicioFunerario && $servicioFunerario->cancion_id) {
+                $cancion = DB::table('canciones')->where('id', $servicioFunerario->cancion_id)->first();
+                if ($cancion) {
+                    $suscripcion->cancion_tributo = $cancion;
+                }
+            }
+        }
+
+        return Inertia::render('Clientes/MiPlan', ['suscripcion' => $suscripcion]);
     }
 
-    /**
-     * Muestra el formulario de inscripción (Mantengo lo que ya tenías).
-     */
-    public function create(Request $request, Plan $plan)
-    {
-        $plan->load('servicios'); 
-
-        return Inertia::render('Clientes/Planes/Inscribir', [
-            'plan' => $plan,
-            'servicios' => Servicio::all(),
-            'recuerdos' => Recuerdo::all(),
-        ]);
-    }
-
-    /**
-     * Guarda la suscripción y sus relaciones (Mantengo lo que ya tenías).
-     */
     public function store(Request $request)
     {
+        \Log::info('VALOR RECIBIDO: ' . $request->input('cuota_mensual'));
+        $userId = $request->usuario_id ?? Auth::id();
+
+        if (!$userId) {
+            return back()->withErrors(['error' => 'No se pudo identificar el usuario.']);
+        }
+
         try {
             DB::beginTransaction();
 
-            $userId = auth()->id() ?? $request->usuario_id;
+            // 1. Crear suscripción
+            $suscripcion = Suscripcion::create([
+                'usuario_id'    => $userId,
+                'plan_id'       => $request->plan_id,
+                'cuota_mensual' => $request->input('cuota_mensual') ?? 0,
+                'estado'        => 'activo',
+                'fecha_inicio'  => now(),
+            ]);
 
-            // 1. Crear la Suscripción
-            $suscripcion = new Suscripcion();
-            $suscripcion->usuario_id = $userId;
-            $suscripcion->plan_id = $request->plan_id;
-            $suscripcion->cuota_mensual = $request->cuota_mensual;
-            $suscripcion->estado = 'activo';
-            $suscripcion->fecha_inicio = now();
-            $suscripcion->save();
-
-            // 2. Guardar Recuerdos en la tabla pivote
-            if (!empty($request->recuerdos_seleccionados)) {
-                foreach ($request->recuerdos_seleccionados as $recuerdoId) {
-                    $recuerdo = Recuerdo::find($recuerdoId);
-                    
-                    DB::table('suscripcion_recuerdos')->insert([
-                        'suscripcion_id' => $suscripcion->id,
-                        'recuerdo_id'    => $recuerdoId,
-                        'costo_unitario' => $recuerdo->precio ?? 0,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ]);
-                }
-            }
-
-            // 3. Guardar Afiliados
-            if (!empty($request->afiliados)) {
+            // 2. Procesar afiliados y servicios funerarios
+            if ($request->has('afiliados')) {
                 foreach ($request->afiliados as $afi) {
-                    $nuevoAfiliado = Afiliado::create([
+                    $afiliado = Afiliado::create([
                         'suscripcion_id' => $suscripcion->id,
                         'user_id'        => $userId,
                         'nombre'         => $afi['nombre'],
-                        'parentesco'     => $afi['parentesco'],
-                        'estado'         => 'activo',
+                        'parentesco'     => $afi['parentesco'] ?? 'Titular',
+                        'estado'         => 'activo'
                     ]);
 
-                    // 4. Guardar Servicio Funerario (vinculando la canción)
                     DB::table('servicios_funerarios')->insert([
-                        'afiliado_id'   => $nuevoAfiliado->id,
-                        'cancion_id'    => $request->cancion_id,
-                        'observaciones' => $request->observaciones ?? 'Sin observaciones',
-                        'fecha_inicio'  => now(),
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
+                        'afiliado_id'  => $afiliado->id,
+                        'cancion_id'   => $afi['cancion_id'] ?? 1,
+                        'fecha_inicio' => now(),
+                        'created_at'   => now(),
+                        'updated_at'   => now()
                     ]);
                 }
             }
 
+            // 3. Guardar Servicios Extra
+if ($request->has('servicios_adicionales')) {
+    foreach ($request->servicios_adicionales as $servicioId) {
+        // Buscamos el precio real de este servicio en la tabla servicios
+        $servicio = \App\Models\Servicio::find($servicioId);
+        $suscripcion->serviciosExtras()->attach($servicioId, [
+            'precio_pagado' => $servicio ? $servicio->precio : 0, 
+            'created_at'    => now(),
+            'updated_at'    => now()
+        ]);
+    }
+}
+
+// 4. Guardar Recuerdos
+if ($request->has('recuerdos_seleccionados')) {
+    foreach ($request->recuerdos_seleccionados as $recuerdoId) {
+        // Buscamos el precio real del recuerdo
+        $recuerdo = \App\Models\Recuerdo::find($recuerdoId);
+        $suscripcion->recuerdos()->attach($recuerdoId, [
+            'costo_unitario' => $recuerdo ? $recuerdo->precio_adicional : 0,
+            'created_at'     => now(),
+            'updated_at'     => now()
+        ]);
+    }
+}
+
             DB::commit();
-            return redirect()->route('mi.plan')->with('message', 'Suscripción creada con éxito');
+            return redirect()->route('mi.plan')->with('message', 'Suscripción exitosa');
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+    DB::rollBack();
+    // Esto enviará el error real a tu modal en el frontend
+    return response()->json(['error' => $e->getMessage()], 500);
+}
+    }
+    
+    // ... mantén el resto de tus métodos abajo (detallesPlan, eliminarAfiliado) ..
+
+    public function detallesPlan()
+    {
+        $suscripcion = Suscripcion::with(['plan.servicios', 'afiliados', 'recuerdos', 'serviciosExtras'])
+            ->where('usuario_id', auth()->id())
+            ->where('estado', 'activo')
+            ->first();
+
+        // ... (Tu lógica de cálculo de precios se mantiene igual)
+        return Inertia::render('Clientes/DetallesPlan', [
+            'suscripcion' => $suscripcion,
+            'todosLosServicios' => Servicio::all(),
+            'todosLosRecuerdos' => Recuerdo::all(),
+            'canciones' => Cancion::all()
+        ]);
+    }
+
+    public function eliminarAfiliado($id)
+    {
+        try {
+            $afiliado = Afiliado::findOrFail($id);
+            if (trim(strtolower($afiliado->parentesco)) === 'titular') {
+                return back()->with('error', 'No puedes eliminar al titular.');
+            }
+            $afiliado->delete();
+            return back()->with('message', 'Afiliado removido.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al eliminar.');
         }
     }
 }

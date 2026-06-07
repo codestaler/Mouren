@@ -59,4 +59,12 @@ class Suscripcion extends Model
                     ->withPivot('costo_unitario')
                     ->withTimestamps();
     }
+
+    // Estos son los servicios adicionales que el usuario pagó por aparte
+    public function serviciosExtras()
+    {   
+        return $this->belongsToMany(Servicio::class, 'servicios_extras_suscripcion', 'suscripcion_id', 'servicio_id')
+                ->withPivot('precio_pagado')
+                ->withTimestamps();
+    }
 }
