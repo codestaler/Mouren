@@ -28,6 +28,8 @@ use App\Http\Controllers\Api\Pagos\MetodoPagoController;
 use App\Http\Controllers\Api\Procesos\EtapaServicioController;
 use App\Http\Controllers\Api\Procesos\TrazabilidadServicioController;
 use App\Http\Controllers\Api\Procesos\NotificacionController;
+use App\Http\Controllers\ChatMascotaController;
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -60,3 +62,4 @@ Route::apiResource('metodos-pago', MetodoPagoController::class);
 Route::apiResource('etapas-servicio', EtapaServicioController::class);
 Route::apiResource('trazabilidad', TrazabilidadServicioController::class);
 Route::apiResource('notificaciones', NotificacionController::class);
+Route::post('/chat/mouri', ChatMascotaController::class);

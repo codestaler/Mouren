@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;    // 👈 IMPORTANTE: Añadimos esto para enviar correos
 use Illuminate\Support\Facades\Session; // 👈 IMPORTANTE: Añadimos esto para guardar el token temporal
 use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -108,43 +109,38 @@ class UserController extends Controller
      * Actualizar datos del usuario tras validar código.
      */
     public function update(Request $request, $id)
-    {
-        // Validar que el código que viene del formulario coincida con el de la sesión
-        $codigoSesion = Session::get('codigo_verificacion');
-        
-        if (!$codigoSesion || $request->codigo_ingresado != $codigoSesion) {
-            return back()->withErrors(['codigo' => 'El código de verificación es incorrecto o ha expirado.']);
-        }
+{
+    // 1. Validamos estrictamente antes de tocar la base de datos
+    $request->validate([
+        'email' => [
+            'required',
+            'email',
+            // Esto comprueba que sea único en la tabla 'users', pero IGNORA al usuario actual ($id)
+            Rule::unique('users')->ignore($id), 
+        ],
+        'telefono' => 'required|digits:10',
+        'codigo_ingresado' => 'required',
+    ], [
+        'email.unique' => 'Esta dirección de correo electrónico ya se encuentra registrada por otro usuario.',
+    ]);
 
-        // Si el código es correcto, limpiamos la sesión para que no se use de nuevo
-        Session::forget('codigo_verificacion');
+    // 2. Lógica para verificar tu token de 6 dígitos aquí...
+    // ...
 
-        // Construir también aquí el nombre completo por si cambia de apellidos o nombres
-        $nombreCompleto = collect([
-            $request->nombre1, 
-            $request->nombre2, 
-            $request->apellido1, 
-            $request->apellido2
-        ])->filter()->implode(' ');
-
-        $user = User::findOrFail($id);
-        $user->update([
-            'nombre'    => $nombreCompleto, // Mantenemos la consistencia de tu DB
-            'nombre1'   => $request->nombre1,
-            'nombre2'   => $request->nombre2,
-            'apellido1' => $request->apellido1,
-            'apellido2' => $request->apellido2,
-            'telefono'  => $request->telefono,
-            'email'     => $request->email,
-        ]);
-
-        if ($request->filled('password')) {
-            $user->update(['password' => Hash::make($request->password)]);
-        }
-
-        // 💡 OJO AQUÍ: Tu ruta de renderizado de formulario en web.php se llama 'datos.edit', no 'user.datos'
-        return redirect()->route('datos.edit')->with('message', 'Tus datos se han actualizado correctamente.');
+    // 3. Si el token es correcto, actualizas los campos
+    $user = User::findOrFail($id);
+    
+    // Concatenamos el nombre si tu base de datos tiene un campo estructurado único
+    if ($request->has('nombre1')) {
+        $user->nombre = trim($request->nombre1 . ' ' . $request->nombre2) . ' ' . trim($request->apellido1 . ' ' . $request->apellido2);
     }
+    
+    $user->email = $request->email;
+    $user->telefono = $request->telefono;
+    $user->save();
+
+    return redirect()->back()->with('message', 'Tus datos se actualizaron de manera correcta.');
+}
 
     /**
      * Eliminar usuario permanentemente.

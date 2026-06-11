@@ -304,7 +304,8 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                         {recuerdos.map(r => (
                                             <div key={r.id} onClick={() => toggleSeleccionRecuerdo(r.id)} className={`p-6 rounded-[45px] border-2 cursor-pointer text-center transition-all ${data.recuerdos_seleccionados.includes(r.id) ? 'bg-[#5D4E3F] text-white border-[#5D4E3F]' : 'bg-[#FDFBF9] border-transparent'}`}>
                                                 <div className="bg-white rounded-3xl p-3 mb-3 shadow-sm">
-                                                    <img src={`/images/planes/recuerdos/${r.imagen_url || 'peluche_mouri.png'}`} className="w-16 h-16 mx-auto object-contain" alt={r.nombre} />
+                                                    <img src={`/images/planes/recuerdos/${r.imagen || 'peluche_mouri.png'}`} className="w-20 h-20 mx-auto object-contain" alt={r.nombre} />
+                                                    {/*<img src={`/images/planes/recuerdos/${r.imagen_url || 'peluche_mouri.png'}`} className="w-16 h-16 mx-auto object-contain" alt={r.nombre} />*/}
                                                 </div>
                                                 <p className="text-xs font-bold lowercase">{r.nombre}</p>
                                                 <p className="text-[10px] opacity-40">$ {Number(r.precio_adicional).toLocaleString()}</p>

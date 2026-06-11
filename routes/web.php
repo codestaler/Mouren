@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\SuscripcionController;
 use App\Models\Cancion;
 use App\Http\Controllers\Api\PersonalizacionController;
 use Inertia\Inertia;
+use App\Http\Controllers\ChatMascotaController;
+use App\Http\Controllers\ClientPaymentsController;
+
 
 // --- RUTAS PÚBLICAS ---
 Route::get('/', fn() => Inertia::render('Home'))->name('home');
@@ -69,6 +72,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/detalles', [SuscripcionController::class, 'detallesPlan'])->name('detalles.plan');
     Route::post('/api/personalizacion/gabinete', [PersonalizacionController::class, 'guardarDesdeGabinete'])->name('personalizacion.gabinete');
 
+    // ⬇️ MUEVE TUS RUTAS DE PAGOS AQUÍ ADENTRO ⬇️
+    Route::get('/pagos', [ClientPaymentsController::class, 'index'])->name('cliente.pagos');
+    Route::post('/cliente/pagos/{id}/procesar', [ClientPaymentsController::class, 'procesarPago']);
+    Route::get('/cliente/factura/{id}/pdf', [ClientPaymentsController::class, 'descargarPdf'])->name('cliente.factura.pdf');
+    Route::get('/cliente/estado-cuenta/pdf', [ClientPaymentsController::class, 'descargarEstadoCuenta'])->name('cliente.estado_cuenta.pdf');
+
+    Route::get('/mouriia', function () {
+    return Inertia::render('Clientes/MouriIa');
+    })->middleware(['auth']);
+
     // Logout dentro del grupo protegido
     Route::get('/force-logout', function () {
         auth()->logout();
@@ -77,5 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect('/');
     });
 });
+
+Route::post('/chat/mouri', ChatMascotaController::class);
 
 require __DIR__.'/auth.php';

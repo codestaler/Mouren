@@ -44,7 +44,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     const opcionesColores = [
         { id: 1, nombre: 'Blanco', hex: '#FFFFFF' },
         { id: 2, nombre: 'Dorado', hex: '#D4AF37' },
-        { id: 3, nombre: 'Azul', hex: '#2563EB' },
+        { id: 3, nombre: 'Cafe', hex: '#494029' },
         { id: 4, nombre: 'Rosado', hex: '#EC4899' }
     ];
 
@@ -62,6 +62,8 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     const guardarAfiliadoGabinete = (e) => {
         e.preventDefault();
 
+        console.log("Datos a guardar:", formAfiliado);
+
         if (formAfiliado.id) {
             setAfiliados(
                 afiliados.map((a) =>
@@ -77,6 +79,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 }
             ]);
         }
+        setAfiliados(prev => prev.map(a =>
+            a.id === formAfiliado.id
+                ? { ...a, ...formAfiliado } // Aquí actualizamos con los valores del form
+                : a
+        ));
 
         cerrarModal();
     };
@@ -86,7 +93,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
             id: afi.id,
             nombre: afi.nombre,
             parentesco: afi.parentesco,
-            observacion_funeraria: afi.observacion_funeraria || '',
+            observacion_funeraria: afi.observacion_funeraria || afi.observaciones || '',
             cancion_id: afi.cancion_id || ''
         });
 
@@ -188,7 +195,16 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         cerrarModal();
     };
 
-
+    useEffect(() => {
+        if (suscripcion && suscripcion.afiliados) {
+            const afiliadosNormalizados = suscripcion.afiliados.map(afi => ({
+                ...afi,
+                observacion_funeraria: afi.observacion_funeraria || afi.observaciones || '',
+                cancion_id: afi.cancion_id || ''
+            }));
+            setAfiliados(afiliadosNormalizados);
+        }
+    }, [suscripcion]);
 
     // --- LÓGICA ---
     useEffect(() => {
@@ -244,6 +260,10 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     const cantidadAfiliadosExtras = cantidadAfiliados > maxAfiliadosIncluidos ? cantidadAfiliados - maxAfiliadosIncluidos : 0;
     const cantidadServiciosTotales = serviciosBaseFijos.length + serviciosExtras.length;
 
+    console.log("¿Qué canciones tengo disponibles?", canciones);
+    console.log("¿Qué ID de canción busca la tarjeta?", afiliados[0]?.cancion_id);
+    console.log(afiliados)
+
 
     return (
         <div className="min-h-screen bg-[#FDFBF7] font-['Hepta_Slab'] text-[#5D4E3F] flex relative overflow-x-hidden">
@@ -267,8 +287,8 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     </header>
 
                     <div className="flex flex-col md:flex-row items-center gap-6 mb-8 relative z-20">
-                        <div className="w-44 h-44 bg-[#F2ECD9] rounded-[35px] p-4 flex items-center justify-center border border-[#D9CEB6] shadow-sm relative bg-white">
-                            <img src="/images/elementos_dashboard/detalles_plan/mouri_saludando.png" alt="Mouri" className="w-full h-full object-contain" onError={(e) => { e.target.src = '/images/elementos_dashboard/detalles_plan/flores_colgantes.png'; }} />
+                        <div className="w-44 h-44 bg-[#F2ECD9] rounded-[20px] p-4 flex items-center justify-center border border-[#D9CEB6] shadow-sm relative bg-white">
+                            <img src="/images/elementos_dashboard/detalles_plan/mouri_detalles_plan.gif" alt="Mouri" className="w-full h-full object-contain" onError={(e) => { e.target.src = '/images/elementos_dashboard/detalles_plan/mouri_detalles_plan.gif'; }} />
                         </div>
 
                         <div className="flex-1 w-full space-y-4">
@@ -286,24 +306,100 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
 
                     {/* TARJETAS INFORMATIVAS */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 relative z-20">
-                        <div className="bg-[#473D2D] text-white p-6 rounded-[25px] min-h-[115px] flex flex-col justify-between relative overflow-hidden shadow-xl ring-4 ring-[#FFC107]/40">
-                            <span className="text-xs uppercase tracking-widest font-black text-[#FFC107]">Cuota Total Dinámica</span>
-                            <span className="text-2xl font-black text-right block tracking-tight text-[#FFF] drop-shadow-md mt-2">
-                                {cuotaTotalDinamica > 0 ? cuotaTotalDinamica.toLocaleString('es-CO') : "0"} <span className="text-[10px] font-bold text-gray-300">COP</span>
+
+                        {/* CUOTA TOTAL */}
+                        <div className="
+                        bg-gradient-to-br from-[#473D2D] via-[#5A4A36] to-[#7A6650]
+                        min-h-[115px]
+                        text-white p-6 rounded-[25px]
+                        flex flex-col justify-between
+                        relative overflow-hidden
+                        shadow-xl ring-2 ring-[#FFC107]/20
+                        hover:-translate-y-1 hover:scale-[1.02] hover:rotate-[0.5deg]
+                        cursor-pointer transition-all duration-300 group
+                    ">
+                            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#FFC107]/10 blur-2xl"></div>
+
+                            <img
+                                src="/images/elementos_dashboard/detalles_plan/flores_esquinas_tarjetas.webp"
+                                alt=""
+                                className="absolute top-[-12px] right-[-6px] w-40 opacity-40 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500"
+                            />
+
+                            <span className="text-xs uppercase tracking-widest font-black text-[#FFD54F] relative z-10">
+                                Cuota Total Dinámica
+                            </span>
+
+                            <span className="text-2xl font-black text-right block tracking-tight mt-2 relative z-10 group-hover:scale-105 transition-transform">
+                                {cuotaTotalDinamica > 0
+                                    ? cuotaTotalDinamica.toLocaleString('es-CO')
+                                    : "0"}
+                                <span className="text-[10px] font-bold text-gray-300"> COP</span>
                             </span>
                         </div>
 
-                        <div className="bg-[#60533E] text-white p-6 rounded-[25px] min-h-[105px] flex flex-col justify-between relative overflow-hidden shadow-md">
-                            <span className="text-xs uppercase tracking-widest font-black opacity-90">Miembros Registrados</span>
-                            <span className="text-2xl font-black text-right block mt-2">
-                                {cantidadAfiliados} {cantidadAfiliadosExtras > 0 && <span className="text-xs text-amber-400 font-bold block">(+{cantidadAfiliadosExtras} Extras × Cuota Base)</span>}
+                        {/* AFILIADOS */}
+                        <div className="
+                            bg-gradient-to-br from-[#5B4E3A] via-[#74624A] to-[#B28A9A]
+                            text-white p-6 rounded-[25px]
+                            min-h-[105px]
+                            flex flex-col justify-between
+                            relative overflow-hidden
+                            shadow-xl
+                            hover:-translate-y-1 hover:scale-[1.02] hover:-rotate-[0.5deg]
+                            cursor-pointer transition-all duration-300 group
+                        ">
+                            <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-[#E8A9B8]/10 blur-2xl"></div>
+
+                            <img
+                                src="/images/elementos_dashboard/detalles_plan/flores_centro.png"
+                                alt=""
+                                className="absolute bottom-0 left-[-20px] w-40 opacity-40 rotate-180 group-hover:scale-110 transition-all duration-500"
+                            />
+
+                            <span className="text-xs uppercase tracking-widest font-black opacity-90 relative z-10">
+                                Miembros Registrados
+                            </span>
+
+                            <span className="text-2xl font-black text-right block mt-2 relative z-10 group-hover:scale-105 transition-transform">
+                                {cantidadAfiliados}
+
+                                {cantidadAfiliadosExtras > 0 && (
+                                    <span className="text-xs text-amber-200 font-bold block">
+                                        (+{cantidadAfiliadosExtras} Extras × Cuota Base)
+                                    </span>
+                                )}
                             </span>
                         </div>
 
-                        <div className="bg-[#60533E] text-white p-6 rounded-[25px] min-h-[105px] flex flex-col justify-between relative overflow-hidden shadow-md">
-                            <span className="text-xs uppercase tracking-widest font-black opacity-90">Servicios en Cobertura</span>
-                            <span className="text-2xl font-black text-right block mt-2">{cantidadServiciosTotales}</span>
+                        {/* SERVICIOS */}
+                        <div className="
+        bg-gradient-to-br from-[#5B4E3A] via-[#74624A] to-[#7A9B8F]
+        text-white p-6 rounded-[25px]
+        min-h-[105px]
+        flex flex-col justify-between
+        relative overflow-hidden
+        shadow-xl
+        hover:-translate-y-1 hover:scale-[1.02] hover:rotate-[0.5deg]
+        cursor-pointer transition-all duration-300 group
+    ">
+                            <div className="absolute -top-8 -left-8 w-24 h-24 rounded-full bg-[#9DB6AA]/10 blur-2xl"></div>
+
+                            <img
+                                src="/images/elementos_dashboard/detalles_plan/lirios_colgantes.png"
+                                alt=""
+                                className="absolute top-[-16px] left-[-30px] w-40 opacity-40 -rotate-0  scale-x-[-1] group-hover:scale-110 transition-all duration-500"
+                            />
+
+                            <span className="text-xs uppercase tracking-widest font-black opacity-90 relative z-10">
+                                Servicios en Cobertura
+                            </span>
+
+                            <span className="text-2xl font-black text-right block mt-2 relative z-10 group-hover:scale-105 transition-transform">
+                                {cantidadServiciosTotales}
+                            </span>
                         </div>
+
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start relative z-20">
@@ -346,19 +442,30 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                     ) : (
                                         afiliados.map((afi, idx) => {
                                             const esExtra = idx >= maxAfiliadosIncluidos;
-                                            /*console.log("Estructura de canciones:", canciones);*/
+                                            // Usamos el nombre exacto que aparece en tu log: servicio_funerario
+                                            const dataFuneraria = afi.servicio_funerario || {};
+
                                             return (
                                                 <div key={afi.id} className={`p-3.5 rounded-[20px] border flex flex-col justify-between gap-2 shadow-xs transition-all ${esExtra ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-500/10' : 'bg-[#FDFBF7] border-[#EAE4D5]'}`}>
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-12 h-12 rounded-full border border-[#D9CEB6] overflow-hidden bg-white flex items-center justify-center p-1 shadow-3xs">
-                                                            <img src="/images/elementos_dashboard/detalles_plan/flores_colgantes.png" alt="Icono" className="w-full h-full object-contain" />
+                                                            <img src="/images/elementos_dashboard/detalles_plan/iconos_afiliados.png" alt="Icono" className="w-full h-full object-contain" />
                                                         </div>
                                                         <div className="flex-1">
-                                                            <div className="flex items-center justify-between gap-1">
-                                                                <h4 className="text-xs font-black text-[#60533E] uppercase tracking-tight truncate max-w-[120px]">{afi.nombre}</h4>
-                                                                {esExtra && <span className="bg-amber-700 text-white text-[7px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">+ Extra</span>}
-                                                            </div>
+                                                            <h4 className="text-xs font-black text-[#60533E] uppercase">{afi.nombre}</h4>
                                                             <p className="text-[10px] text-[#8A7A65] font-bold italic">Vínculo: {afi.parentesco}</p>
+
+                                                            {/* Accedemos con guion bajo igual que en el log */}
+                                                            <p className="text-[10px] text-[#60533E] font-medium mt-1">
+                                                                <strong>✏ Obs:</strong> {dataFuneraria.observaciones || "Sin observaciones"}
+                                                            </p>
+
+                                                            <p className="text-[10px] text-[#60533E] font-bold mt-0.5">
+                                                                🎵 Canción:
+                                                                <span className="font-normal italic text-gray-600 ml-1">
+                                                                    {canciones.find(c => c.id == dataFuneraria.cancion_id)?.titulo || "Por defecto"}
+                                                                </span>
+                                                            </p>
                                                         </div>
                                                     </div>
                                                     {afi.observacion_funeraria && (
@@ -445,6 +552,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 </div>
 
                 {/* --- MODALES EMERGENTES --- */}
+                {/* --- PARTE AFILIADOS --- */}
                 {modalConfig.visible && modalConfig.tipo === 'FORMULARIO_AFILIADO' && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
                         <form onSubmit={guardarAfiliadoGabinete} className="bg-[#FDFBF7] p-6 rounded-[28px] max-w-sm w-full border-2 border-[#60533E] shadow-2xl">
@@ -452,11 +560,25 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                             <div className="space-y-3.5 text-xs mb-5">
                                 <div className="flex flex-col gap-1">
                                     <label className="font-black uppercase text-gray-500 text-[10px]">Nombre Completo:</label>
-                                    <input type="text" value={formAfiliado.nombre} onChange={(e) => setFormAfiliado({ ...formAfiliado, nombre: e.target.value })} className="p-2.5 bg-white border border-[#D9CEB6] rounded-xl text-[#60533E] font-bold" required />
+                                    <input
+                                        type="text"
+                                        value={formAfiliado.nombre}
+                                        onChange={(e) => setFormAfiliado({ ...formAfiliado, nombre: e.target.value })}
+                                        className="p-2.5 bg-white border border-[#D9CEB6] rounded-xl text-[#60533E] font-bold"
+                                        required
+                                        disabled={formAfiliado.parentesco?.toLowerCase() === 'titular'} // Bloquea si es titular
+                                    />
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <label className="font-black uppercase text-gray-500 text-[10px]">Parentesco / Vínculo:</label>
-                                    <input type="text" value={formAfiliado.parentesco} onChange={(e) => setFormAfiliado({ ...formAfiliado, parentesco: e.target.value })} className="p-2.5 bg-white border border-[#D9CEB6] rounded-xl text-[#60533E] font-bold" placeholder="Ej: Hijo, Mascota, Hermano..." required />
+                                    <input
+                                        type="text"
+                                        value={formAfiliado.parentesco}
+                                        onChange={(e) => setFormAfiliado({ ...formAfiliado, parentesco: e.target.value })}
+                                        className="p-2.5 bg-white border border-[#D9CEB6] rounded-xl text-[#60533E] font-bold"
+                                        required
+                                        disabled={formAfiliado.parentesco?.toLowerCase() === 'titular'} // Bloquea si es titular
+                                    />
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <label className="font-black uppercase text-amber-800 text-[10px]">Observaciones:</label>
@@ -502,8 +624,13 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                 ) : (
                                     todosLosRecuerdos.map((rec) => (
                                         <div key={rec.id} onClick={() => { setRecuerdosSeleccionados(rec); cerrarModal(); }} className="p-2.5 bg-[#F7F4EB] hover:bg-[#60533E] hover:text-white rounded-xl cursor-pointer font-black uppercase flex justify-between items-center border border-[#E3DCcc]">
-                                            <span>{rec.nombre}</span>
-                                            <span className="text-[9px] bg-white text-[#60533E] px-1.5 py-0.5 rounded font-black">${Number(rec.precio_adicional || 0).toLocaleString('es-CO')}</span>
+                                            <img src={`/images/planes/recuerdos/${rec.imagen || 'default.png'}`} alt={rec.nombre} className="w-10 h-10 object-cover rounded-lg" />
+                                            <div className="flex-1 flex justify-between items-center">
+                                                <span>{rec.nombre}</span>
+                                                <span className="text-[9px] bg-white text-[#60533E] px-1.5 py-0.5 rounded font-black">
+                                                    ${Number(rec.precio_adicional || 0).toLocaleString('es-CO')}
+                                                </span>
+                                            </div>
                                         </div>
                                     ))
                                 )}

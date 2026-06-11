@@ -47,7 +47,7 @@ export default function Sidebar() {
                         <Link href="/detalles" className={`text-base md:text-lg w-fit ${active('/detalles')}`}>
                             Detalles del plan
                         </Link>
-                        <Link href="#" className={`text-base md:text-lg w-fit ${active('/pagos')}`}>
+                        <Link href="/pagos" className={`text-base md:text-lg w-fit ${active('/pagos')}`}>
                             Pagar mi cuota
                         </Link>
                         {/* Cambia la línea de Tus datos para que quede así: */}

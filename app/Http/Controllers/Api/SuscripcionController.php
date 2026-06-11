@@ -124,10 +124,15 @@ if ($request->has('recuerdos_seleccionados')) {
 
     public function detallesPlan()
     {
-        $suscripcion = Suscripcion::with(['plan.servicios', 'afiliados', 'recuerdos', 'serviciosExtras'])
-            ->where('usuario_id', auth()->id())
-            ->where('estado', 'activo')
-            ->first();
+        $suscripcion = Suscripcion::with([
+        'plan.servicios', 
+        'afiliados.servicioFunerario', // <--- AGREGA ESTO
+        'recuerdos', 
+        'serviciosExtras'
+    ])
+    ->where('usuario_id', auth()->id())
+    ->where('estado', 'activo')
+    ->first();
 
         // ... (Tu lógica de cálculo de precios se mantiene igual)
         return Inertia::render('Clientes/DetallesPlan', [
