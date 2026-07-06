@@ -34,6 +34,9 @@ export default function PlanesIndex({ planes }) {
                         const rutaImagen = `/images/planes/mouri_${nombreLimpio}.png`;
                         const rutaPdf = `/pdfs/${nombreLimpio}.pdf`;
 
+                        // Validamos si es el plan de mascotas para cambiar el destino
+                        const esPlanMascotas = plan.nombre.toLowerCase().includes('huella eterna');
+
                         return (
                             <div key={plan.id} 
                                  className="bg-[#FDFBF9] rounded-[35px] shadow-sm border border-[#5D4E3F]/5 overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-500 border-b-4 border-b-[#A68966] max-w-[340px]">
@@ -48,9 +51,9 @@ export default function PlanesIndex({ planes }) {
 
                                     <img 
                                         src={rutaImagen} 
-                                        className="absolute right-[-15px] bottom-[-15px] w-32 opacity-20 grayscale invert group-hover:rotate-12 group-hover:scale-110 transition-all duration-700 pointer-events-none z-0" 
+                                        className="absolute right-[-20px] bottom-[-30px] w-40 opacity-20 grayscale group-hover:rotate-12 group-hover:scale-110 transition-all duration-700 pointer-events-none z-0" 
                                         alt={plan.nombre}
-                                        onError={(e) => { e.target.src = '/images/login/mouri_registro_exitoso.png'; }}
+                                        onError={(e) => { e.target.src = '/images/elementos_dashboard/inscripcion_planes/mouri_planes.gif'; }}
                                     />
                                 </div>
 
@@ -69,13 +72,16 @@ export default function PlanesIndex({ planes }) {
                                         </div>
                                         <div className="flex items-start gap-2">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-[#A68966] mt-0.5 shrink-0" />
-                                            <p className="text-[10px] font-bold lowercase opacity-70 leading-snug">hasta {plan.max_afiliados} beneficiarios</p>
+                                            <p className="text-[10px] font-bold lowercase opacity-70 leading-snug">
+                                                {esPlanMascotas ? 'Protección exclusiva para tu mascota' : `hasta ${plan.max_afiliados} beneficiarios`}
+                                            </p>
                                         </div>
                                     </div>
 
                                     <div className="mt-auto pt-2 space-y-2">
+                                        {/* El botón ahora decide inteligentemente a dónde dirigir al usuario */}
                                         <Link 
-                                            href={`/planes/inscribir/${plan.id}`}
+                                            href={esPlanMascotas ? '/mi-plan-mascota' : `/planes/inscribir/${plan.id}`}
                                             className="block w-full bg-[#5D4E3F] text-white py-3 rounded-2xl font-bold text-center hover:bg-[#A68966] transition-all shadow-md active:scale-95 lowercase tracking-widest text-[10px]"
                                         >
                                             inscribirme

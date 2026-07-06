@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
 import Sidebar from '@/Pages/Clientes/Sidebar';
 import {
     Trash2, Plus, Play, Pause, Sparkles, ShieldCheck, Gem
@@ -127,28 +127,35 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
     }, [totalCalculado]);
 
     const enviarInscripcion = () => {
-        // 1. Preparamos el objeto EXACTO que vamos a enviar
-        const datosParaEnviar = {
-            usuario_id: data.usuario_id,
-            plan_id: data.plan_id,
-            afiliados: data.afiliados,
-            servicios_adicionales: data.servicios_adicionales,
-            recuerdos_seleccionados: data.recuerdos_seleccionados,
+
+    post(route('suscripciones.store'), {
+
+        data: {
+            ...data,
             cuota_mensual: totalCalculado
-        };
+        },
 
-        console.log("Enviando datos:", datosParaEnviar);
-
-        // 2. Usamos el 'post' de Inertia
-        // Nota: El segundo argumento es el objeto de datos, no envuelvas en { data: ... }
-       post(route('suscripciones.store'), {
         preserveScroll: true,
+
+        onSuccess: () => {
+    // Ya no hace falta nada aquí:
+    // Laravel redirige solo a "Mi Plan" y el GIF se mostrará allá.
+},
+
         onError: (errors) => {
-            console.error("DEBUG DE ERRORES:", errors);
-            setErrorModal({ show: true, message: "Error al guardar: " + JSON.stringify(errors) });
+
+            console.log(errors);
+
+            setErrorModal({
+                show: true,
+                message: JSON.stringify(errors)
+            });
+
         }
+
     });
-    };
+
+};
 
     console.log("DEBUG PLAN:", plan);
     console.log("DEBUG TOTAL:", totalCalculado);
@@ -164,19 +171,19 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
                         <div>
-                            <h1 className="text-3xl font-black tracking-tighter italic lowercase">
+                            <h1 className="text-3xl font-black tracking-tighter ">
                                 inscribir <span className="text-[#A68966]">plan {plan.nombre}</span>
                             </h1>
                             <p className="text-[10px] uppercase font-bold tracking-[0.4em] opacity-30 mt-2">Paso {paso} de 4</p>
                         </div>
 
                         <div className="bg-[#5D4E3F] text-white p-4 rounded-2xl flex items-center gap-4 max-w-md shadow-xl border-l-4 border-[#A68966]">
-                            <Sparkles className="text-[#A68966] shrink-0" size={20} />
+                            <Sparkles className="text-[#A68966] shrink-0" size={30} />
                             <p className="text-[10px] font-bold italic leading-tight">
-                                {paso === 1 && "Mouri dice: Estás incluido automáticamente como titular de la protección. Agrega a tus seres queridos."}
-                                {paso === 2 && "Mouri dice: La música y los servicios extra hacen que el homenaje sea único."}
-                                {paso === 3 && "Mouri dice: Solo puedes elegir un objeto de memoria como tributo principal."}
-                                {paso === 4 && "Mouri dice: Lee con atención el compromiso. Estamos aquí para cuidarte."}
+                                {paso === 1 && " Argg Estás incluido automáticamente como titular de la protección. Agrega a tus seres queridos."}
+                                {paso === 2 && " Oh you can´t read my poker face!! argg verdad que aun sigues hay, la música y los servicios extra hacen que el homenaje sea único."}
+                                {paso === 3 && " Solo puedes elegir un objeto de memoria como tributo principal Argg."}
+                                {paso === 4 && " Lee con atención el compromiso. Estamos aquí para cuidarte Argg."}
                             </p>
                         </div>
                     </div>
@@ -462,6 +469,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

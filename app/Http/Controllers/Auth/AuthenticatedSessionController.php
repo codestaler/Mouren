@@ -33,9 +33,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // 🚦 ¡Aquí tomamos el control del flujo de Mouren!
+        $user = Auth::user();
+
+        if ($user->tipo_usuario_id === 1) {
+            // Si es Administrador, lo desviamos directito a su panel de control
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Si es un cliente común, sigue su camino original sin enterarse de nada
         return redirect()->intended(route('dashboard', absolute: false));
     }
-
     /**
      * Destroy an authenticated session.
      */

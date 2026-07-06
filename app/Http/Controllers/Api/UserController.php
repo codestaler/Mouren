@@ -106,41 +106,101 @@ class UserController extends Controller
     }
 
     /**
+     * Crear un nuevo usuario Administrador desde el panel.
+     */
+    public function storeAdmin(Request $request) {
+        // 1. Validación simplificada para administradores
+        $request->validate([
+            'nombre1' => 'required|string|max:50',
+            'apellido1' => 'required|string|max:50',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|confirmed|min:6',
+        ], [
+            'email.unique' => 'Este correo electrónico ya está en uso.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+        ]);
+
+        try {
+            // 2. Construcción del nombre completo (igual que en clientes)
+            $nombreCompleto = collect([
+                $request->nombre1, 
+                $request->nombre2, 
+                $request->apellido1, 
+                $request->apellido2
+            ])->filter()->implode(' ');
+
+            // 3. Creación del registro con tipo_usuario_id = 1 (Administrador)
+            User::create([
+                'nombre' => $nombreCompleto, 
+                'nombre1' => $request->nombre1,
+                'nombre2' => $request->nombre2,
+                'apellido1' => $request->apellido1,
+                'apellido2' => $request->apellido2,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'estado_id' => 1,          // Activo por defecto
+                'tipo_usuario_id' => 1,    // 👈 ¡FORZAMOS EL 1 PARA QUE SEA ADMIN!
+                // Colocamos valores nulos o por defecto para campos que un admin no necesita obligatoriamente al crearse
+                'cedula' => 'ADMIN-' . time(), // Genera un identificador único temporal si el campo es UNIQUE en BD
+                'tipo_documento_id' => 1,  
+                'genero_id' => 1,          
+                'fecha_nacimiento' => now()->format('Y-m-d'),
+                'telefono' => $request->telefono ?? '0000000000',
+            ]);
+
+            return redirect()->back()->with('message', '¡Nuevo administrador registrado con éxito!');
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'No pudimos crear el administrador: ' . $e->getMessage()]);
+        }
+    }
+    /**
      * Actualizar datos del usuario tras validar código.
      */
-    public function update(Request $request, $id)
-{
-    // 1. Validamos estrictamente antes de tocar la base de datos
-    $request->validate([
-        'email' => [
-            'required',
-            'email',
-            // Esto comprueba que sea único en la tabla 'users', pero IGNORA al usuario actual ($id)
-            Rule::unique('users')->ignore($id), 
-        ],
-        'telefono' => 'required|digits:10',
-        'codigo_ingresado' => 'required',
-    ], [
-        'email.unique' => 'Esta dirección de correo electrónico ya se encuentra registrada por otro usuario.',
-    ]);
+     public function update(Request $request, $id)
+    {
+        // 1. Validamos estrictamente antes de tocar la base de datos
+        $request->validate([
+            'email' => [
+                'required',
+                'email',
+                // Esto comprueba que sea único en la tabla 'users', pero IGNORA al usuario actual ($id)
+                Rule::unique('users')->ignore($id), 
+            ],
+            'telefono' => 'required|digits:10',
+            'codigo_ingresado' => 'required',
+        ], [
+            'email.unique' => 'Esta dirección de correo electrónico ya se encuentra registrada por otro usuario.',
+        ]);
 
-    // 2. Lógica para verificar tu token de 6 dígitos aquí...
-    // ...
+        // 2. Lógica para verificar tu token de 6 dígitos
+        $codigoGuardado = Session::get('codigo_verificacion');
+        $emailGuardado = Session::get('email_verificacion');
 
-    // 3. Si el token es correcto, actualizas los campos
-    $user = User::findOrFail($id);
-    
-    // Concatenamos el nombre si tu base de datos tiene un campo estructurado único
-    if ($request->has('nombre1')) {
-        $user->nombre = trim($request->nombre1 . ' ' . $request->nombre2) . ' ' . trim($request->apellido1 . ' ' . $request->apellido2);
+        // Si el código no coincide o el correo cambió a mitad de camino, frenamos el proceso
+        if (!$codigoGuardado || $codigoGuardado != $request->codigo_ingresado || $emailGuardado != $request->email) {
+            return back()->withErrors([
+                'codigo' => 'El código de seguridad ingresado es incorrecto o ha expirado.'
+            ]);
+        }
+
+        // 3. Si el token es correcto, limpiamos la sesión y actualizas los campos
+        Session::forget(['codigo_verificacion', 'email_verificacion']);
+        
+        $user = User::findOrFail($id);
+        
+        // Concatenamos el nombre si tu base de datos tiene un campo estructurado único
+        if ($request->has('nombre1')) {
+            $user->nombre = trim($request->nombre1 . ' ' . $request->nombre2) . ' ' . trim($request->apellido1 . ' ' . $request->apellido2);
+        }
+        
+        $user->email = $request->email;
+        $user->telefono = $request->telefono;
+        $user->save();
+
+        return redirect()->back()->with('message', 'Tus datos se actualizaron de manera correcta.');
     }
-    
-    $user->email = $request->email;
-    $user->telefono = $request->telefono;
-    $user->save();
-
-    return redirect()->back()->with('message', 'Tus datos se actualizaron de manera correcta.');
-}
 
     /**
      * Eliminar usuario permanentemente.

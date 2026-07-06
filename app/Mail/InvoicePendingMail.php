@@ -5,7 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Factura;
+use App\Models\Pagos\Factura;
 use App\Models\User;
 
 class InvoicePendingMail extends Mailable

@@ -38,6 +38,28 @@ public function guardarDesdeGabinete(Request $request)
         }
         $suscripcion->serviciosExtras()->sync($serviciosData);
 
+    // ==========================
+// GUARDAR PERSONALIZACIONES
+// ==========================
+if ($request->has('servicios_adicionales')) {
+
+    foreach ($request->servicios_adicionales as $serv) {
+
+        if (!empty($serv['personalizacion'])) {
+
+            \App\Models\Personalizacion::updateOrCreate(
+                [
+                    'suscripcion_id' => $suscripcion->id,
+                    'servicio_id' => $serv['id']
+                ],
+                [
+                    'servicio_funerario_id' => null,
+                    'configuracion' => $serv['personalizacion']
+                ]
+            );
+        }
+    }
+}
 // 3. ACTUALIZACIÓN DE AFILIADOS
 if ($request->has('afiliados')) {
     foreach ($request->afiliados as $data) {

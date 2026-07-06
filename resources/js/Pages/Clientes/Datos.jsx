@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, useForm } from '@inertiajs/react';
 import Sidebar from './Sidebar';
+import MiniJuegoMouri from '@/Components/MouriGame/MiniJuegoMouri';
 import axios from 'axios';
 
 export default function Datos() {
@@ -174,187 +175,192 @@ export default function Datos() {
     };
 
     return (
-        <div className="min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] flex overflow-x-hidden transition-all duration-1000 bg-[#FFFFFF]">
-            <Head title="Tus Datos - Mouren" />
+    <div className="min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] flex overflow-x-hidden transition-all duration-1000 bg-[#FFFFFF]">
+        <Head title="Tus Datos - Mouren" />
 
-            <Sidebar />
+        <Sidebar />
 
-            <main className="flex-1 p-6 md:p-10 content-shift transition-all duration-700 ease-in-out">
+        <main className="flex-1 p-6 md:p-10 content-shift transition-all duration-700 ease-in-out">
 
-                <header className="flex justify-between items-start mb-10 animate-fade-in">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-black tracking-tighter leading-tight">
-                            Mantén tu info al día,
-                            <span className="text-[#A68966]"> {nombreParaMostrar}</span>
-                        </h1>
-                        <p className="text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
-                    </div>
+            <header className="flex justify-between items-start mb-10 animate-fade-in">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter leading-tight">
+                        Mantén tu info al día,
+                        <span className="text-[#A68966]"> {nombreParaMostrar}</span>
+                    </h1>
+                    <p className="text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
+                </div>
 
-                    <div className="flex items-center gap-3 bg-white/30 p-2 rounded-full border border-white/50 shadow-sm backdrop-blur-sm">
-                        <button className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm text-sm text-[#5D4E3F]">🔔</button>
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md bg-[#5D4E3F] text-white">
-                            {nombreParaMostrar[0]}
-                        </div>
-                    </div>
-                </header>
-
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-xl font-bold mb-6 italic border-b pb-2 border-[#5D4E3F]/10">Tus datos personales:</h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-
-                        {/* TARJETA FORMULARIO */}
-                        <div className="md:col-span-2 bg-[#FAF8F5] p-8 rounded-[45px] shadow-lg border border-[#5D4E3F]/5 flex flex-col justify-between relative overflow-hidden group">
-
-                            <div className="relative z-10 w-full">
-                                {flash?.message && (
-                                    <div className="mb-6 p-4 bg-[#302A1D] text-[#F4EDE6] rounded-2xl text-xs font-bold border-l-4 border-[#A68966] shadow-sm animate-fade-in">
-                                        ✨ {flash.message}
-                                    </div>
-                                )}
-
-                                {errorFormulario && (
-                                    <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-xs font-bold border-l-4 border-red-500 shadow-sm animate-fade-in flex items-center gap-2">
-                                        ⚠️ <span>{errorFormulario}</span>
-                                    </div>
-                                )}
-
-                                {Object.keys(errors).length > 0 && (
-                                    <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-xs font-bold border-l-4 border-red-500 shadow-sm animate-fade-in">
-                                        {Object.values(errors).map((err, i) => <p key={i}>• {err}</p>)}
-                                    </div>
-                                )}
-
-                                <form onSubmit={handlePreSubmit} className="space-y-5">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Primer Nombre *</label>
-                                            <input type="text" value={data.nombre1} onChange={e => setData('nombre1', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Segundo Nombre</label>
-                                            <input type="text" value={data.nombre2} onChange={e => setData('nombre2', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Primer Apellido *</label>
-                                            <input type="text" value={data.apellido1} onChange={e => setData('apellido1', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Segundo Apellido</label>
-                                            <input type="text" value={data.apellido2} onChange={e => setData('apellido2', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Documento de Identidad</label>
-                                            <input type="text" value={data.cedula} className="w-full bg-[#EFECE8] border border-neutral-300 text-neutral-500 rounded-xl px-4 py-2.5 text-xs cursor-not-allowed font-sans" disabled />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Teléfono Móvil *</label>
-                                            <input type="text" value={data.telefono} onChange={handleTelefonoChange} placeholder="Ej. 3001234567" className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all font-sans" required />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Correo Electrónico *</label>
-                                            <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all font-sans" required />
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 flex justify-end relative z-10">
-                                        <button
-                                            type="submit"
-                                            disabled={enviandoEmail || processing || data.telefono.length !== 10}
-                                            className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-xs bg-[#302A1D] text-white hover:bg-[#A68966] transition-all duration-300 shadow-md uppercase tracking-widest disabled:opacity-40"
-                                        >
-                                            {enviandoEmail ? 'Validando...' : processing ? 'Guardando...' : 'Verificar y Actualizar'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        {/* TARJETA BANNER */}
-                        <div className="bg-[#5D4E3F] text-[#F4EDE6] p-8 rounded-[45px] shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden h-full min-h-[320px] group">
-
-                            {/* Flores en las esquinas */}
-                            <img
-                                src="/images/elementos_dashboard/flores_esquinas_tarjeta1.png"
-                                className="absolute -top-6 -left-6 w-40 opacity-40 pointer-events-none transform rotate-40 transition-all group-hover:opacity-80"
-                                alt="flores_esquina_superior"
-                            />
-                            <img
-                                src="/images/elementos_dashboard/flores_esquinas_tarjeta1.png"
-                                className="absolute -bottom-6 -right-6 w-40 opacity-40 pointer-events-none transform -rotate-90 transition-all group-hover:opacity-60"
-                                alt="flores_esquina_inferior"
-                            />
-
-                            {/* Contenedor de Mouri */}
-                            <div className="w-40 h-40 bg-[#4A3E32] rounded-full flex items-center justify-center p-3 shadow-lg relative z-10 mb-4 transition-transform duration-500 group-hover:scale-105">
-                                <img src="/images/login/mouri_registro_exitoso.gif" alt="Mascota Mouri" className="w-full h-full object-contain" />
-                            </div>
-
-                            {/* Frase de Mouri */}
-                            <div className="relative z-10 max-w-[200px]">
-                                <p className="text-xs font-bold italic tracking-wide opacity-90 leading-relaxed">
-                                    "Para que descanses mejor que en vida"
-                                </p>
-                                <span className="block text-[9px] uppercase tracking-widest mt-1 text-[#A68966] font-black">
-                                    - Mouri
-                                </span>
-                            </div>
-                        </div>
-
+                <div className="flex items-center gap-3 bg-white/30 p-2 rounded-full border border-white/50 shadow-sm backdrop-blur-sm">
+                    <button className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm text-sm text-[#5D4E3F]">🔔</button>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md bg-[#5D4E3F] text-white">
+                        {nombreParaMostrar[0]}
                     </div>
                 </div>
-            </main>
+            </header>
 
-            {/* MODAL DE VERIFICACIÓN */}
-            {mostrarModal && (
-                <div className="fixed inset-0 bg-[#302A1D]/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-[#FFFFFF] rounded-[36px] p-8 max-w-sm w-full shadow-2xl text-center relative overflow-hidden">
-                        <h3 className="text-lg font-black text-[#302A1D] mb-1">Código de Seguridad</h3>
-                        <p className="text-[11px] text-[#5D4E3F] opacity-70 mb-6 italic">Ingresa el token de 6 dígitos enviado.</p>
+            {/* CONTENEDOR PRINCIPAL LIMITADO */}
+            <div className="max-w-5xl mx-auto">
+                <h2 className="text-xl font-bold mb-6 italic border-b pb-2 border-[#5D4E3F]/10">Tus datos personales:</h2>
 
-                        {errorCodigo && <div className="text-[10px] text-red-600 font-bold mb-4 bg-red-50 py-1.5 px-3 rounded-lg">{errorCodigo}</div>}
+                {/* FILA SUPERIOR: FORMULARIO + BANNER DE MOURI */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-12">
 
-                        <div className="relative min-h-[50px] flex justify-center items-center mb-8">
-                            {!validandoToken ? (
-                                <div className="flex justify-center gap-2">
-                                    {codigoVerificacion.map((num, index) => (
-                                        <input
-                                            key={index}
-                                            type="text"
-                                            maxLength="1"
-                                            value={num}
-                                            onChange={e => handleCodigoChange(e.target, index)}
-                                            className="w-10 h-14 bg-[#FAF8F5] border border-[#A68966]/30 rounded-xl text-center font-black text-base text-[#302A1D] font-sans"
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex justify-center gap-2">
-                                    {digitosCasino.map((digito, index) => (
-                                        <div key={index} className="w-10 h-14 bg-[#302A1D] border border-[#A68966] rounded-xl flex items-center justify-center text-white font-black text-xl font-sans">{digito}</div>
-                                    ))}
+                    {/* TARJETA FORMULARIO (2 columnas en escritorio) */}
+                    <div className="md:col-span-2 bg-[#FAF8F5] p-8 rounded-[45px] shadow-lg border border-[#5D4E3F]/5 flex flex-col justify-between relative overflow-hidden group">
+                        <div className="relative z-10 w-full">
+                            {flash?.message && (
+                                <div className="mb-6 p-4 bg-[#302A1D] text-[#F4EDE6] rounded-2xl text-xs font-bold border-l-4 border-[#A68966] shadow-sm animate-fade-in">
+                                    ✨ {flash.message}
                                 </div>
                             )}
-                        </div>
 
-                        <div className="flex gap-3 justify-center">
-                            <button onClick={() => setMostrarModal(false)} disabled={validandoToken} className="px-6 py-3 rounded-xl border border-neutral-200 text-[10px] uppercase font-bold tracking-widest">Volver</button>
-                            <button onClick={handleConfirmarCodigo} disabled={validandoToken} className="px-6 py-3 rounded-xl bg-[#302A1D] text-[#F4EDE6] text-[10px] uppercase font-bold tracking-widest">
-                                {validandoToken ? 'Verificando...' : 'Confirmar'}
-                            </button>
+                            {errorFormulario && (
+                                <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-xs font-bold border-l-4 border-red-500 shadow-sm animate-fade-in flex items-center gap-2">
+                                    ⚠️ <span>{errorFormulario}</span>
+                                </div>
+                            )}
+
+                            {Object.keys(errors).length > 0 && (
+                                <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-xs font-bold border-l-4 border-red-500 shadow-sm animate-fade-in">
+                                    {Object.values(errors).map((err, i) => <p key={i}>• {err}</p>)}
+                                </div>
+                            )}
+
+                            <form onSubmit={handlePreSubmit} className="space-y-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Primer Nombre *</label>
+                                        <input type="text" value={data.nombre1} onChange={e => setData('nombre1', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Segundo Nombre</label>
+                                        <input type="text" value={data.nombre2} onChange={e => setData('nombre2', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Primer Apellido *</label>
+                                        <input type="text" value={data.apellido1} onChange={e => setData('apellido1', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Segundo Apellido</label>
+                                        <input type="text" value={data.apellido2} onChange={e => setData('apellido2', formatName(e.target.value))} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Documento de Identidad</label>
+                                        <input type="text" value={data.cedula} className="w-full bg-[#EFECE8] border border-neutral-300 text-neutral-500 rounded-xl px-4 py-2.5 text-xs cursor-not-allowed font-sans" disabled />
+                                        <p className="text-[10px] text-[#A68966] italic mt-1.5 flex items-center gap-1 leading-snug">
+                                            <span>ℹ️</span> El documento no se puede modificar. Si hay un error, contacta a 
+                                            <a href="mailto:soporte@mouren.com?subject=Correccion de Cedula" className="underline font-bold hover:text-[#302A1D] transition-colors ml-0.5">
+                                                Soporte Mouren
+                                            </a>.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Teléfono Móvil *</label>
+                                        <input type="text" value={data.telefono} onChange={handleTelefonoChange} placeholder="Ej. 3001234567" className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all font-sans" required />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Correo Electrónico *</label>
+                                        <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="w-full bg-white border border-[#A68966]/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all font-sans" required />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 flex justify-end relative z-10">
+                                    <button
+                                        type="submit"
+                                        disabled={enviandoEmail || processing || data.telefono.length !== 10}
+                                        className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-xs bg-[#302A1D] text-white hover:bg-[#A68966] transition-all duration-300 shadow-md uppercase tracking-widest disabled:opacity-40"
+                                    >
+                                        {enviandoEmail ? 'Validando...' : processing ? 'Guardando...' : 'Verificar y Actualizar'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
+
+                    {/* TARJETA BANNER CON EL BUZÓN DE CONSEJOS (1 columna en escritorio) */}
+                    <div className="bg-[#5D4E3F] text-[#F4EDE6] p-8 rounded-[45px] shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden h-full min-h-[350px] group">
+                        <img src="/images/elementos_dashboard/flores_esquinas_tarjeta1.png" className="absolute -top-6 -left-6 w-40 opacity-40 pointer-events-none transform rotate-40 transition-all group-hover:opacity-80" alt="flores_esquina_superior" />
+                        <img src="/images/elementos_dashboard/flores_esquinas_tarjeta1.png" className="absolute -bottom-6 -right-6 w-40 opacity-40 pointer-events-none transform -rotate-90 transition-all group-hover:opacity-60" alt="flores_esquina_inferior" />
+
+                        <div className="relative z-10 bg-[#4A3E32] text-[10px] px-4 py-2 rounded-2xl border border-[#A68966]/40 max-w-[210px] animate-bounce mb-3 italic shadow-md text-center">
+                            "Revisar bien tus datos asegura la paz de tus seres queridos (¡humanos y peluditos!)"
+                            <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#4A3E32] rotate-45 border-r border-b border-[#A68966]/40"></div>
+                        </div>
+
+                        <div className="w-40 h-40 bg-[#4A3E32] rounded-full flex items-center justify-center p-3 shadow-lg relative z-10 mb-4 transition-transform duration-500 group-hover:scale-105">
+                            <img src="/images/login/mouri_registro_exitoso.gif" alt="Mascota Mouri" className="w-full h-full object-contain" />
+                        </div>
+
+                        <div className="relative z-10 max-w-[200px]">
+                            <p className="text-xs font-bold italic tracking-wide opacity-90 leading-relaxed">"Para que descanses mejor que en vida"</p>
+                            <span className="block text-[9px] uppercase tracking-widest mt-1 text-[#A68966] font-black">- Mouri</span>
+                        </div>
+                    </div>
+
+                </div> {/* AQUÍ CIERRA EL GRID DE LAS TARJETA SUPERIORES */}
+
+                {/* FILA INFERIOR: MINIJUEGO DE MOURI (Ahora se expande libremente abajo) */}
+                <div className="w-full animate-fade-in block">
+                    <h3 className="text-lg font-bold mb-4 italic border-b pb-2 border-[#5D4E3F]/10 flex items-center gap-2">
+                        🎮 <span>Un descanso con Mouri:</span>
+                    </h3>
+                    <MiniJuegoMouri />
                 </div>
-            )}
-        </div>
-    );
+
+            </div> {/* AQUÍ CIERRA EL CONTENEDOR max-w-5xl */}
+        </main>
+
+        {/* MODAL DE VERIFICACIÓN (Se mantiene independiente por encima de todo) */}
+        {mostrarModal && (
+            <div className="fixed inset-0 bg-[#302A1D]/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+                <div className="bg-[#FFFFFF] rounded-[36px] p-8 max-w-sm w-full shadow-2xl text-center relative overflow-hidden">
+                    <h3 className="text-lg font-black text-[#302A1D] mb-1">Código de Seguridad</h3>
+                    <p className="text-[11px] text-[#5D4E3F] opacity-70 mb-6 italic">Ingresa el token de 6 dígitos enviado.</p>
+
+                    {errorCodigo && <div className="text-[10px] text-red-600 font-bold mb-4 bg-red-50 py-1.5 px-3 rounded-lg">{errorCodigo}</div>}
+
+                    <div className="relative min-h-[50px] flex justify-center items-center mb-8">
+                        {!validandoToken ? (
+                            <div className="flex justify-center gap-2">
+                                {codigoVerificacion.map((num, index) => (
+                                    <input
+                                        key={index}
+                                        type="text"
+                                        maxLength="1"
+                                        value={num}
+                                        onChange={e => handleCodigoChange(e.target, index)}
+                                        className="w-10 h-14 bg-[#FAF8F5] border border-[#A68966]/30 rounded-xl text-center font-black text-base text-[#302A1D] font-sans"
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex justify-center gap-2">
+                                {digitosCasino.map((digito, index) => (
+                                    <div key={index} className="w-10 h-14 bg-[#302A1D] border border-[#A68966] rounded-xl flex items-center justify-center text-white font-black text-xl font-sans">{digito}</div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3 justify-center">
+                        <button onClick={() => setMostrarModal(false)} disabled={validandoToken} className="px-6 py-3 rounded-xl border border-neutral-200 text-[10px] uppercase font-bold tracking-widest">Volver</button>
+                        <button onClick={handleConfirmarCodigo} disabled={validandoToken} className="px-6 py-3 rounded-xl bg-[#302A1D] text-[#F4EDE6] text-[10px] uppercase font-bold tracking-widest">
+                            {validandoToken ? 'Verificando...' : 'Confirmar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+);
 }

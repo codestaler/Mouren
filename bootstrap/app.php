@@ -12,17 +12,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // 1. Configuramos el grupo de middleware 'web' para Inertia
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // --- ESTO ES LO QUE DEBES AGREGAR ---
+        // 2. Configuramos las rutas de redirección por defecto
         $middleware->redirectTo(
-            guests: '/login',           // Si no está logueado, va al login
-            users: '/cliente/mi-plan',  // SI YA SE LOGUEÓ, VA AL DASHBOARD DE CLIENTE
+            guests: '/login',           // Si es invitado, va al login
+            users: '/cliente/mi-plan',  // Si es cliente logueado, va a su plan
         );
-        // ------------------------------------
+
+        // 3. Registramos el alias 'admin' sin pisar lo anterior
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

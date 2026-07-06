@@ -23,8 +23,27 @@
             margin-bottom: 30px;
         }
         .brand-section {
-            width: 45%;
-            vertical-align: top;
+            width: 50%;
+            vertical-align: middle;
+        }
+        /* Estructura para alinear Logo y Texto */
+        .logo-container-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .logo-cell {
+            width: 65px;
+            padding: 0;
+            vertical-align: middle;
+        }
+        .logo-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        .text-cell {
+            padding-left: 10px;
+            vertical-align: middle;
         }
         .logo-text {
             font-size: 32px;
@@ -41,7 +60,7 @@
             margin-top: -2px;
         }
         .invoice-badge-section {
-            width: 55%;
+            width: 50%;
             background-color: #5D4E3F;
             color: #FFFFFF;
             padding: 25px;
@@ -214,8 +233,17 @@
     <table class="header-table">
         <tr>
             <td class="brand-section">
-                <h1 class="logo-text">Mouren</h1>
-                <div class="logo-sub">• FUNERARIA •</div>
+                <table class="logo-container-table">
+                    <tr>
+                        <td class="logo-cell">
+                            <img src="{{ public_path('images/logo.png') }}" class="logo-img" alt="Logo Mouren">
+                        </td>
+                        <td class="text-cell">
+                            <h1 class="logo-text">Mouren</h1>
+                            <div class="logo-sub">• FUNERARIA •</div>
+                        </td>
+                    </tr>
+                </table>
             </td>
             <td class="invoice-badge-section">
                 <h2 class="invoice-title">FACTURA</h2>
@@ -287,8 +315,26 @@
         </thead>
         <tbody>
             <tr>
-                <td class="text-center" style="font-weight: bold; color: #A68966;">S001</td>
-                <td>Cuota mensual de Cobertura de Previsión Exequial Contratada (Plan Familiar Mouren)</td>
+                <td class="text-center" style="font-weight: bold; color: #A68966;">
+                    @if($factura->suscripcion->plan_id == 4) M-004 @else H-00{{ $factura->suscripcion->plan_id ?? '1' }} @endif
+                </td>
+                <td>
+                    <strong>
+                        @if($factura->suscripcion->plan_id == 4)
+                            Plan Huella Eterna (Mascotas) 🐾
+                        @else
+                            {{ $factura->suscripcion->plan->nombre ?? 'Plan Previsión Exequial Humano' }} 👥
+                        @endif
+                    </strong><br>
+                    
+                    <span style="font-size: 10px; color: #6E6255;">
+                        @if($factura->suscripcion->plan_id == 4)
+                            Cuota correspondiente a la protección y cobertura integral para la mascota registrada en el sistema.
+                        @else
+                            Cuota correspondiente a la cobertura integral de previsión exequial familiar contratada.
+                        @endif
+                    </span>
+                </td>
                 <td class="text-right">1</td>
                 <td class="text-right" style="font-weight: bold;">${{ number_format($factura->total, 2) }}</td>
             </tr>

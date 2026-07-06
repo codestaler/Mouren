@@ -67,4 +67,9 @@ class Suscripcion extends Model
                 ->withPivot('precio_pagado')
                 ->withTimestamps();
     }
+    public function mascotas()
+    {
+    return $this->hasMany(Mascota::class, 'suscripcion_id');
+    }
+
 }

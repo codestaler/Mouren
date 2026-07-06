@@ -6,31 +6,91 @@ import axios from 'axios';
 export default function Cartera({ facturas = [] }) {
     const { auth } = usePage().props;
     const usuario = auth?.user || {};
-    const [procesandoId, setProcesandoId] = useState(null);
+    const [procesando, setProcesando] = useState(false);
+    
+    // Estado para almacenar las IDs de las facturas seleccionadas para pago múltiple
+    const [seleccionadas, setSeleccionadas] = useState([]);
     
     // Estados para controlar los modales personalizados de diseño
     const [modalConfig, setModalConfig] = useState({ visible: false, mensaje: '', tipo: 'info' });
-    const [confirmConfig, setConfirmConfig] = useState({ visible: false, facturaId: null });
-
-    // Filtrar la cuota pendiente más urgente para mostrarla en el banner principal
-    const facturaPendiente = facturas.find(f => f.estado_factura_id === 1); // 1 = Pendiente
-    const totalPendiente = facturas
-        .filter(f => f.estado_factura_id === 1)
-        .reduce((sum, f) => sum + Number(f.total), 0);
+    const [confirmConfig, setConfirmConfig] = useState({ visible: false, modoMasivo: false, facturaId: null });
 
     const nombreParaMostrar = usuario.name || "Usuario";
 
-    // Función para mostrar alertas personalizadas estéticas de Mouren
+    // Filtrar únicamente las facturas pendientes
+    const facturasPendientes = facturas.filter(f => f.estado_factura_id === 1);
+    
+    // Total histórico de deuda pendiente
+    const totalDeudaPendiente = facturasPendientes.reduce((sum, f) => sum + Number(f.total), 0);
+
+    // TOTAL CORREGIDO (Sin espacios en el nombre de la variable)
+    const totalSeleccionado = facturasPendientes
+        .filter(f => seleccionadas.includes(f.id))
+        .reduce((sum, f) => sum + Number(f.total), 0);
+
+    // Función auxiliar para calcular días restantes y retornar la alerta estética
+    const obtenerAlertaVencimiento = (fechaVencimiento) => {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const vencimiento = new Date(fechaVencimiento);
+        vencimiento.setHours(0, 0, 0, 0);
+        
+        const diferenciaTiempo = vencimiento - hoy;
+        const diasRestantes = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
+
+        if (diasRestantes < 0) {
+            return (
+                <span className="inline-block px-2 py-0.5 bg-red-200 text-red-900 font-black rounded-md text-[9px] uppercase tracking-wider animate-pulse">
+                    Vencida ({Math.abs(diasRestantes)}d)
+                </span>
+            );
+        } else if (diasRestantes === 0) {
+            return (
+                <span className="inline-block px-2 py-0.5 bg-red-500 text-white font-black rounded-md text-[9px] uppercase tracking-wider animate-pulse">
+                    ¡Vence Hoy! ⚠️
+                </span>
+            );
+        } else if (diasRestantes === 1) {
+            return (
+                <span className="inline-block px-2 py-0.5 bg-orange-100 text-orange-800 font-black rounded-md text-[9px] uppercase tracking-wider">
+                    Vence Mañana
+                </span>
+            );
+        } else if (diasRestantes <= 3) {
+            return (
+                <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 font-black rounded-md text-[9px] uppercase tracking-wider">
+                    Faltan {diasRestantes} días
+                </span>
+            );
+        }
+        return null;
+    };
+
+    // Control de selección individual
+    const handleSeleccionarFactura = (id) => {
+        if (seleccionadas.includes(id)) {
+            setSeleccionadas(seleccionadas.filter(item => item !== id));
+        } else {
+            setSeleccionadas([...seleccionadas, id]);
+        }
+    };
+
+    // Seleccionar o deseleccionar todas las facturas pendientes de un solo golpe
+    const handleSeleccionarTodas = () => {
+        if (seleccionadas.length === facturasPendientes.length) {
+            setSeleccionadas([]);
+        } else {
+            setSeleccionadas(facturasPendientes.map(f => f.id));
+        }
+    };
+
     const mostrarAlerta = (mensaje, tipo = 'info') => {
         setModalConfig({ visible: true, mensaje, tipo });
     };
 
-    // Función para descargar el PDF usando tu ruta activa de Laravel
     const descargarPDF = async (facturaId) => {
         try {
-            const response = await axios.get(`/cliente/factura/${facturaId}/pdf`, {
-                responseType: 'blob',
-            });
+            const response = await axios.get(`/cliente/factura/${facturaId}/pdf`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
@@ -44,12 +104,9 @@ export default function Cartera({ facturas = [] }) {
         }
     };
 
-    // Nueva Función: Descargar el Estado de Cuenta Completo en PDF
     const descargarEstadoCuenta = async () => {
         try {
-            const response = await axios.get(`/cliente/estado-cuenta/pdf`, {
-                responseType: 'blob',
-            });
+            const response = await axios.get(`/cliente/estado-cuenta/pdf`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
@@ -63,27 +120,38 @@ export default function Cartera({ facturas = [] }) {
         }
     };
 
-    // Iniciar el flujo de pago abriendo el modal de confirmación propio
-    const solicitarConfirmacionPago = (facturaId) => {
-        setConfirmConfig({ visible: true, facturaId });
+    // Solicitar confirmación para pago único o masivo
+    const abrirModalConfirmacion = (modoMasivo, facturaId = null) => {
+        setConfirmConfig({ visible: true, modoMasivo, facturaId });
     };
 
-    // Ejecutar la petición real de pago si el usuario acepta en nuestro modal
     const procesarPagoConfirmado = () => {
-        const facturaId = confirmConfig.facturaId;
-        setConfirmConfig({ visible: false, facturaId: null });
-        setProcesandoId(facturaId);
+        const { modoMasivo, facturaId } = confirmConfig;
         
-        router.post(`/cliente/pagos/${facturaId}/procesar`, {}, {
+        // Si es masivo, toma las seleccionadas; si es individual, crea un arreglo con ese único ID
+        const idsAProcesar = modoMasivo ? seleccionadas : [facturaId];
+
+        setConfirmConfig({ visible: false, modoMasivo: false, facturaId: null });
+        setProcesando(true);
+        
+        // Hacemos la petición POST hacia la ruta exacta de tu backend de Mouren
+        router.post(`/cliente/pagos/procesar-lote`, { ids: idsAProcesar }, {
             preserveScroll: true,
             onSuccess: () => {
-                setProcesandoId(null);
-                mostrarAlerta("¡Pago procesado con éxito! Gracias por mantener tu cobertura al día.", 'success');
+                setProcesando(false);
+                setSeleccionadas([]);
             },
-            onError: () => setProcesandoId(null)
+            onError: (errors) => {
+                setProcesando(false);
+                // Si el backend nos devuelve un error de validación o pasarela, lo atrapamos y lo mostramos en tu modal estético
+                if (errors.error) {
+                    mostrarAlerta(errors.error, 'error');
+                } else {
+                    mostrarAlerta("Ocurrió un inconveniente al conectar con la pasarela de pagos.", 'error');
+                }
+            }
         });
     };
-
     return (
         <div className="min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] bg-[#FFFFFF] flex overflow-x-hidden relative">
             <Head title="Estado de Cuenta - Mouren" />
@@ -100,16 +168,11 @@ export default function Cartera({ facturas = [] }) {
                         <p className="text-[11px] italic opacity-70 mt-1">Suscripciones y previsión exequial de {nombreParaMostrar}</p>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-white/30 p-2 rounded-full border border-white/50 shadow-sm backdrop-blur-sm">
-                        <div className="w-9 h-9 rounded-full bg-[#5D4E3F] text-white flex items-center justify-center font-bold text-xs shadow-md">
-                            {nombreParaMostrar[0]}
-                        </div>
-                    </div>
                 </header>
 
                 <div className="max-w-5xl mx-auto space-y-8">
                     
-                    {/* SECCIÓN 1: TARJETA RESUMEN DE CARTERA */}
+                    {/* SECCIÓN 1: RESUMEN DE CARTERA INTELIGENTE */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 bg-[#5D4E3F] text-white p-8 rounded-[45px] shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[180px]">
                             <img src="/images/elementos_dashboard/flores_main.gif" className="absolute -top-8 -right-12 w-[200px] opacity-40 pointer-events-none" alt="" />
@@ -117,54 +180,64 @@ export default function Cartera({ facturas = [] }) {
                             <div>
                                 <h3 className="text-[10px] uppercase tracking-[3px] font-bold text-[#FFD97D] mb-2 italic">Estado de Cartera</h3>
                                 <h2 className="text-2xl font-black">
-                                    {totalPendiente > 0 ? 'Tienes saldos pendientes' : '¡Te encuentras al día!'}
+                                    {totalDeudaPendiente > 0 ? 'Tienes saldos pendientes' : '¡Te encuentras al día!'}
                                 </h2>
-                                <p className="text-[11px] opacity-70 mt-1">Mantén tus pagos al día para garantizar la protección total de tus afiliados.</p>
+                                <p className="text-[11px] opacity-70 mt-1">
+                                    {seleccionadas.length > 0 
+                                        ? `Has seleccionado ${seleccionadas.length} cuotas para saldar en bloque.` 
+                                        : 'Selecciona las facturas de la tabla inferior que desees abonar en conjunto.'}
+                                </p>
                             </div>
 
-                            <div className="text-right mt-4">
-                                <p className="text-[9px] uppercase opacity-60 font-bold">Total Deuda Actual</p>
-                                <p className="text-3xl font-black text-[#FFBD2E]">${Number(totalPendiente).toLocaleString()}</p>
+                            <div className="flex justify-between items-end mt-4">
+                                <div>
+                                    <p className="text-[9px] uppercase opacity-60 font-bold">Total Deuda</p>
+                                    <p className="text-xl font-bold opacity-90">${Number(totalDeudaPendiente).toLocaleString()}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] uppercase text-[#FFD97D] font-bold">Total a Pagar Seleccionado</p>
+                                    <p className="text-3xl font-black text-[#FFBD2E]">${Number(totalSeleccionado).toLocaleString()}</p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* TARJETA CHICA: PRÓXIMO VENCIMIENTO CON MÁS DETALLES */}
+                        {/* ACCIONES MASIVAS Y BOTÓN DE PAGO */}
                         <div className="bg-[#D3CAB6] p-8 rounded-[45px] shadow-md flex flex-col justify-between text-left">
                             <div>
-                                <h4 className="text-[10px] uppercase tracking-[2px] font-bold opacity-60 mb-2">Próximo Límite</h4>
-                                {facturaPendiente ? (
-                                    <div className="space-y-2">
-                                        <p className="text-lg font-black text-[#302A1D]">
-                                            {facturaPendiente.fecha_vencimiento}
-                                        </p>
+                                <h4 className="text-[10px] uppercase tracking-[2px] font-bold opacity-60 mb-3">Acciones de Pago</h4>
+                                {seleccionadas.length > 0 ? (
+                                    <div className="space-y-3">
                                         <div className="space-y-1 text-[11px] font-bold opacity-80">
-                                            <p>📄 Documento: <span className="opacity-100 font-black">#{facturaPendiente.id}</span></p>
-                                            <p>💰 Valor cuota: <span className="text-[#6E5D4F] font-black">${Number(facturaPendiente.total).toLocaleString()}</span></p>
+                                            <p>📦 Cuotas marcadas: <span className="opacity-100 font-black">{seleccionadas.length}</span></p>
+                                            <p>💰 Monto total: <span className="text-[#6E5D4F] font-black">${Number(totalSeleccionado).toLocaleString()}</span></p>
                                         </div>
-                                        <span className="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-800 font-black rounded-md text-[9px] uppercase tracking-wider animate-pulse">
-                                            Pago Requerido
-                                        </span>
+                                        <button
+                                            onClick={() => abrirModalConfirmacion(true)}
+                                            disabled={procesando}
+                                            className="w-full py-2.5 bg-[#302A1D] text-white rounded-2xl text-[10px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition shadow-md"
+                                        >
+                                            {procesando ? 'Procesando Transacción...' : 'Pagar Cuotas Seleccionadas'}
+                                        </button>
                                     </div>
                                 ) : (
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-black text-emerald-800">Sin fechas límite</p>
-                                        <p className="text-[11px] opacity-70">No registras ninguna obligación pendiente por abonar.</p>
+                                    <div className="space-y-2 text-[11px] font-bold opacity-70 italic py-4">
+                                        <p>No has marcado ningún elemento.</p>
+                                        <p className="text-[10px] opacity-50 font-normal">Usa las casillas de la tabla para abonar múltiples obligaciones a la vez.</p>
                                     </div>
                                 )}
                             </div>
                             <div className="pt-4 border-t border-[#5D4E3F]/10 text-[9px] uppercase tracking-wider opacity-60 italic">
-                                Mouren Previsión
+                                Mouren Previsión Pasarela
                             </div>
                         </div>
                     </div>
 
-                    {/* SECCIÓN 2: TABLA DETALLADA DE HISTORIAL */}
+                    {/* SECCIÓN 2: TABLA CON CHECKBOXES E INDICADORES DE TIEMPO */}
                     <div className="bg-[#F4F1ED] p-6 md:p-8 rounded-[45px] shadow-sm border border-[#5D4E3F]/5">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-[#5D4E3F]/10 pb-4">
                             <h3 className="text-lg font-black italic flex items-center gap-2">
                                 Historial de Facturación 📜
                             </h3>
-                            {/* Botón para descargar Estado de Cuenta general */}
                             <button
                                 onClick={descargarEstadoCuenta}
                                 className="px-4 py-2 bg-[#5D4E3F] text-white rounded-2xl text-[11px] font-black tracking-wider uppercase hover:bg-[#4A3E32] transition shadow-sm flex items-center gap-2"
@@ -177,9 +250,19 @@ export default function Cartera({ facturas = [] }) {
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="border-b-2 border-[#5D4E3F]/20 text-[10px] uppercase tracking-wider opacity-60">
+                                        <th className="py-3 px-2 text-center w-12">
+                                            {facturasPendientes.length > 0 && (
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={seleccionadas.length === facturasPendientes.length}
+                                                    onChange={handleSeleccionarTodas}
+                                                    className="rounded border-[#5D4E3F]/30 text-[#5D4E3F] focus:ring-[#5D4E3F]"
+                                                />
+                                            )}
+                                        </th>
                                         <th className="py-3 px-2">Factura #</th>
                                         <th className="py-3 px-2">Emisión</th>
-                                        <th className="py-3 px-2">Vencimiento</th>
+                                        <th className="py-3 px-2">Vencimiento / Alerta</th>
                                         <th className="py-3 px-2 text-right">Total</th>
                                         <th className="py-3 px-2 text-center">Estado</th>
                                         <th className="py-3 px-2 text-center">Acciones</th>
@@ -187,45 +270,63 @@ export default function Cartera({ facturas = [] }) {
                                 </thead>
                                 <tbody>
                                     {facturas.length > 0 ? (
-                                        facturas.map((factura) => (
-                                            <tr key={factura.id} className="border-b border-[#5D4E3F]/10 hover:bg-white/40 transition-all font-bold">
-                                                <td className="py-4 px-2">#{factura.id}</td>
-                                                <td className="py-4 px-2 opacity-80">{factura.fecha_emision}</td>
-                                                <td className="py-4 px-2 opacity-80">{factura.fecha_vencimiento}</td>
-                                                <td className="py-4 px-2 text-right text-[#A68966]">${Number(factura.total).toLocaleString()}</td>
-                                                <td className="py-4 px-2 text-center">
-                                                    <span className={`px-3 py-1 rounded-full text-[9px] uppercase tracking-wider font-black ${
-                                                        factura.estado_factura_id === 1 
-                                                            ? 'bg-[#FFD97D]/30 text-[#8C6F4F]' 
-                                                            : 'bg-emerald-100 text-emerald-800' 
-                                                    }`}>
-                                                        {factura.estado_factura_id === 1 ? 'Pendiente' : 'Pagado'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 px-2 text-center flex items-center justify-center gap-2">
-                                                    <button 
-                                                        onClick={() => descargarPDF(factura.id)}
-                                                        className="p-2 bg-white rounded-xl shadow-sm hover:scale-105 transition border border-[#5D4E3F]/10"
-                                                        title="Descargar PDF"
-                                                    >
-                                                        📄
-                                                    </button>
-
-                                                    {factura.estado_factura_id === 1 && (
+                                        facturas.map((factura) => {
+                                            const esPendiente = factura.estado_factura_id === 1;
+                                            return (
+                                                <tr key={factura.id} className="border-b border-[#5D4E3F]/10 hover:bg-white/40 transition-all font-bold">
+                                                    <td className="py-4 px-2 text-center">
+                                                        {esPendiente ? (
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={seleccionadas.includes(factura.id)}
+                                                                onChange={() => handleSeleccionarFactura(factura.id)}
+                                                                className="rounded border-[#5D4E3F]/30 text-[#5D4E3F] focus:ring-[#5D4E3F]"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-emerald-600 text-xs">✔</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-4 px-2">#{factura.id}</td>
+                                                    <td className="py-4 px-2 opacity-80">{factura.fecha_emision}</td>
+                                                    <td className="py-4 px-2 space-x-2">
+                                                        <span className="opacity-80">{factura.fecha_vencimiento}</span>
+                                                        {esPendiente && obtenerAlertaVencimiento(factura.fecha_vencimiento)}
+                                                    </td>
+                                                    <td className="py-4 px-2 text-right text-[#A68966]">${Number(factura.total).toLocaleString()}</td>
+                                                    <td className="py-4 px-2 text-center">
+                                                        <span className={`px-3 py-1 rounded-full text-[9px] uppercase tracking-wider font-black ${
+                                                            esPendiente 
+                                                                ? 'bg-[#FFD97D]/30 text-[#8C6F4F]' 
+                                                                : 'bg-emerald-100 text-emerald-800' 
+                                                        }`}>
+                                                            {esPendiente ? 'Pendiente' : 'Pagado'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-2 text-center flex items-center justify-center gap-2">
                                                         <button 
-                                                            onClick={() => solicitarConfirmacionPago(factura.id)}
-                                                            disabled={procesandoId === factura.id}
-                                                            className="px-3 py-1.5 bg-[#302A1D] text-white rounded-xl text-[10px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition disabled:opacity-50"
+                                                            onClick={() => descargarPDF(factura.id)}
+                                                            className="p-2 bg-white rounded-xl shadow-sm hover:scale-105 transition border border-[#5D4E3F]/10"
+                                                            title="Descargar PDF"
                                                         >
-                                                            {procesandoId === factura.id ? '...' : 'Pagar'}
+                                                            📄
                                                         </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
+
+                                                        {esPendiente && (
+                                                            <button 
+                                                                onClick={() => abrirModalConfirmacion(false, factura.id)}
+                                                                disabled={procesando}
+                                                                className="px-3 py-1.5 bg-[#302A1D] text-white rounded-xl text-[10px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition disabled:opacity-50"
+                                                            >
+                                                                Pagar
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     ) : (
                                         <tr>
-                                            <td colSpan="6" className="py-10 text-center opacity-50 italic">
+                                            <td colSpan="7" className="py-10 text-center opacity-50 italic">
                                                 No se registran movimientos ni facturas en tu historial.
                                             </td>
                                         </tr>
@@ -237,7 +338,7 @@ export default function Cartera({ facturas = [] }) {
                 </div>
             </main>
 
-            {/* MODAL 1: ALERTA PERSONALIZADA (Reemplaza al alert de localhost) */}
+            {/* MODAL 1: ALERTA PERSONALIZADA */}
             {modalConfig.visible && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
                     <div className="bg-[#F4F1ED] border border-[#5D4E3F]/20 max-w-sm w-full p-6 rounded-[35px] shadow-2xl text-center space-y-4">
@@ -257,18 +358,23 @@ export default function Cartera({ facturas = [] }) {
                 </div>
             )}
 
-            {/* MODAL 2: CONFIRMACIÓN DE PAGO (Reemplaza al confirm de localhost) */}
+            {/* MODAL 2: CONFIRMACIÓN DE PAGO ADAPTADO A PAGOS MÚLTIPLES */}
             {confirmConfig.visible && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
                     <div className="bg-[#F4F1ED] border border-[#5D4E3F]/20 max-w-sm w-full p-6 rounded-[35px] shadow-2xl text-center space-y-5">
                         <div className="text-2xl">🔒</div>
                         <div className="space-y-1">
                             <h4 className="text-sm font-black uppercase tracking-wide">Confirmar Transacción</h4>
-                            <p className="text-[11px] opacity-80 font-medium">¿Deseas proceder con el pago seguro de la cuota #{confirmConfig.facturaId}?</p>
+                            <p className="text-[11px] opacity-80 font-medium">
+                                {confirmConfig.modoMasivo 
+                                    ? `¿Deseas proceder con el pago seguro de las ${seleccionadas.length} cuotas seleccionadas por un valor de $${totalSeleccionado.toLocaleString()}?`
+                                    : `¿Deseas proceder con el pago seguro de la cuota #${confirmConfig.facturaId}?`
+                                }
+                            </p>
                         </div>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setConfirmConfig({ visible: false, facturaId: null })}
+                                onClick={() => setConfirmConfig({ visible: false, modoMasivo: false, facturaId: null })}
                                 className="flex-1 py-2 bg-transparent border border-[#5D4E3F]/30 text-[#5D4E3F] text-[10px] tracking-wider uppercase font-black rounded-xl hover:bg-gray-100 transition"
                             >
                                 Cancelar

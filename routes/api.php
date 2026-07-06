@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TipoDocumentoController;
 use App\Http\Controllers\Api\GeneroController;
 use App\Http\Controllers\Api\PlanController;
-use App\Http\Controllers\Api\PersonaController;
 use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\EstadoUsuarioController;
@@ -37,7 +36,6 @@ Route::get('/user', function (Request $request) {
 
 
 Route::apiResource('planes', PlanController::class);
-Route::apiResource('personas', PersonaController::class);
 Route::apiResource('tipos-documento', TipoDocumentoController::class);
 Route::apiResource('generos', GeneroController::class);
 Route::apiResource('servicios', ServicioController::class);

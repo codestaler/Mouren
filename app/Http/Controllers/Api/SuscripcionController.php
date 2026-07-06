@@ -16,31 +16,70 @@ use Illuminate\Support\Facades\Auth;
 
 class SuscripcionController extends Controller
 {
-    public function miPlan()
-    {
-        $suscripcion = Suscripcion::with(['plan', 'afiliados', 'recuerdos', 'serviciosExtras'])
-            ->where('usuario_id', auth()->id())
-            ->where('estado', 'activo')
+public function miPlan()
+{
+    $user = auth()->user();
+
+    // QUITALE el ->with('servicios') si te sigue dando error de tabla no encontrada
+    $suscripciones = Suscripcion::where('usuario_id', $user->id)
+        ->where('estado', 'activo')
+        ->get();
+
+        $suscripciones = Suscripcion::with([
+    'plan',
+    'afiliados',
+    'mascotas.especie',
+    'mascotas.raza'
+])
+->where('usuario_id', $user->id)
+->where('estado', 'activo')
+->get();
+    
+    $planHumano = $suscripciones->first(fn($s) => $s->plan_id != 4);
+    $planMascota = $suscripciones->first(fn($s) => $s->plan_id == 4);
+
+    if ($planHumano && $planHumano->afiliados->count() > 0) {
+
+    $primerAfiliado = $planHumano->afiliados->first();
+
+    $servicio = DB::table('servicios_funerarios')
+        ->where('afiliado_id', $primerAfiliado->id)
+        ->latest()
+        ->first();
+
+    if ($servicio && $servicio->cancion_id) {
+
+        $cancion = DB::table('canciones')
+            ->where('id', $servicio->cancion_id)
             ->first();
 
-        // Lógica de canción para el front
-        if ($suscripcion && $suscripcion->afiliados->count() > 0) {
-            $primerAfiliadoId = $suscripcion->afiliados->first()->id;
-            $servicioFunerario = DB::table('servicios_funerarios')
-                ->where('afiliado_id', $primerAfiliadoId)
-                ->orderBy('id', 'desc')
-                ->first();
-
-            if ($servicioFunerario && $servicioFunerario->cancion_id) {
-                $cancion = DB::table('canciones')->where('id', $servicioFunerario->cancion_id)->first();
-                if ($cancion) {
-                    $suscripcion->cancion_tributo = $cancion;
-                }
-            }
-        }
-
-        return Inertia::render('Clientes/MiPlan', ['suscripcion' => $suscripcion]);
+        $planHumano->cancion_tributo = $cancion;
     }
+}
+
+if ($planMascota && $planMascota->mascotas->count() > 0) {
+
+    $primeraMascota = $planMascota->mascotas->first();
+
+    $servicio = DB::table('servicios_funerarios')
+        ->where('mascota_id', $primeraMascota->id)
+        ->latest()
+        ->first();
+
+    if ($servicio && $servicio->cancion_id) {
+
+        $cancion = DB::table('canciones')
+            ->where('id', $servicio->cancion_id)
+            ->first();
+
+        $planMascota->cancion_tributo = $cancion;
+    }
+}
+    return Inertia::render('Clientes/MiPlan', [
+        'planHumano' => $planHumano,
+        'planMascota' => $planMascota, // O tu lógica de mascota
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -110,13 +149,12 @@ if ($request->has('recuerdos_seleccionados')) {
     }
 }
 
-            DB::commit();
-            return redirect()->route('mi.plan')->with('message', 'Suscripción exitosa');
+DB::commit();
+return redirect()->route('mi.plan')->with('activado', true);
 
-        } catch (\Exception $e) {
+} catch (\Exception $e) {
     DB::rollBack();
-    // Esto enviará el error real a tu modal en el frontend
-    return response()->json(['error' => $e->getMessage()], 500);
+    return back()->withErrors(['error' => $e->getMessage()]);
 }
     }
     
@@ -128,11 +166,22 @@ if ($request->has('recuerdos_seleccionados')) {
         'plan.servicios', 
         'afiliados.servicioFunerario', // <--- AGREGA ESTO
         'recuerdos', 
-        'serviciosExtras'
+        'serviciosExtras.personalizacion'
     ])
     ->where('usuario_id', auth()->id())
     ->where('estado', 'activo')
     ->first();
+
+
+       if ($suscripcion) {
+    \Log::info(
+        json_encode(
+            $suscripcion->serviciosExtras->toArray(),
+            JSON_PRETTY_PRINT
+        )
+    );
+}
+
 
         // ... (Tu lógica de cálculo de precios se mantiene igual)
         return Inertia::render('Clientes/DetallesPlan', [

@@ -86,12 +86,12 @@ export default function Login() {
 
                 {/* ZONA DERECHA (Formulario) */}
                 <div className="w-1/2 flex flex-col justify-center items-center pr-20">
-                    <div className="w-full max-w-sm bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-white/30 shadow-2xl text-[#5D4E3F]">
-                        <h2 className="text-3xl font-bold mb-8 text-center tracking-tight ">Inicia Sesión</h2>
+                    <div className="w-full max-w-sm bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-gray text-[#5D4E3F]">
+                        <h2 className="text-[25px] font-bold mb-8 text-center tracking-tight ">Inicia Sesión</h2>
                         
                         <form onSubmit={submit} className="flex flex-col gap-6">
                             <div className="group">
-                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors  tracking-widest">Correo electrónico</label>
+                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors">Correo electrónico</label>
                                 <input 
                                     type="email"
                                     className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-1 focus:border-[#A68966] outline-none text-lg transition-all duration-300"
@@ -102,7 +102,7 @@ export default function Login() {
                             </div>
 
                             <div className="group">
-                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors  tracking-widest">Contraseña</label>
+                                <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors ">Contraseña</label>
                                 <input 
                                     type="password"
                                     className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-1 focus:border-[#A68966] outline-none text-lg transition-all duration-300"
@@ -121,7 +121,7 @@ export default function Login() {
                                     {processing ? 'COMPROBANDO...' : '¡Ya Estoy Listo!'}
                                 </button>
                                 
-                                <Link href={route('password.request')} className="text-xs hover:text-[#A68966] underline decoration-[#A68966]/30 transition-all">
+                                <Link href={route('password.request')} className="text-[16px] hover:text-[#A68966] underline decoration-[#A68966]/30 transition-all">
                                     ¿Olvidaste tu contraseña?
                                 </Link>
                             </div>
