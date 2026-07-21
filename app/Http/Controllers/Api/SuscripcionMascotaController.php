@@ -90,6 +90,7 @@ class SuscripcionMascotaController extends Controller
             // 2. Asociar o crear la mascota al plan
             if ($request->has('mascotas')) {
                 foreach ($request->mascotas as $mascotaData) {
+                    \Log::info('MASCOTA payload:', $mascotaData);
                     $mascota = Mascota::create([
     'suscripcion_id'   => $suscripcion->id,
     'user_id'          => $userId,

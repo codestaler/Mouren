@@ -11,10 +11,7 @@ export default function AfiliadosPanel({
     return (
         <div
             className="
-                bg-gradient-to-br
-                from-[#FFFDF8]
-                via-[#FFF9F0]
-                to-[#FAF4EA]
+                bg-[#FFFFFF]
                 p-6
                 rounded-[32px]
                 border
@@ -42,7 +39,11 @@ export default function AfiliadosPanel({
                             nombre: '',
                             parentesco: '',
                             observacion_funeraria: '',
-                            cancion_id: ''
+                            cancion_id: '',
+                            genero_id: '',
+                            tipo_documento_id: '',
+                            cedula: '',
+                            fecha_nacimiento: ''
                         });
 
                         abrirModal('FORMULARIO_AFILIADO');
@@ -51,14 +52,13 @@ export default function AfiliadosPanel({
                         px-4
                         py-2
                         rounded-2xl
-                        bg-gradient-to-r
-                        from-[#5A4632]
-                        to-[#7A6145]
+                        bg-[#5A4632]
                         text-white
                         text-[11px]
                         font-black
                         uppercase
                         shadow-md
+                        hover:bg-[#6E5540]
                         hover:scale-105
                         hover:shadow-xl
                         transition-all
@@ -76,77 +76,64 @@ export default function AfiliadosPanel({
                     const esExtra =
                         idx >= maxAfiliadosIncluidos;
 
+                    const esFallecido = afi.estado?.toLowerCase() === 'fallecido';
+
                     const dataFuneraria =
                         afi.servicio_funerario || {};
 
+                    const cancionIdActual = afi.cancion_id ?? dataFuneraria.cancion_id;
+                    const observacionesActuales = afi.observacion_funeraria ?? dataFuneraria.observaciones;
+
                     const cancion =
                         canciones.find(
-                            c => c.id == dataFuneraria.cancion_id
+                            c => c.id == cancionIdActual
                         )?.titulo || 'Sin canción';
 
                     return (
                         <div
                             key={afi.id}
                             className={`
+                                group
                                 relative
                                 overflow-hidden
                                 rounded-[26px]
                                 border
                                 p-4
+                                bg-white
                                 transition-all
                                 duration-300
                                 hover:-translate-y-1
                                 hover:shadow-xl
 
-                                ${
-                                    esExtra
-                                        ? `
-                                            bg-gradient-to-br
-                                            from-[#FFF4D8]
-                                            to-[#FFE9C4]
-                                            border-[#E8B44D]
-                                          `
-                                        : `
-                                            bg-white/80
-                                            backdrop-blur-sm
-                                            border-[#EFE6D3]
-                                          `
+                               ${
+                                    esFallecido
+                                        ? 'border-[#E8C468] hover:shadow-[0_0_25px_-5px_rgba(232,196,104,0.6)]'
+                                        : esExtra
+                                        ? 'border-[#5A4632]'
+                                        : 'border-[#EFE6D3]'
                                 }
                             `}
                         >
-                            {/* Mancha artística */}
+                            {/* Franja lateral de color según estado, en vez de manchas degradadas */}
 
                             <div
-                                className="
+                                className={`
                                     absolute
-                                    -top-10
-                                    -right-10
-                                    w-28
-                                    h-28
-                                    rounded-full
-                                    bg-[#6F9FCF]/10
-                                "
+                                    top-0
+                                    left-0
+                                    h-full
+                                    w-1.5
+                                    ${esFallecido ? 'bg-[#E8C468]' : 'bg-[#5A4632]'}
+                                `}
                             />
 
-                            <div
-                                className="
-                                    absolute
-                                    -bottom-8
-                                    -left-8
-                                    w-24
-                                    h-24
-                                    rounded-full
-                                    bg-[#D96C4F]/10
-                                "
-                            />
-
-                            {esExtra && (
+                            {esExtra && !esFallecido && (
                                 <div
                                     className="
                                         absolute
                                         top-3
                                         right-3
-                                        bg-[#E8B44D]
+                                        bg-[#5A4632]
                                         text-white
                                         px-2
                                         py-1
@@ -160,24 +147,66 @@ export default function AfiliadosPanel({
                                 </div>
                             )}
 
-                            <div className="relative flex gap-4">
+                            {esFallecido && !esExtra && (
+                                <div
+                                    className="
+                                        absolute
+                                        top-3
+                                        right-3
+                                        bg-[#E8C468]
+                                        text-[#5A4020]
+                                        px-2
+                                        py-1
+                                        rounded-full
+                                        text-[9px]
+                                        font-black
+                                        uppercase
+                                    "
+                                >
+                                    En memoria
+                                </div>
+                            )}
+
+                            {/* Overlay de homenaje al hacer hover, solo para fallecidos */}
+                            {esFallecido && (
+                                <div
+                                    className="
+                                        absolute inset-0 z-20
+                                        flex flex-col items-center justify-center gap-2
+                                        bg-[#FFF8E1]
+                                        opacity-0 group-hover:opacity-100
+                                        transition-opacity duration-500
+                                        text-center px-6
+                                    "
+                                >
+                                    <span className="text-2xl">🕯️✨</span>
+                                    <p className="text-[12px] font-black text-[#8A6B22] uppercase tracking-wide">
+                                        En memoria de {afi.nombre}
+                                    </p>
+                                    <p className="text-[10px] italic text-[#8A6B22]/80 leading-snug">
+                                        Su recuerdo permanece protegido y en paz.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="relative flex gap-4 pl-2">
                                 {/* Avatar */}
 
                                 <div
-                                    className="
+                                    className={`
                                         w-14
                                         h-14
                                         rounded-full
                                         flex
                                         items-center
                                         justify-center
-                                        bg-gradient-to-br
-                                        from-[#E8B44D]
-                                        via-[#D96C4F]
-                                        to-[#6F9FCF]
                                         shadow-md
                                         p-2
-                                    "
+                                        ${esFallecido
+                                            ? 'bg-[#E8C468]'
+                                            : 'bg-[#5A4632]'
+                                        }
+                                    `}
                                 >
                                     <img
                                         src="/images/elementos_dashboard/detalles_plan/iconos_afiliados.png"
@@ -208,6 +237,16 @@ export default function AfiliadosPanel({
                                         {afi.parentesco}
                                     </p>
 
+                                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                        esFallecido
+                                            ? 'bg-[#E8C468] text-[#5A4020]'
+                                            : afi.estado?.toLowerCase() === 'activo'
+                                            ? 'bg-[#5A4632] text-white'
+                                            : 'bg-red-100 text-red-600'
+                                    }`}>
+                                        {esFallecido ? '🕯️ ' : ''}{afi.estado || 'Sin estado'}
+                                    </span>
+
                                     <div className="mt-3 space-y-2">
                                         <div
                                             className="
@@ -220,7 +259,7 @@ export default function AfiliadosPanel({
                                             <span>📝</span>
 
                                             <span className="text-[#6A5A48]">
-                                                {dataFuneraria.observaciones ||
+                                                {observacionesActuales ||
                                                     'Sin observaciones'}
                                             </span>
                                         </div>
@@ -252,50 +291,66 @@ export default function AfiliadosPanel({
                                     border-t
                                     border-[#EFE6D3]
                                     flex
-                                    justify-end
+                                    justify-between
+                                    items-center
                                     gap-3
+                                    relative
+                                    pl-2
                                 "
                             >
-                                <button
-                                    onClick={() =>
-                                        iniciarEdicionAfiliado(afi)
-                                    }
-                                    className="
-                                        px-3
-                                        py-1.5
-                                        rounded-xl
-                                        bg-[#6F9FCF]/15
-                                        text-[#4D78A3]
-                                        font-bold
-                                        text-[11px]
-                                        hover:bg-[#6F9FCF]/25
-                                        transition
-                                    "
-                                >
-                                    Editar
-                                </button>
+                                {esFallecido ? (
+                                    <p className="text-[10px] italic text-[#8A6B22] font-bold">
+                                        🕊️ Registro conservado, sin cambios permitidos
+                                    </p>
+                                ) : (
+                                    <div />
+                                )}
 
-                                {afi.parentesco?.toLowerCase() !==
-                                    'titular' && (
+                                <div className="flex gap-3">
                                     <button
                                         onClick={() =>
-                                            ventanaConfirmarQuitar(afi)
+                                            iniciarEdicionAfiliado(afi)
                                         }
-                                        className="
+                                        disabled={esFallecido}
+                                        className={`
                                             px-3
                                             py-1.5
                                             rounded-xl
-                                            bg-[#D96C4F]/15
-                                            text-[#C24D35]
                                             font-bold
                                             text-[11px]
-                                            hover:bg-[#D96C4F]/25
                                             transition
-                                        "
+                                            ${esFallecido
+                                                ? 'bg-[#E8C468]/30 text-[#8A6B22]/50 cursor-not-allowed'
+                                                : 'bg-[#5A4632] text-white hover:bg-[#6E5540]'
+                                            }
+                                        `}
                                     >
-                                        Eliminar
+                                        Editar
                                     </button>
-                                )}
+
+                                    {afi.parentesco?.toLowerCase() !== 'titular' && (
+                                        <button
+                                            onClick={() =>
+                                                ventanaConfirmarQuitar(afi)
+                                            }
+                                            disabled={esFallecido}
+                                            className={`
+                                                px-3
+                                                py-1.5
+                                                rounded-xl
+                                                font-bold
+                                                text-[11px]
+                                                transition
+                                                ${esFallecido
+                                                    ? 'bg-[#E8C468]/30 text-[#8A6B22]/50 cursor-not-allowed'
+                                                    : 'bg-[#D96C4F]/15 text-[#C24D35] hover:bg-[#D96C4F]/25'
+                                                }
+                                            `}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );

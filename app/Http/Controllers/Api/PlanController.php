@@ -33,23 +33,27 @@ class PlanController extends Controller
      * Mostrar formulario de inscripción (El que necesitas para /planes/inscribir/{id})
      */
     public function inscribir($id)
-    {
-        // 1. Buscamos el plan específico con sus servicios base
-        $plan = Plan::with('servicios')->findOrFail($id);
+{
+    // 1. Buscamos el plan específico con sus servicios base
+    $plan = Plan::with('servicios')->findOrFail($id);
 
-        // 2. Obtenemos el resto de catálogos para los pasos del formulario
-        $servicios = Servicio::all();
-        $recuerdos = Recuerdo::all();
-        $canciones = Cancion::all();
+    // 2. Obtenemos el resto de catálogos para los pasos del formulario
+    $servicios = Servicio::all();
+    $recuerdos = Recuerdo::all();
+    $canciones = Cancion::all();
+    $generos = \App\Models\Genero::all();
+    $tiposDocumento = \App\Models\TipoDocumento::all();
 
-        // 3. Enviamos todo a la vista de React
-        return Inertia::render('Clientes/Planes/Inscribir', [
-            'plan'      => $plan,
-            'servicios' => $servicios,
-            'recuerdos' => $recuerdos,
-            'canciones' => $canciones,
-        ]);
-    }
+    // 3. Enviamos todo a la vista de React
+    return Inertia::render('Clientes/Planes/Inscribir', [
+        'plan'      => $plan,
+        'servicios' => $servicios,
+        'recuerdos' => $recuerdos,
+        'canciones' => $canciones,
+        'generos'   => $generos,
+        'tiposDocumento' => $tiposDocumento,
+    ]);
+}
 
     /**
      * Crear un plan (Admin / API)

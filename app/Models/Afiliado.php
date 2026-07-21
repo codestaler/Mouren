@@ -17,7 +17,16 @@ class Afiliado extends Model
         'nombre', // Este campo es vital para guardar lo que escribes en el formulario
         'parentesco',
         'estado',
-        'fecha_fallecimiento'
+        'fecha_fallecimiento',
+        'genero_id',
+        'tipo_documento_id',
+        'cedula',
+        'fecha_nacimiento',
+    ];
+
+    protected $casts = [
+        'fecha_nacimiento' => 'date',
+        'fecha_fallecimiento' => 'date',
     ];
 
     /**
@@ -36,9 +45,27 @@ class Afiliado extends Model
         return $this->belongsTo(Suscripcion::class, 'suscripcion_id');
     }
 
+    /**
+     * Relación con el Género del afiliado
+     */
+    public function genero()
+    {
+        return $this->belongsTo(Genero::class, 'genero_id');
+    }
+
+    /**
+     * Relación con el Tipo de Documento del afiliado
+     */
+    public function tipoDocumento()
+    {
+        return $this->belongsTo(TipoDocumento::class, 'tipo_documento_id');
+    }
+
     public function servicioFunerario()
-{
-    // Un afiliado tiene un servicio funerario vinculado
-    return $this->hasOne(ServicioFunerario::class, 'afiliado_id');
-}
+    {
+        // Un afiliado tiene un servicio funerario vinculado
+        return $this->hasOne(ServicioFunerario::class, 'afiliado_id');
+    }
+
+    
 }

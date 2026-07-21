@@ -94,80 +94,106 @@ export default function MiPlanMascotaView({
                                         </button>
                                     </div>
 
-                                    <div className="space-y-4 mt-6">
-                                        {data.mascotas.map((masc, i) => {
-                                            // Buscamos la especie seleccionada para obtener sus razas correspondientes
-                                            const especieSeleccionada = especies.find(e => String(e.id) === String(masc.especie_id));
-                                            const razasDisponibles = especieSeleccionada ? especieSeleccionada.razas : [];
+                                    <div className="space-y-5 mt-6">
+    {data.mascotas.map((masc, i) => {
+        const especieSeleccionada = especies.find(e => String(e.id) === String(masc.especie_id));
+        const razasDisponibles = especieSeleccionada ? especieSeleccionada.razas : [];
 
-                                            return (
-                                                <div key={i} className="flex flex-col gap-2 p-4 rounded-3xl border bg-[#FDFBF9] border-[#5D4E3F]/10 transition-all shadow-sm">
-                                                    <div className="flex flex-col sm:flex-row gap-2">
-                                                        {/* Input Nombre */}
-                                                        <input
-                                                            className="flex-1 border-none bg-white rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966]"
-                                                            placeholder="Nombre de la mascota"
-                                                            value={masc.nombre}
-                                                            onChange={e => {
-                                                                const m = [...data.mascotas];
-                                                                m[i].nombre = e.target.value;
-                                                                setData('mascotas', m);
-                                                            }}
-                                                        />
+        return (
+            <div
+                key={i}
+                className="relative p-5 rounded-[35px] border bg-[#FDFBF9] border-[#5D4E3F]/10 shadow-sm hover:shadow-md transition-all"
+            >
+                {/* Botón eliminar flotante */}
+                {numMascotasActuales > 1 && (
+                    <button
+                        type="button"
+                        onClick={() => setData('mascotas', data.mascotas.filter((_, idx) => idx !== i))}
+                        className="absolute -top-2 -right-2 bg-white text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full p-2 shadow-md border border-red-100 transition-colors z-10"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                )}
 
-                                                        {/* Select Especie (Dinámico de BD sin 'Otros') */}
-                                                        <select 
-                                                            className="bg-white border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-full sm:w-40" 
-                                                            value={masc.especie_id} 
-                                                            onChange={e => { 
-                                                                const m = [...data.mascotas]; 
-                                                                m[i].especie_id = e.target.value;
-                                                                m[i].raza_id = ''; // Reseteamos la raza al cambiar de especie
-                                                                setData('mascotas', m); 
-                                                            }}
-                                                        >
-                                                            <option value="">Especie</option>
-                                                            {especies.map(esp => (
-                                                                <option key={esp.id} value={esp.id}>{esp.nombre}</option>
-                                                            ))}
-                                                        </select>
+                <div className="flex flex-col sm:flex-row gap-4">
+                    {/* AVATAR / FOTO DE LA MASCOTA (placeholder, luego pones la imagen real) */}
+                    <div className="shrink-0 flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2">
+                        <div className="w-16 h-16 rounded-full bg-white border-2 border-dashed border-[#A68966]/40 flex items-center justify-center overflow-hidden shadow-inner">
+                            {/* Cuando tengas la foto real, reemplaza este ícono por:
+                                <img src={masc.foto_url} className="w-full h-full object-cover" /> */}
+                            <PawPrint className="text-[#A68966]/50" size={26} />
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[#A68966]/60 sm:text-center">
+                            #{i + 1}
+                        </span>
+                    </div>
 
-                                                        {/* Select Raza (Dinámico de BD filtrado por Especie) */}
-                                                        <select
-                                                            className="bg-white border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-full sm:w-40 disabled:opacity-50"
-                                                            value={masc.raza_id}
-                                                            disabled={!masc.especie_id}
-                                                            onChange={e => {
-                                                                const m = [...data.mascotas];
-                                                                m[i].raza_id = e.target.value;
-                                                                setData('mascotas', m);
-                                                            }}
-                                                        >
-                                                            <option value="">Raza / Variedad</option>
-                                                            {razasDisponibles.map(rz => (
-                                                                <option key={rz.id} value={rz.id}>{rz.nombre}</option>
-                                                            ))}
-                                                        </select>
+                    {/* CAMPOS */}
+                    <div className="flex-1 space-y-3">
+                        {/* Nombre */}
+                        <input
+                            className="w-full border-none bg-white rounded-2xl text-xs font-bold p-3.5 shadow-sm focus:ring-2 focus:ring-[#A68966]/40 placeholder:font-normal placeholder:opacity-40"
+                            placeholder="Nombre de tu consentido 🐾"
+                            value={masc.nombre}
+                            onChange={e => {
+                                const m = [...data.mascotas];
+                                m[i].nombre = e.target.value;
+                                setData('mascotas', m);
+                            }}
+                        />
 
-                                                        {/* Botón eliminar mascota */}
-                                                        {numMascotasActuales > 1 ? (
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => setData('mascotas', data.mascotas.filter((_, idx) => idx !== i))} 
-                                                                className="p-2 text-red-400 hover:text-red-600 self-center transition-colors"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        ) : (
-                                                            <div className="w-10 h-10 flex items-center justify-center opacity-20 self-center">
-                                                                <PawPrint size={18} className="text-[#A68966]" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                        {/* Especie + Raza en grid, ya no se desbordan */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[8px] font-black uppercase tracking-widest text-[#A68966]/70 ml-1">
+                                    Especie
+                                </label>
+                                <select
+                                    className="w-full bg-white border-none rounded-2xl text-xs p-3 shadow-sm focus:ring-2 focus:ring-[#A68966]/40"
+                                    value={masc.especie_id}
+                                    onChange={e => {
+                                        const m = [...data.mascotas];
+                                        m[i].especie_id = e.target.value;
+                                        m[i].raza_id = '';
+                                        setData('mascotas', m);
+                                    }}
+                                >
+                                    <option value="">Elegir</option>
+                                    {especies.map(esp => (
+                                        <option key={esp.id} value={esp.id}>{esp.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[8px] font-black uppercase tracking-widest text-[#A68966]/70 ml-1">
+                                    Raza / Variedad
+                                </label>
+                                <select
+                                    className="w-full bg-white border-none rounded-2xl text-xs p-3 shadow-sm focus:ring-2 focus:ring-[#A68966]/40 disabled:opacity-40"
+                                    value={masc.raza_id}
+                                    disabled={!masc.especie_id}
+                                    onChange={e => {
+                                        const m = [...data.mascotas];
+                                        m[i].raza_id = e.target.value;
+                                        setData('mascotas', m);
+                                    }}
+                                >
+                                    <option value="">
+                                        {masc.especie_id ? 'Elegir' : 'Selecciona especie primero'}
+                                    </option>
+                                    {razasDisponibles.map(rz => (
+                                        <option key={rz.id} value={rz.id}>{rz.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    })}
+</div>
                                 </div>
                             )}
 

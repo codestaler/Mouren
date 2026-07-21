@@ -5,42 +5,52 @@ namespace App\Http\Controllers\Api\Procesos;
 use App\Http\Controllers\Controller;
 use App\Models\Procesos\Notificacion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class NotificacionController extends Controller
 {
+    /**
+     * Devuelve las últimas notificaciones del usuario logueado + el conteo de no leídas.
+     */
     public function index()
     {
-        // Traemos las notificaciones junto con los datos del usuario 🔗
-        return response()->json(Notificacion::with('usuario')->get(), 200);
-    }
+        $usuarioId = Auth::id();
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'usuario_id' => 'required|exists:users,id',
-            'mensaje'    => 'required|string',
-            'fecha'      => 'required|date',
+        $notificaciones = Notificacion::where('usuario_id', $usuarioId)
+            ->orderByDesc('fecha')
+            ->limit(20)
+            ->get();
+
+        $noLeidas = Notificacion::where('usuario_id', $usuarioId)
+            ->where('leido', false)
+            ->count();
+
+        return response()->json([
+            'notificaciones' => $notificaciones,
+            'no_leidas'      => $noLeidas,
         ]);
-
-        // Por defecto 'leido' será false gracias a la base de datos
-        $notificacion = Notificacion::create($request->all());
-        return response()->json($notificacion, 201);
     }
 
-    public function show($id)
+    /**
+     * Marca una notificación puntual como leída.
+     */
+    public function marcarLeida($id)
     {
-        $notificacion = Notificacion::find($id);
-        if (!$notificacion) return response()->json(['msg' => 'No encontrada'], 404);
-        return response()->json($notificacion, 200);
+        $notificacion = Notificacion::where('usuario_id', Auth::id())->findOrFail($id);
+        $notificacion->update(['leido' => true]);
+
+        return response()->json(['success' => true]);
     }
 
-    // Método útil para marcar como leída ✅
-    public function update(Request $request, $id)
+    /**
+     * Marca todas las notificaciones del usuario logueado como leídas.
+     */
+    public function marcarTodasLeidas()
     {
-        $notificacion = Notificacion::find($id);
-        if (!$notificacion) return response()->json(['msg' => 'No encontrada'], 404);
-        
-        $notificacion->update($request->only('leido'));
-        return response()->json($notificacion, 200);
+        Notificacion::where('usuario_id', Auth::id())
+            ->where('leido', false)
+            ->update(['leido' => true]);
+
+        return response()->json(['success' => true]);
     }
 }

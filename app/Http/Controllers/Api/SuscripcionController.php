@@ -27,9 +27,10 @@ public function miPlan()
 
         $suscripciones = Suscripcion::with([
     'plan',
-    'afiliados',
+    'afiliados.servicioFunerario.cancion',  // <-- AGREGA ESTO
     'mascotas.especie',
-    'mascotas.raza'
+    'mascotas.raza',
+    'mascotas.servicioFunerario.cancion'   // <-- Y ESTO PARA MASCOTAS
 ])
 ->where('usuario_id', $user->id)
 ->where('estado', 'activo')
@@ -105,13 +106,18 @@ if ($planMascota && $planMascota->mascotas->count() > 0) {
             // 2. Procesar afiliados y servicios funerarios
             if ($request->has('afiliados')) {
                 foreach ($request->afiliados as $afi) {
+                    \Log::info('AFILIADO payload:', $afi);
                     $afiliado = Afiliado::create([
-                        'suscripcion_id' => $suscripcion->id,
-                        'user_id'        => $userId,
-                        'nombre'         => $afi['nombre'],
-                        'parentesco'     => $afi['parentesco'] ?? 'Titular',
-                        'estado'         => 'activo'
-                    ]);
+    'suscripcion_id'     => $suscripcion->id,
+    'user_id'            => $userId,
+    'nombre'             => $afi['nombre'],
+    'parentesco'         => $afi['parentesco'] ?? 'Titular',
+    'estado'             => 'activo',
+    'genero_id'          => $afi['genero_id'] ?? null,
+    'tipo_documento_id'  => $afi['tipo_documento_id'] ?? null,
+    'cedula'             => $afi['cedula'] ?? null,
+    'fecha_nacimiento'   => $afi['fecha_nacimiento'] ?? null,
+]);
 
                     DB::table('servicios_funerarios')->insert([
                         'afiliado_id'  => $afiliado->id,
@@ -166,7 +172,7 @@ return redirect()->route('mi.plan')->with('activado', true);
         'plan.servicios', 
         'afiliados.servicioFunerario', // <--- AGREGA ESTO
         'recuerdos', 
-        'serviciosExtras.personalizacion'
+        'serviciosExtras'
     ])
     ->where('usuario_id', auth()->id())
     ->where('estado', 'activo')
@@ -174,22 +180,30 @@ return redirect()->route('mi.plan')->with('activado', true);
 
 
        if ($suscripcion) {
-    \Log::info(
-        json_encode(
-            $suscripcion->serviciosExtras->toArray(),
-            JSON_PRETTY_PRINT
-        )
-    );
-}
+        // Traemos SOLO las personalizaciones de ESTA suscripción
+        $personalizaciones = \App\Models\Personalizacion::where('suscripcion_id', $suscripcion->id)
+            ->get()
+            ->keyBy('servicio_id'); // para buscarlas rápido por servicio_id
+
+        // Pegamos la personalización correcta a cada servicio extra
+        $suscripcion->serviciosExtras->each(function ($servicio) use ($personalizaciones) {
+            $personalizacion = $personalizaciones->get($servicio->id);
+            $servicio->personalizacion = $personalizacion
+                ? ['configuracion' => $personalizacion->configuracion]
+                : null;
+        });
+    }
 
 
         // ... (Tu lógica de cálculo de precios se mantiene igual)
         return Inertia::render('Clientes/DetallesPlan', [
-            'suscripcion' => $suscripcion,
-            'todosLosServicios' => Servicio::all(),
-            'todosLosRecuerdos' => Recuerdo::all(),
-            'canciones' => Cancion::all()
-        ]);
+        'suscripcion' => $suscripcion,
+        'todosLosServicios' => Servicio::all(),
+        'todosLosRecuerdos' => Recuerdo::all(),
+        'canciones' => Cancion::all(),
+        'generos' => \App\Models\Genero::all(),
+        'tiposDocumento' => \App\Models\TipoDocumento::all(),
+    ]);
     }
 
     public function eliminarAfiliado($id)
@@ -199,10 +213,37 @@ return redirect()->route('mi.plan')->with('activado', true);
             if (trim(strtolower($afiliado->parentesco)) === 'titular') {
                 return back()->with('error', 'No puedes eliminar al titular.');
             }
+            if (strtolower($afiliado->estado) === 'fallecido') {
+                return back()->with('error', 'No se puede eliminar un afiliado marcado como fallecido.');
+            }
             $afiliado->delete();
             return back()->with('message', 'Afiliado removido.');
         } catch (\Exception $e) {
             return back()->with('error', 'Error al eliminar.');
         }
+    }
+
+    public function certificadoAfiliacion()
+    {
+        $suscripcion = Suscripcion::with(['plan', 'afiliados.genero', 'afiliados.tipoDocumento'])
+            ->where('usuario_id', auth()->id())
+            ->where('estado', 'activo')
+            ->first();
+
+        if (!$suscripcion) {
+            return back()->with('error', 'No tienes una suscripción activa para generar un certificado.');
+        }
+
+        $usuario = auth()->user();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reportes.certificado-afiliacion', [
+            'usuario'     => $usuario,
+            'suscripcion' => $suscripcion,
+            'plan'        => $suscripcion->plan,
+            'afiliados'   => $suscripcion->afiliados,
+            'fecha'       => \Carbon\Carbon::now()->format('d/m/Y'),
+        ]);
+
+        return $pdf->download('certificado-afiliacion-mouren-' . $usuario->cedula . '.pdf');
     }
 }

@@ -12,4 +12,9 @@ class SalaVelacion extends Model
     protected $table = 'salas_velacion';
 
     protected $fillable = ['nombre', 'estado'];
+
+    public function ceremonias()
+    {
+        return $this->hasMany(Ceremonia::class, 'sala_velacion_id');
+    }
 }

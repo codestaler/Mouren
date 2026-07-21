@@ -26,5 +26,17 @@ class DatabaseSeeder extends Seeder
             // Tus otros seeders (Usuarios, Planes, etc.)...
             MetodoPagoSeeder::class,
         ]);
+
+        $this->call([
+            EstadoUsuarioSeeder::class,
+        ]);
+
+        $this->call([
+        ServiciosSeeder::class,
+        ]);
+
+        $this->call([
+        EstadoFacturaSeeder::class,
+        ]);
     }
 }

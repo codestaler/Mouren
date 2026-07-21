@@ -22,11 +22,44 @@ class User extends Authenticatable
         'password',
         'estado_id',
         'tipo_usuario_id',
+        'avatar', 'idioma', 'tema', 'notificaciones_activadas',
+'two_factor_secret', 'two_factor_confirmed_at',
     ];
 
+    // 👇 NUEVA relación
+    public function genero()
+    {
+        return $this->belongsTo(Genero::class);
+    }
+
+    public function suscripciones()
+    {
+        return $this->hasMany(Suscripcion::class, 'usuario_id');
+    }
+
+
+    public function afiliados()
+{
+    return $this->hasMany(Afiliado::class, 'user_id');
+}
     // Ocultamos la contraseña en las respuestas JSON por seguridad 🔒
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    public function estado()
+    {
+        return $this->belongsTo(EstadoUsuario::class, 'estado_id');
+    }
+
+    public function tipoDocumento()
+    {
+        return $this->belongsTo(TipoDocumento::class, 'tipo_documento_id');
+    }
+
+    public function tieneDosPasosActivo(): bool
+{
+    return !is_null($this->two_factor_confirmed_at);
+}
 }

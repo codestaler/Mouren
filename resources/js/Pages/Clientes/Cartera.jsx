@@ -11,22 +11,32 @@ export default function Cartera({ facturas = [] }) {
     // Estado para almacenar las IDs de las facturas seleccionadas para pago múltiple
     const [seleccionadas, setSeleccionadas] = useState([]);
     
+    // 🆕 NUEVO ESTADO: Almacena los montos específicos que el usuario decide abonar por cada factura
+    // Se inicializa dinámicamente con el saldo_pendiente real de cada factura
+    const [valoresAbono, setValoresAbono] = useState(() => {
+        const inicial = {};
+        facturas.forEach(f => {
+            inicial[f.id] = Number(f.saldo_pendiente ?? f.total);
+        });
+        return inicial;
+    });
+    
     // Estados para controlar los modales personalizados de diseño
     const [modalConfig, setModalConfig] = useState({ visible: false, mensaje: '', tipo: 'info' });
     const [confirmConfig, setConfirmConfig] = useState({ visible: false, modoMasivo: false, facturaId: null });
 
     const nombreParaMostrar = usuario.name || "Usuario";
 
-    // Filtrar únicamente las facturas pendientes
-    const facturasPendientes = facturas.filter(f => f.estado_factura_id === 1);
+    // 🆕 CAMBIO: Filtrar las facturas que tengan saldo pendiente real (Pendientes = 1 o Abonadas = 3)
+    const facturasCobrables = facturas.filter(f => f.estado_factura_id === 1 || f.estado_factura_id === 3);
     
-    // Total histórico de deuda pendiente
-    const totalDeudaPendiente = facturasPendientes.reduce((sum, f) => sum + Number(f.total), 0);
+    // 🆕 CAMBIO: El total histórico de deuda ahora se calcula en base a lo que realmente falta por pagar (saldo_pendiente)
+    const totalDeudaPendiente = facturasCobrables.reduce((sum, f) => sum + Number(f.saldo_pendiente ?? f.total), 0);
 
-    // TOTAL CORREGIDO (Sin espacios en el nombre de la variable)
-    const totalSeleccionado = facturasPendientes
+    // 🆕 TOTAL CORREGIDO: Suma los abonos específicos que el usuario digitó en los inputs para las facturas seleccionadas
+    const totalSeleccionado = facturasCobrables
         .filter(f => seleccionadas.includes(f.id))
-        .reduce((sum, f) => sum + Number(f.total), 0);
+        .reduce((sum, f) => sum + Number(valoresAbono[f.id] || 0), 0);
 
     // Función auxiliar para calcular días restantes y retornar la alerta estética
     const obtenerAlertaVencimiento = (fechaVencimiento) => {
@@ -75,13 +85,26 @@ export default function Cartera({ facturas = [] }) {
         }
     };
 
-    // Seleccionar o deseleccionar todas las facturas pendientes de un solo golpe
+    // Seleccionar o deseleccionar todas las facturas cobrables de un solo golpe
     const handleSeleccionarTodas = () => {
-        if (seleccionadas.length === facturasPendientes.length) {
+        if (seleccionadas.length === facturasCobrables.length) {
             setSeleccionadas([]);
         } else {
-            setSeleccionadas(facturasPendientes.map(f => f.id));
+            setSeleccionadas(facturasCobrables.map(f => f.id));
         }
+    };
+
+    // 🆕 NUEVO: Manejar cambios en el input de abono parcial protegiendo los límites de la factura
+    const handleCambioMontoAbono = (id, valorDigitado, saldoMaximo) => {
+        const numero = Number(valorDigitado);
+        
+        // No permitimos que digite un valor negativo ni que supere el saldo total pendiente de la factura
+        if (numero < 0) return;
+        
+        setValoresAbono({
+            ...valoresAbono,
+            [id]: numero > saldoMaximo ? saldoMaximo : numero
+        });
     };
 
     const mostrarAlerta = (mensaje, tipo = 'info') => {
@@ -128,14 +151,28 @@ export default function Cartera({ facturas = [] }) {
     const procesarPagoConfirmado = () => {
         const { modoMasivo, facturaId } = confirmConfig;
         
-        // Si es masivo, toma las seleccionadas; si es individual, crea un arreglo con ese único ID
+        // 🆕 CAMBIO ESTRATÉGICO: Construimos una estructura estructurada [id => monto] para pasarle al backend
         const idsAProcesar = modoMasivo ? seleccionadas : [facturaId];
+        const detallesPago = idsAProcesar.map(id => ({
+            id: id,
+            monto: valoresAbono[id] || 0
+        }));
+
+        // Validar que no se envíen abonos en $0
+        const abonosValidos = detallesPago.filter(item => item.monto > 0);
+        if (abonosValidos.length === 0) {
+            mostrarAlerta("El monto de abono debe ser mayor a $0 en las facturas seleccionadas.", "error");
+            return;
+        }
 
         setConfirmConfig({ visible: false, modoMasivo: false, facturaId: null });
         setProcesando(true);
         
-        // Hacemos la petición POST hacia la ruta exacta de tu backend de Mouren
-        router.post(`/cliente/pagos/procesar-lote`, { ids: idsAProcesar }, {
+        // Enviamos tanto las IDs como sus montos personalizados correspondientes en el request
+        router.post(`/cliente/pagos/procesar-lote`, { 
+            ids: abonosValidos.map(item => item.id),
+            montos_personalizados: abonosValidos // Enviamos el mapeo detallado al servidor
+        }, {
             preserveScroll: true,
             onSuccess: () => {
                 setProcesando(false);
@@ -143,7 +180,6 @@ export default function Cartera({ facturas = [] }) {
             },
             onError: (errors) => {
                 setProcesando(false);
-                // Si el backend nos devuelve un error de validación o pasarela, lo atrapamos y lo mostramos en tu modal estético
                 if (errors.error) {
                     mostrarAlerta(errors.error, 'error');
                 } else {
@@ -152,6 +188,7 @@ export default function Cartera({ facturas = [] }) {
             }
         });
     };
+
     return (
         <div className="min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] bg-[#FFFFFF] flex overflow-x-hidden relative">
             <Head title="Estado de Cuenta - Mouren" />
@@ -167,7 +204,6 @@ export default function Cartera({ facturas = [] }) {
                         </h1>
                         <p className="text-[11px] italic opacity-70 mt-1">Suscripciones y previsión exequial de {nombreParaMostrar}</p>
                     </div>
-
                 </header>
 
                 <div className="max-w-5xl mx-auto space-y-8">
@@ -184,18 +220,18 @@ export default function Cartera({ facturas = [] }) {
                                 </h2>
                                 <p className="text-[11px] opacity-70 mt-1">
                                     {seleccionadas.length > 0 
-                                        ? `Has seleccionado ${seleccionadas.length} cuotas para saldar en bloque.` 
-                                        : 'Selecciona las facturas de la tabla inferior que desees abonar en conjunto.'}
+                                        ? `Has seleccionado ${seleccionadas.length} obligaciones para procesar abonos parciales o totales.` 
+                                        : 'Selecciona las facturas de la tabla inferior. Si superan los $60.000 puedes escribir el monto parcial que deseas abonar.'}
                                 </p>
                             </div>
 
                             <div className="flex justify-between items-end mt-4">
                                 <div>
-                                    <p className="text-[9px] uppercase opacity-60 font-bold">Total Deuda</p>
+                                    <p className="text-[9px] uppercase opacity-60 font-bold">Total Saldo Pendiente</p>
                                     <p className="text-xl font-bold opacity-90">${Number(totalDeudaPendiente).toLocaleString()}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[9px] uppercase text-[#FFD97D] font-bold">Total a Pagar Seleccionado</p>
+                                    <p className="text-[9px] uppercase text-[#FFD97D] font-bold">Total del Abono a Enviar</p>
                                     <p className="text-3xl font-black text-[#FFBD2E]">${Number(totalSeleccionado).toLocaleString()}</p>
                                 </div>
                             </div>
@@ -209,14 +245,14 @@ export default function Cartera({ facturas = [] }) {
                                     <div className="space-y-3">
                                         <div className="space-y-1 text-[11px] font-bold opacity-80">
                                             <p>📦 Cuotas marcadas: <span className="opacity-100 font-black">{seleccionadas.length}</span></p>
-                                            <p>💰 Monto total: <span className="text-[#6E5D4F] font-black">${Number(totalSeleccionado).toLocaleString()}</span></p>
+                                            <p>💰 Monto de abono: <span className="text-[#6E5D4F] font-black">${Number(totalSeleccionado).toLocaleString()}</span></p>
                                         </div>
                                         <button
                                             onClick={() => abrirModalConfirmacion(true)}
-                                            disabled={procesando}
-                                            className="w-full py-2.5 bg-[#302A1D] text-white rounded-2xl text-[10px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition shadow-md"
+                                            disabled={procesando || totalSeleccionado <= 0}
+                                            className="w-full py-2.5 bg-[#302A1D] text-white rounded-2xl text-[10px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition shadow-md disabled:opacity-50"
                                         >
-                                            {procesando ? 'Procesando Transacción...' : 'Pagar Cuotas Seleccionadas'}
+                                            {procesando ? 'Procesando Transacción...' : 'Pagar Abonos Seleccionados'}
                                         </button>
                                     </div>
                                 ) : (
@@ -251,19 +287,21 @@ export default function Cartera({ facturas = [] }) {
                                 <thead>
                                     <tr className="border-b-2 border-[#5D4E3F]/20 text-[10px] uppercase tracking-wider opacity-60">
                                         <th className="py-3 px-2 text-center w-12">
-                                            {facturasPendientes.length > 0 && (
+                                            {facturasCobrables.length > 0 && (
                                                 <input 
                                                     type="checkbox"
-                                                    checked={seleccionadas.length === facturasPendientes.length}
+                                                    checked={seleccionadas.length === facturasCobrables.length}
                                                     onChange={handleSeleccionarTodas}
                                                     className="rounded border-[#5D4E3F]/30 text-[#5D4E3F] focus:ring-[#5D4E3F]"
                                                 />
                                             )}
                                         </th>
                                         <th className="py-3 px-2">Factura #</th>
-                                        <th className="py-3 px-2">Emisión</th>
                                         <th className="py-3 px-2">Vencimiento / Alerta</th>
-                                        <th className="py-3 px-2 text-right">Total</th>
+                                        <th className="py-3 px-2 text-right">Monto Total</th>
+                                        <th className="py-3 px-2 text-right text-emerald-700">Ya Pagado</th>
+                                        <th className="py-3 px-2 text-right text-red-700">Por Pagar</th>
+                                        <th className="py-3 px-2 text-center w-36">¿Cuánto deseas abonar?</th>
                                         <th className="py-3 px-2 text-center">Estado</th>
                                         <th className="py-3 px-2 text-center">Acciones</th>
                                     </tr>
@@ -271,11 +309,16 @@ export default function Cartera({ facturas = [] }) {
                                 <tbody>
                                     {facturas.length > 0 ? (
                                         facturas.map((factura) => {
-                                            const esPendiente = factura.estado_factura_id === 1;
+                                            // Se permite pagar si el estado es Pendiente (1) o Abonado (3)
+                                            const esCobrable = factura.estado_factura_id === 1 || factura.estado_factura_id === 3;
+                                            const saldoReal = Number(factura.saldo_pendiente ?? factura.total);
+                                            // Condición solicitada: Habilitar abonos parciales si el total original supera los $60.000
+                                            const permiteAbonosParciales = Number(factura.total) > 60000;
+
                                             return (
                                                 <tr key={factura.id} className="border-b border-[#5D4E3F]/10 hover:bg-white/40 transition-all font-bold">
                                                     <td className="py-4 px-2 text-center">
-                                                        {esPendiente ? (
+                                                        {esCobrable ? (
                                                             <input 
                                                                 type="checkbox"
                                                                 checked={seleccionadas.includes(factura.id)}
@@ -287,19 +330,45 @@ export default function Cartera({ facturas = [] }) {
                                                         )}
                                                     </td>
                                                     <td className="py-4 px-2">#{factura.id}</td>
-                                                    <td className="py-4 px-2 opacity-80">{factura.fecha_emision}</td>
                                                     <td className="py-4 px-2 space-x-2">
                                                         <span className="opacity-80">{factura.fecha_vencimiento}</span>
-                                                        {esPendiente && obtenerAlertaVencimiento(factura.fecha_vencimiento)}
+                                                        {esCobrable && obtenerAlertaVencimiento(factura.fecha_vencimiento)}
                                                     </td>
-                                                    <td className="py-4 px-2 text-right text-[#A68966]">${Number(factura.total).toLocaleString()}</td>
+                                                    <td className="py-4 px-2 text-right opacity-60">${Number(factura.total).toLocaleString()}</td>
+                                                    <td className="py-4 px-2 text-right text-emerald-600">${Number(factura.monto_pagado ?? 0).toLocaleString()}</td>
+                                                    <td className="py-4 px-2 text-right text-red-600">${saldoReal.toLocaleString()}</td>
+                                                    
+                                                    {/* 🆕 COLUMNA DE ABONO INTELIGENTE */}
+                                                    <td className="py-2 px-2 text-center">
+                                                        {esCobrable ? (
+                                                            permiteAbonosParciales ? (
+                                                                <div className="flex items-center bg-white border border-[#5D4E3F]/20 rounded-lg px-2 py-1 max-w-[130px] mx-auto shadow-inner">
+                                                                    <span className="text-[10px] opacity-50 mr-1">$</span>
+                                                                    <input 
+                                                                        type="number"
+                                                                        value={valoresAbono[factura.id] ?? ''}
+                                                                        onChange={(e) => handleCambioMontoAbono(factura.id, e.target.value, saldoReal)}
+                                                                        className="w-full bg-transparent border-none p-0 text-xs text-right focus:ring-0 text-[#5D4E3F] font-black"
+                                                                        placeholder="0"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[11px] opacity-50 italic">Valor Fijo Obligatorio</span>
+                                                            )
+                                                        ) : (
+                                                            <span className="text-[11px] text-emerald-600">Completado</span>
+                                                        )}
+                                                    </td>
+
                                                     <td className="py-4 px-2 text-center">
                                                         <span className={`px-3 py-1 rounded-full text-[9px] uppercase tracking-wider font-black ${
-                                                            esPendiente 
+                                                            factura.estado_factura_id === 1 
                                                                 ? 'bg-[#FFD97D]/30 text-[#8C6F4F]' 
+                                                                : factura.estado_factura_id === 3
+                                                                ? 'bg-blue-100 text-blue-800'
                                                                 : 'bg-emerald-100 text-emerald-800' 
                                                         }`}>
-                                                            {esPendiente ? 'Pendiente' : 'Pagado'}
+                                                            {factura.estado_factura_id === 1 ? 'Pendiente' : factura.estado_factura_id === 3 ? 'Abonado' : 'Pagado'}
                                                         </span>
                                                     </td>
                                                     <td className="py-4 px-2 text-center flex items-center justify-center gap-2">
@@ -311,10 +380,10 @@ export default function Cartera({ facturas = [] }) {
                                                             📄
                                                         </button>
 
-                                                        {esPendiente && (
+                                                        {esCobrable && (
                                                             <button 
                                                                 onClick={() => abrirModalConfirmacion(false, factura.id)}
-                                                                disabled={procesando}
+                                                                disabled={procesando || (valoresAbono[factura.id] || 0) <= 0}
                                                                 className="px-3 py-1.5 bg-[#302A1D] text-white rounded-xl text-[10px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition disabled:opacity-50"
                                                             >
                                                                 Pagar
@@ -326,7 +395,7 @@ export default function Cartera({ facturas = [] }) {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="7" className="py-10 text-center opacity-50 italic">
+                                            <td colSpan="9" className="py-10 text-center opacity-50 italic">
                                                 No se registran movimientos ni facturas en tu historial.
                                             </td>
                                         </tr>
@@ -367,8 +436,8 @@ export default function Cartera({ facturas = [] }) {
                             <h4 className="text-sm font-black uppercase tracking-wide">Confirmar Transacción</h4>
                             <p className="text-[11px] opacity-80 font-medium">
                                 {confirmConfig.modoMasivo 
-                                    ? `¿Deseas proceder con el pago seguro de las ${seleccionadas.length} cuotas seleccionadas por un valor de $${totalSeleccionado.toLocaleString()}?`
-                                    : `¿Deseas proceder con el pago seguro de la cuota #${confirmConfig.facturaId}?`
+                                    ? `¿Deseas proceder con el pago seguro de los abonos seleccionados por un valor total de $${totalSeleccionado.toLocaleString()}?`
+                                    : `¿Deseas proceder con el pago seguro del abono para la cuota #${confirmConfig.facturaId} por un valor de $${(valoresAbono[confirmConfig.facturaId] || 0).toLocaleString()}?`
                                 }
                             </p>
                         </div>

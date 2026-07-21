@@ -34,16 +34,17 @@ class HandleInertiaRequests extends Middleware
             
             // Datos de autenticación
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user()?->load('genero'),
             ],
 
             // ✅ ESTA ES LA SECCIÓN CLAVE PARA LOS MENSAJES:
             // Compartimos los datos "flash" de la sesión para que aparezcan en props.flash
             'flash' => [
-                'message' => fn () => $request->session()->get('message'),
-                'error'   => fn () => $request->session()->get('error'),
-                'activado' => fn () => $request->session()->get('activado'), // 👈 única línea nueva
-            ],
+    'success' => fn () => $request->session()->get('success'),
+    'message' => fn () => $request->session()->get('message'),
+    'error'   => fn () => $request->session()->get('error'),
+    'activado' => fn () => $request->session()->get('activado'),
+],
         ];
     }
 }

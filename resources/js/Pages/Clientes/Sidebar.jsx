@@ -1,18 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
 export default function Sidebar() {
-    const { url } = usePage();
+    const { url, props } = usePage();
     const [isOpen, setIsOpen] = useState(true);
+
+    useEffect(() => {
+        const tema = props?.auth?.user?.tema || 'claro';
+        document.documentElement.classList.toggle('dark', tema === 'oscuro');
+    }, [props?.auth?.user?.tema]);
+
+    useEffect(() => {
+        const cerrar = () => setIsOpen(false);
+        const abrir = () => setIsOpen(true);
+        window.addEventListener('sidebar:cerrar', cerrar);
+        window.addEventListener('sidebar:abrir', abrir);
+        return () => {
+            window.removeEventListener('sidebar:cerrar', cerrar);
+            window.removeEventListener('sidebar:abrir', abrir);
+        };
+    }, []);
 
     const active = (path) =>
         url === path
-            ? "border-b-2 border-[#5D4E3F] font-bold"
+            ? "border-b-2 border-[#5D4E3F] dark:border-[#D9B44A] font-bold"
             : "opacity-70 hover:opacity-100 transition-all hover:translate-x-1";
 
     return (
         <>
-            {/* TIRADOR DE CUERDA (ESQUINA) */}
             <div
                 onClick={() => setIsOpen(!isOpen)}
                 className="fixed top-0 left-0 z-50 cursor-pointer transition-transform duration-500 hover:scale-105"
@@ -21,9 +36,8 @@ export default function Sidebar() {
                 <img src="/images/esquina-decorativa.png" className="w-full drop-shadow-sm" alt="Menú" />
             </div>
 
-            <aside className={`fixed top-0 left-0 h-screen bg-[#EBE3CB] shadow-2xl transition-all duration-700 ease-in-out z-40 flex flex-col overflow-hidden ${isOpen ? 'w-64' : 'w-0'}`}>
+            <aside className={`fixed top-0 left-0 h-screen bg-[#453C2A] dark:bg-[#453C2A] shadow-2xl transition-all duration-700 ease-in-out z-40 flex flex-col overflow-hidden ${isOpen ? 'w-64' : 'w-0'}`}>
 
-                {/* CONTENEDOR LOGO (MÁS ARRIBA) */}
                 <div className="relative h-40 flex items-center justify-center flex-shrink-0">
                     <img
                         src="/images/esquina-decorativa.png"
@@ -36,11 +50,10 @@ export default function Sidebar() {
                     />
                 </div>
 
-                {/* OPCIONES DEL MENÚ (AJUSTADAS) */}
-                <nav className="flex-1 px-8 mt-2 min-w-[256px] text-[#5D4E3F]">
+                <nav className="flex-1 px-8 mt-2 min-w-[256px] text-[#FFFFFF] dark:text-[#EDE4D3]">
                     <p className="text-[10px] uppercase tracking-[4px] font-bold opacity-40 mb-6">Gestión</p>
 
-                    <div className="flex flex-col gap-5"> {/* Espaciado controlado entre opciones */}
+                    <div className="flex flex-col gap-5">
                         <Link href="/cliente/mi-plan" className={`text-base md:text-lg w-fit ${active('/cliente/mi-plan')}`}>
                             Mi plan Funerario
                         </Link>
@@ -50,22 +63,19 @@ export default function Sidebar() {
                         <Link href="/pagos" className={`text-base md:text-lg w-fit ${active('/pagos')}`}>
                             Pagar mi cuota
                         </Link>
-                        {/* Cambia la línea de Tus datos para que quede así: */}
                         <Link href="/datos" className={`text-base md:text-lg w-fit ${active('/datos')}`}>
                             Tus datos
                         </Link>
-                        {/* Cambia la línea de Tus datos para que quede así: */}
                         <Link href="/mouriia" className={`text-base md:text-lg w-fit ${active('/mouriia')}`}>
                             Habla con Mouri
                         </Link>
                     </div>
                 </nav>
 
-                {/* BOTÓN CERRAR SESIÓN ESTILIZADO */}
                 <div className="p-6 mt-auto min-w-[256px]">
                     <Link
                         href="/force-logout"
-                        className="group flex items-center justify-center gap-3 bg-[#5D4E3F] text-[#F4EDE6] py-3 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] transition-all hover:bg-[#4A3E32] hover:shadow-lg active:scale-95"
+                        className="group flex items-center justify-center gap-3 bg-[#5D4E3F] dark:bg-[#3A322A] text-[#F4EDE6] py-3 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] transition-all hover:bg-[#4A3E32] hover:shadow-lg active:scale-95"
                     >
                         <span>CERRAR SESIÓN</span>
                         <span className="group-hover:translate-x-1 transition-transform">→</span>

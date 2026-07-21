@@ -33,4 +33,14 @@ class ServicioFunerario extends Model
     public function mascota() {
         return $this->belongsTo(Mascota::class, 'mascota_id');
     }
+
+    // Historial de trazabilidad del servicio (etapas por las que ha pasado)
+    public function trazabilidades() {
+        return $this->hasMany(\App\Models\Procesos\TrazabilidadServicio::class, 'servicio_funerario_id');
+    }
+
+    // Ceremonias programadas para este servicio
+    public function ceremonias() {
+        return $this->hasMany(Ceremonia::class, 'servicio_funerario_id');
+    }
 }

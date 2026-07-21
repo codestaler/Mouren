@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\Schedule;
 use App\Http\Controllers\Api\Pagos\PagoController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\DashboardController;
-
+use App\Http\Controllers\VentasController;
+use App\Http\Controllers\NotificacionController;
 
 // --- RUTAS PÚBLICAS ---
 Route::get('/', fn() => Inertia::render('Home'))->name('home');
@@ -87,6 +88,87 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // CORREGIDO: Ahora usa DashboardController en lugar del AdminController que no existe
     Route::get('/admin/gestion-usuarios', [DashboardController::class, 'gestionUsuarios'])->name('admin.usuarios');
 
+    Route::get('/admin/gestion-usuarios/exportar-pdf', [App\Http\Controllers\DashboardController::class, 'exportarPdf'])->name('admin.exportar.pdf');
+Route::get('/admin/gestion-usuarios/exportar-excel', [App\Http\Controllers\DashboardController::class, 'exportarExcel'])->name('admin.exportar.excel');
+
+Route::prefix('admin/servicios-funerarios')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'index'])->name('admin.servicios-funerarios');
+    Route::get('/en-proceso', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'serviciosEnProceso']);
+    Route::get('/datos-formulario', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'datosFormulario']);
+    Route::get('/buscar-titular', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'buscarTitular']);
+    Route::get('/buscar-mascota', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'buscarMascota']);
+    Route::post('/marcar-fallecido', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'marcarFallecido']);
+    Route::post('/programar-ceremonia', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'programarCeremonia']);
+    Route::post('/agregar-etapa', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'agregarEtapa']);
+    Route::get('/{servicio}/carta-fallecimiento', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'cartaFallecimiento']);
+    Route::get('/{servicio}/carta-atencion', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'cartaAtencion']);
+    Route::get('/ceremonia/{ceremonia}/imagen-whatsapp', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'imagenWhatsapp']);
+    Route::post('/etapas', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'crearEtapa']);
+    Route::put('/etapas/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'actualizarEtapa']);
+    Route::delete('/etapas/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'eliminarEtapa']);
+    Route::post('/salas', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'crearSala']);
+    Route::put('/salas/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'actualizarSala']);
+    Route::delete('/salas/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'eliminarSala']);
+    Route::put('/ceremonia/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'editarCeremonia']);
+});
+
+Route::get('/admin/ventas', [App\Http\Controllers\VentasController::class, 'index'])
+    ->name('admin.ventas');
+
+Route::post('/admin/informes-ventas/factura', [VentasController::class, 'store'])
+    ->name('admin.facturas.store');
+
+Route::post('/admin/ventas/store',[VentasController::class,'store'])
+    ->name('admin.ventas.store');
+
+Route::get(
+    '/admin/facturas/{id}/pdf',
+    [VentasController::class,'descargarPdf']
+)->name('admin.facturas.pdf'); 
+
+Route::get(
+    '/admin/ventas/exportar',
+    [VentasController::class, 'exportarExcel']
+)->name('ventas.exportar');
+
+Route::post(
+    '/admin/facturas/registrar-pago',
+    [PagoController::class,'registrarManual']
+)->name('admin.facturas.pagar');
+
+Route::post(
+    '/admin/facturas/registrar-pago',
+    [PagoController::class, 'registrarManual']
+)->name('admin.facturas.registrar-pago');
+
+Route::put(
+    '/admin/facturas/{id}/anular',
+    [VentasController::class, 'anular']
+)->name('admin.facturas.anular');
+
+
+Route::prefix('admin/ajustes')->name('admin.ajustes.')->group(function () {
+    Route::get('/', [App\Http\Controllers\AjustesController::class, 'index'])->name('index');
+    Route::put('/datos', [App\Http\Controllers\AjustesController::class, 'actualizarDatos'])->name('datos');
+    Route::post('/avatar', [App\Http\Controllers\AjustesController::class, 'actualizarAvatar'])->name('avatar');
+    Route::post('/cerrar-otras-sesiones', [App\Http\Controllers\AjustesController::class, 'cerrarOtrasSesiones'])->name('cerrar-sesiones');
+    Route::put('/password', [App\Http\Controllers\AjustesController::class, 'cambiarPassword'])->name('password');
+    Route::get('/2fa/iniciar', [App\Http\Controllers\AjustesController::class, 'iniciar2FA'])->name('2fa.iniciar');
+    Route::post('/2fa/confirmar', [App\Http\Controllers\AjustesController::class, 'confirmar2FA'])->name('2fa.confirmar');
+    Route::post('/2fa/desactivar', [App\Http\Controllers\AjustesController::class, 'desactivar2FA'])->name('2fa.desactivar');
+    Route::put('/idioma', [App\Http\Controllers\AjustesController::class, 'actualizarIdioma'])->name('idioma');
+    Route::put('/tema', [App\Http\Controllers\AjustesController::class, 'actualizarTema'])->name('tema');
+    Route::put('/notificaciones', [App\Http\Controllers\AjustesController::class, 'actualizarNotificaciones'])->name('notificaciones');
+});
+// 👇 Rutas de Gestión de Usuarios y Tipos de Documento — AHORA sí en su propio espacio
+Route::get('/admin/usuarios/listar', [UserController::class, 'listarOperativo']);
+Route::put('/admin/usuarios/{id}/actualizar', [UserController::class, 'actualizarDesdeAdmin']);
+Route::put('/admin/usuarios/{id}/estado', [UserController::class, 'cambiarEstado']);
+Route::post('/admin/usuarios/crear', [UserController::class, 'crearUsuarioDesdeAdmin']);
+Route::post('/admin/tipos-documento', [UserController::class, 'crearTipoDocumento']);
+Route::put('/admin/tipos-documento/{id}', [UserController::class, 'actualizarTipoDocumento']);
+Route::delete('/admin/tipos-documento/{id}', [UserController::class, 'eliminarTipoDocumento']);
+
 });
 
 // --- RUTAS PROTEGIDAS (PARA USUARIOS LOGUEADOS) ---
@@ -105,10 +187,21 @@ Route::post('/chat/mouri', ChatMascotaController::class)->middleware(['auth'])->
     });
 
     Route::get('/datos', function () {
-        return Inertia::render('Clientes/Datos', [
-            'auth_user' => auth()->user()
-        ]);
-    })->name('datos.edit');
+    return Inertia::render('Clientes/Datos', [
+        'auth_user' => auth()->user(),
+        'generos' => \App\Models\Genero::all(),
+    ]);
+})->name('datos.edit');
+
+
+// 👇 NUEVO: rutas para que el cliente actualice sus preferencias
+Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
+    Route::put('/tema', [App\Http\Controllers\AjustesController::class, 'actualizarTema'])->name('tema');
+    Route::put('/idioma', [App\Http\Controllers\AjustesController::class, 'actualizarIdioma'])->name('idioma');
+    Route::put('/notificaciones', [App\Http\Controllers\AjustesController::class, 'actualizarNotificaciones'])->name('notificaciones');
+});
+
+    Route::get('/mi-plan/certificado', [App\Http\Controllers\Api\SuscripcionController::class, 'certificadoAfiliacion'])->name('certificado.afiliacion');
 
     Route::post('/user-enviar-codigo', [UserController::class, 'enviarCodigoVerificacion'])->name('user.enviar-codigo');
     Route::put('/user-update/{id}', [UserController::class, 'update'])->name('user.update');

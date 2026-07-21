@@ -2,16 +2,26 @@
 
 namespace App\Models\Procesos;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Notificacion extends Model
 {
     protected $table = 'notificaciones';
+
     protected $fillable = [
-        'usuario_id', 
-        'mensaje', 
-        'fecha', 
-        'leido'
+        'usuario_id',
+        'titulo',
+        'mensaje',
+        'tipo',
+        'enlace',
+        'fecha',
+        'leido',
+    ];
+
+    protected $casts = [
+        'leido' => 'boolean',
+        'fecha' => 'datetime',
     ];
 
     // Relación: Una notificación le pertenece a un usuario 👤

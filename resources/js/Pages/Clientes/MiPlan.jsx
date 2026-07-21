@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, usePage, Link, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
+import EstadisticasDashboard from "./Components/EstadisticasDashboard";
 
 export default function MiPlan({
     planHumano = null,
@@ -22,12 +23,12 @@ export default function MiPlan({
     const [mostrarBienvenida, setMostrarBienvenida] = useState(false);
 
     useEffect(() => {
-    if (flash?.activado) {
-        setMostrarBienvenida(true);
-        const timer = setTimeout(() => setMostrarBienvenida(false), 4000);
-        return () => clearTimeout(timer);
-    }
-}, [flash]);
+        if (flash?.activado) {
+            setMostrarBienvenida(true);
+            const timer = setTimeout(() => setMostrarBienvenida(false), 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
 
     // --- ESTADOS DE INTERFAZ DUAL (HUMANO / MASCOTA) ---
     const [modoMascota, setModoMascota] = useState(false);
@@ -119,9 +120,9 @@ export default function MiPlan({
     }*/
 
     return (
-        <div className={`min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] flex overflow-x-hidden transition-all duration-1000 ${reproduciendo
+        <div className={`min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex overflow-x-hidden transition-all duration-1000 ${reproduciendo
             ? 'bg-gradient-to-br from-[#4A3B2C] via-[#A68966] via-[#F5C453] to-[#8C6F4F] bg-[length:300%300%] animate-gradient-bg text-white'
-            : 'bg-[#FFFFFF]'
+            : 'bg-[#FFFFFF] dark:bg-[#221D17]'
             }`}>
             <Head title="Mi Plan - Mouren" />
 
@@ -146,9 +147,18 @@ export default function MiPlan({
                         <p className="text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-white/30 p-2 rounded-full border border-white/50 shadow-sm backdrop-blur-sm">
-                        <button className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm text-sm text-[#5D4E3F]">🔔</button>
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md ${reproduciendo ? 'bg-[#FFD97D] text-[#4A3B2C]' : 'bg-[#5D4E3F] text-white'}`}>
+                    <div className="relative flex items-center gap-3 bg-white/30 dark:bg-black/20 p-2 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm">
+                        {/* GIF de luciérnagas — SOLO en modo oscuro, más grande que el pill y saliéndose de sus bordes */}
+                        <img
+                            src="/images/elementos_dashboard/luciernagas.gif"
+                            alt=""
+                            className="hidden dark:block absolute -inset-8 w-[calc(100%+4rem)] h-[calc(100%+4rem)] object-contain pointer-events-none z-0"
+                        />
+
+                        <button className="relative z-10 w-9 h-9 bg-white dark:bg-transparent rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm text-sm text-[#5D4E3F] dark:text-[#EDE4D3]">
+                            🔔
+                        </button>
+                        <div className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md ${reproduciendo ? 'bg-[#FFD97D] text-[#4A3B2C]' : 'bg-[#5D4E3F] text-white'}`}>
                             {nombreParaMostrar[0]}
                         </div>
                     </div>
@@ -166,8 +176,7 @@ export default function MiPlan({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
                         {/* TARJETA 1: INFO DEL PLAN (COMPLETAMENTE ARREGLADA) */}
-                        <div className={`${suscripcion ? (reproduciendo ? 'bg-[#362A1F]/90 text-white border-white/30' : 'bg-[#5D4E3F] text-white') : 'bg-[#CDC2AD] text-[#5D4E3F]'} p-8 rounded-[45px] shadow-lg border relative group overflow-hidden flex flex-col h-full transition-all duration-500`}>
-
+                        <div className={`${suscripcion ? (reproduciendo ? 'bg-[#362A1F]/90 text-white border-white/30' : 'bg-[#5D4E3F] text-white') : 'bg-[#CDC2AD] dark:bg-[#3A322A] text-[#5D4E3F] dark:text-[#EDE4D3]'} p-8 rounded-[45px] shadow-lg relative group overflow-hidden flex flex-col h-full transition-all duration-500`}>
                             {/* PEQUEÑO BOTÓN FLOTANTE INGENIOSO - SOLO SALE SI YA TIENE UN PLAN */}
                             {suscripcion && planHumano && (
                                 <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
@@ -230,7 +239,7 @@ export default function MiPlan({
 
                                 {suscripcion ? (
                                     <div className="space-y-3 mt-6">
-                                        <div className="bg-white/10 p-3 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                        <div className="bg-white/10 p-3 rounded-2xl  backdrop-blur-sm">
                                             <p className="text-[9px] uppercase opacity-60 font-bold">
                                                 {modoMascota ? 'Suscripción Huella Eterna' : 'Cuota Mensual Plan'}
                                             </p>
@@ -314,7 +323,7 @@ export default function MiPlan({
                         </div>
 
                         {/* TARJETA 2: BENEFICIARIOS HUMANOS / DINÁMICA DE MASCOTAS */}
-                        <div className={`${(planHumano || planMascota) ? (reproduciendo ? 'bg-white/20 border border-white/30 text-white backdrop-blur-md' : 'bg-[#D3CAB6] text-[#5D4E3F]') : 'bg-[#5D4E3F]'} p-8 rounded-[45px] shadow-2xl flex flex-col items-center justify-center text-center h-full transition-all duration-500 relative overflow-hidden`}>
+                        <div className={`${(planHumano || planMascota) ? (reproduciendo ? 'bg-white/20 border border-white/30 text-white backdrop-blur-md' : 'bg-[#D3CAB6] dark:bg-[#3A322A] text-[#5D4E3F] dark:text-[#EDE4D3]') : 'bg-[#5D4E3F]'} p-8 rounded-[45px] shadow-2xl flex flex-col items-center justify-center text-center h-full transition-all duration-500 relative overflow-hidden`}>
                             {suscripcion && (
                                 <>
                                     <img src="/images/elementos_dashboard/flores-esquina-top.png" className={`absolute -top-4 -right-4 w-40 opacity-80 pointer-events-none transition-all ${reproduciendo ? 'brightness-125 contrast-125' : ''}`} alt="flores" />
@@ -354,7 +363,7 @@ export default function MiPlan({
                                             // RENDERIZADO DE AFILIADOS HUMANOS
                                             planHumano?.afiliados?.length > 0 ? (
                                                 planHumano.afiliados.map((afi, idx) => (
-                                                    <div key={idx} className={`flex justify-between items-center p-3 rounded-[20px] rounded-tr-none text-[10px] font-bold border-l-4 ${reproduciendo ? 'bg-white/10 text-white border-[#FFD97D]' : 'bg-white/60 text-[#5D4E3F] border-[#8C6F4F]'}`}>
+                                                    <div key={idx} className={`flex justify-between items-center p-3 rounded-[20px] rounded-tr-none text-[10px] font-bold border-l-4 ${reproduciendo ? 'bg-white/10 text-white border-[#FFD97D]' : 'bg-white/60 dark:bg-black/20 text-[#5D4E3F] dark:text-[#EDE4D3] border-[#8C6F4F]'}`}>
                                                         <div className="flex flex-col">
                                                             <span className="text-sm">{afi.nombre}</span>
                                                             <span className="text-[8px] italic opacity-70">Vinculado: {afi.parentesco}</span>
@@ -407,11 +416,18 @@ export default function MiPlan({
 
                     </div>
                 </div>
+                <EstadisticasDashboard
+                    beneficiarios={planHumano?.afiliados?.length || 0}
+                    servicios={suscripcion?.plan?.servicios?.length || 0}
+                    cuota={suscripcion?.cuota_mensual || 0}
+                    tieneCancion={!!nombreArchivo}
+                    reproduciendo={reproduciendo}
+                />
             </main>
 
             {mostrarBienvenida && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center bg-[#5D4E3F]/90 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white p-10 rounded-[50px] text-center shadow-2xl">
+                    <div className="bg-white dark:bg-[#2E2720] p-10 rounded-[50px] text-center shadow-2xl">
                         <img
                             src="/images/elementos_dashboard/inscripcion_planes/welcome.gif"
                             className="w-40 h-40 mx-auto mb-4"

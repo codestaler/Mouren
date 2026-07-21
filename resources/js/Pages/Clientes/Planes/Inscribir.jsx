@@ -1,17 +1,19 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import Sidebar from '@/Pages/Clientes/Sidebar';
+import { BotonTutorial } from './TutorialAnimacionModal';
 import {
     Trash2, Plus, Play, Pause, Sparkles, ShieldCheck, Gem
 } from 'lucide-react';
 
-export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], canciones = [] }) {
+export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], canciones = [], generos = [], tiposDocumento = [] }) {
     const { auth } = usePage().props;
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [paso, setPaso] = useState(1);
     const [aceptoTerminos, setAceptoTerminos] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-
+    const [afiliadoAbierto, setAfiliadoAbierto] = useState(0); // índice del que está expandido
+    const [erroresAfiliados, setErroresAfiliados] = useState({}); // { indice: { campo: 'mensaje' } }
     const [playingId, setPlayingId] = useState(null);
     const audioRef = useRef(null);
 
@@ -20,17 +22,43 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
     const nombreTitular = auth?.user?.nombre1 || auth?.user?.nombre || auth?.user?.name || '';
 
     // --- LÓGICA DE AFILIADO TITULAR AUTOMÁTICO ---
+    const FRAMES_TUTORIAL_INSCRIPCION = [
+  {
+    imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/1.gif",
+    tiempo: "Paso 1",
+    etiqueta: "Titular",
+    nota: "Ya apareces registrado automáticamente como titular del plan.",
+    destacado: false,
+  },
+  {
+    imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/2.gif",
+    tiempo: "Paso 2",
+    etiqueta: "Agregar familiar",
+    nota: "Puedes añadir hasta cinco personas protegidas cada persona, cada uno aumenta el costo en base al valor del plan.",
+    destacado: true,
+  },
+  {
+    imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/3.gif",
+    tiempo: "Paso 3",
+    etiqueta: "Completar datos",
+    nota: "Todos los campos son obligatorios para validar la afiliación asegurate de escribir correctamente la cedula de tus afiliados y so nombre.",
+    destacado: false,
+  },
+];
 
     const { data, setData, post, processing, errors } = useForm({
         usuario_id: auth?.user?.id,
         plan_id: plan?.id || null,
-        // Asegúrate de tener UN SOLO cancion_id global para el plan
         cancion_id: '',
         afiliados: [
             {
                 nombre: nombreTitular,
                 parentesco: 'Titular',
-                cancion_id: '' // Este es el que falla si no se llena
+                cancion_id: '',
+                genero_id: auth?.user?.genero_id || '',
+                tipo_documento_id: auth?.user?.tipo_documento_id || '',
+                cedula: auth?.user?.cedula || '',
+                fecha_nacimiento: auth?.user?.fecha_nacimiento || ''
             }
         ],
         servicios_adicionales: [],
@@ -70,11 +98,68 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         plan?.id // <- Dependencia del ID del plan
     ]);
 
+
+    const calcularEdad = (fechaNacimiento) => {
+        if (!fechaNacimiento) return null;
+        const hoy = new Date();
+        const nacimiento = new Date(fechaNacimiento);
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mes = hoy.getMonth() - nacimiento.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+            edad--;
+        }
+        return edad;
+    };
+
     // --- VALIDACIONES ---
     const validarPaso = () => {
         if (paso === 1) {
             if (data.afiliados.some(a => !a.nombre || !a.parentesco)) {
                 return alert("Mouri dice: No dejes campos vacíos. Cada protegido necesita su nombre y vínculo.");
+            }
+
+            const nuevosErrores = {};
+            let primerErrorIndex = null;
+
+            data.afiliados.forEach((a, i) => {
+                if (i === 0) return; // el Titular no se valida aquí, sus datos son de solo lectura
+
+                const camposFaltantes = {};
+                if (!a.genero_id) camposFaltantes.genero_id = 'Selecciona un género';
+                if (!a.tipo_documento_id) camposFaltantes.tipo_documento_id = 'Selecciona el tipo de documento';
+                if (!a.cedula || a.cedula.trim() === '') camposFaltantes.cedula = 'La cédula es obligatoria';
+                if (!a.fecha_nacimiento) {
+                    camposFaltantes.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
+                } else {
+                    const edad = calcularEdad(a.fecha_nacimiento);
+                    if (edad < 6 || edad > 75) {
+                        camposFaltantes.fecha_nacimiento = `Mouren solo cubre entre 6 y 75 años (esta persona tiene ${edad})`;
+                    }
+                }
+
+                if (Object.keys(camposFaltantes).length > 0) {
+                    nuevosErrores[i] = camposFaltantes;
+                    if (primerErrorIndex === null) primerErrorIndex = i;
+                }
+            });
+
+            // Validar cédulas duplicadas entre afiliados
+            data.afiliados.forEach((a, i) => {
+                if (i === 0) return;
+                const cedula = a.cedula?.trim();
+                if (!cedula) return;
+                const hayDuplicado = data.afiliados.some((b, j) => j !== i && b.cedula?.trim() === cedula);
+                if (hayDuplicado) {
+                    nuevosErrores[i] = { ...(nuevosErrores[i] || {}), cedula: 'Esta cédula ya la usó otro protegido' };
+                    if (primerErrorIndex === null) primerErrorIndex = i;
+                }
+            });
+
+            setErroresAfiliados(nuevosErrores);
+
+            if (Object.keys(nuevosErrores).length > 0) {
+                setAfiliadoAbierto(primerErrorIndex); // abre automáticamente la tarjeta con el error
+                return;
             }
         }
         if (paso === 2 && !data.cancion_id) {
@@ -84,6 +169,26 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
             return alert("Mouri dice: Los objetos de memoria son tesoros. Selecciona al menos uno.");
         }
         setPaso(paso + 1);
+    };
+
+    const actualizarCampoAfiliado = (i, campo, valor) => {
+        const n = [...data.afiliados];
+        n[i][campo] = valor;
+        setData('afiliados', n);
+
+        // Si había un error en este campo, lo quitamos apenas el usuario lo cambia
+        if (erroresAfiliados[i]?.[campo]) {
+            const copia = { ...erroresAfiliados };
+            const erroresDeEste = { ...copia[i] };
+            delete erroresDeEste[campo];
+
+            if (Object.keys(erroresDeEste).length === 0) {
+                delete copia[i];
+            } else {
+                copia[i] = erroresDeEste;
+            }
+            setErroresAfiliados(copia);
+        }
     };
 
 
@@ -128,34 +233,34 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
     const enviarInscripcion = () => {
 
-    post(route('suscripciones.store'), {
+        post(route('suscripciones.store'), {
 
-        data: {
-            ...data,
-            cuota_mensual: totalCalculado
-        },
+            data: {
+                ...data,
+                cuota_mensual: totalCalculado
+            },
 
-        preserveScroll: true,
+            preserveScroll: true,
 
-        onSuccess: () => {
-    // Ya no hace falta nada aquí:
-    // Laravel redirige solo a "Mi Plan" y el GIF se mostrará allá.
-},
+            onSuccess: () => {
+                // Ya no hace falta nada aquí:
+                // Laravel redirige solo a "Mi Plan" y el GIF se mostrará allá.
+            },
 
-        onError: (errors) => {
+            onError: (errors) => {
 
-            console.log(errors);
+                console.log(errors);
 
-            setErrorModal({
-                show: true,
-                message: JSON.stringify(errors)
-            });
+                setErrorModal({
+                    show: true,
+                    message: JSON.stringify(errors)
+                });
 
-        }
+            }
 
-    });
+        });
 
-};
+    };
 
     console.log("DEBUG PLAN:", plan);
     console.log("DEBUG TOTAL:", totalCalculado);
@@ -195,9 +300,20 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                 <div className="flex-1">
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className="text-2xl font-black lowercase italic">tus protegidos</h2>
+                                        <BotonTutorial
+                                            titulo="Cómo inscribir a tus protegidos"
+                                            numero="01"
+                                            subtitulo="Guía rápida"
+                                            frames={FRAMES_TUTORIAL_INSCRIPCION}
+                                            notaFinal="Toca cada tarjeta para continuar"
+                                            autor="Mouren"
+                                        />
                                         <button
                                             disabled={numPersonasActuales >= MAX_PERSONAS}
-                                            onClick={() => setData('afiliados', [...data.afiliados, { nombre: '', parentesco: '', cancion: '' }])}
+                                            onClick={() => setData('afiliados', [...data.afiliados, {
+                                                nombre: '', parentesco: '', cancion_id: '',
+                                                genero_id: '', tipo_documento_id: '', cedula: '', fecha_nacimiento: ''
+                                            }])}
                                             className={`text-[10px] font-bold uppercase flex items-center gap-2 ${numPersonasActuales >= MAX_PERSONAS ? 'opacity-20' : 'text-[#A68966]'}`}
                                         >
                                             <Plus size={14} /> agregar ({numPersonasActuales}/{MAX_PERSONAS})
@@ -205,46 +321,159 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                     </div>
 
                                     <div className="space-y-4 mt-6">
-                                        {data.afiliados.map((afi, i) => (
-                                            <div key={i} className={`flex gap-2 p-3 rounded-2xl border transition-all animate-in slide-in-from-top-2 ${i === 0 ? 'bg-[#F4F1ED] border-[#A68966]/20 shadow-inner' : 'bg-[#FDFBF9] border-[#5D4E3F]/5'}`}>
-                                                <input
-                                                    className={`flex-1 border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] ${i === 0 ? 'bg-white/70 text-[#5D4E3F]/60 font-medium cursor-not-allowed' : 'bg-white'}`}
-                                                    placeholder="Nombre completo"
-                                                    value={afi.nombre}
-                                                    readOnly={i === 0}
-                                                    onChange={e => {
-                                                        if (i === 0) return;
-                                                        const n = [...data.afiliados];
-                                                        n[i].nombre = e.target.value;
-                                                        setData('afiliados', n);
-                                                    }}
-                                                />
+                                        {data.afiliados.map((afi, i) => {
+                                            const abierto = afiliadoAbierto === i;
+                                            const erroresDeEste = erroresAfiliados[i] || {};
 
-                                                {i === 0 ? (
-                                                    <input
-                                                        className="bg-white/70 border-none rounded-xl text-xs p-3 shadow-sm text-center font-black text-[#A68966] w-36 cursor-not-allowed"
-                                                        value="Titular"
-                                                        readOnly
-                                                    />
-                                                ) : (
-                                                    <select className="bg-white border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-36" value={afi.parentesco} onChange={e => { const n = [...data.afiliados]; n[i].parentesco = e.target.value; setData('afiliados', n); }}>
-                                                        <option value="">Vínculo</option>
-                                                        <option value="Hijo/a">Hijo/a</option>
-                                                        <option value="Cónyuge">Cónyuge</option>
-                                                        <option value="Padre/Madre">Padre/Madre</option>
-                                                        <option value="Mascota">Mascota</option>
-                                                    </select>
-                                                )}
+                                            return (
+                                                <div key={i} className={`rounded-3xl border transition-all ${i === 0 ? 'bg-[#F4F1ED] border-[#A68966]/30 shadow-inner' : 'bg-white border-[#5D4E3F]/10 shadow-sm'}`}>
 
-                                                {i === 0 ? (
-                                                    <div className="w-10 h-10 flex items-center justify-center opacity-30">
-                                                        <ShieldCheck size={18} className="text-[#A68966]" />
+                                                    {/* CABECERA: siempre visible, clic para expandir/colapsar */}
+                                                    <div
+                                                        className="flex flex-wrap items-center gap-2 p-4 cursor-pointer"
+                                                        onClick={() => setAfiliadoAbierto(abierto ? -1 : i)}
+                                                    >
+                                                        <input
+                                                            className={`flex-1 min-w-[140px] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] ${i === 0 ? 'bg-white/70 text-[#5D4E3F]/60 font-medium cursor-not-allowed' : 'bg-[#FDFBF9]'}`}
+                                                            placeholder="Nombre completo"
+                                                            value={afi.nombre}
+                                                            readOnly={i === 0}
+                                                            onClick={e => e.stopPropagation()}
+                                                            onChange={e => {
+                                                                if (i === 0) return;
+                                                                const n = [...data.afiliados];
+                                                                n[i].nombre = e.target.value;
+                                                                setData('afiliados', n);
+                                                            }}
+                                                        />
+
+                                                        {i === 0 ? (
+                                                            <input
+                                                                className="bg-white/70 border-none rounded-xl text-xs p-3 shadow-sm text-center font-black text-[#A68966] w-36 cursor-not-allowed"
+                                                                value="Titular"
+                                                                readOnly
+                                                                onClick={e => e.stopPropagation()}
+                                                            />
+                                                        ) : (
+                                                            <select
+                                                                className="bg-[#FDFBF9] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-36"
+                                                                value={afi.parentesco}
+                                                                onClick={e => e.stopPropagation()}
+                                                                onChange={e => { const n = [...data.afiliados]; n[i].parentesco = e.target.value; setData('afiliados', n); }}
+                                                            >
+                                                                <option value="">Vínculo</option>
+                                                                <option value="Hijo/a">Hijo/a</option>
+                                                                <option value="Cónyuge">Cónyuge</option>
+                                                                <option value="Padre/Madre">Padre/Madre</option>
+                                                                <option value="Tio/Tia">Tio/Tia</option>
+                                                                <option value="Primo/Prima">Primo/Prima</option>
+                                                                <option value="Amigo sin ningún grado de consanguinidad">Amigo sin ningún grado de consanguinidad</option>
+                                                            </select>
+                                                        )}
+
+                                                        {i === 0 ? (
+                                                            <div className="w-10 h-10 flex items-center justify-center opacity-30 shrink-0">
+                                                                <ShieldCheck size={18} className="text-[#A68966]" />
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={e => { e.stopPropagation(); setData('afiliados', data.afiliados.filter((_, idx) => idx !== i)); }}
+                                                                className="p-2 text-red-300 hover:text-red-500 shrink-0"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
+
+                                                        <div className="w-6 h-10 flex items-center justify-center text-[#A68966] shrink-0 text-xs">
+                                                            {abierto ? '▲' : '▼'}
+                                                        </div>
                                                     </div>
-                                                ) : (
-                                                    <button onClick={() => setData('afiliados', data.afiliados.filter((_, idx) => idx !== i))} className="p-2 text-red-300 hover:text-red-500"><Trash2 size={16} /></button>
-                                                )}
-                                            </div>
-                                        ))}
+
+                                                    {/* CUERPO: datos personales, colapsable */}
+                                                    <div className={`overflow-hidden transition-all duration-300 ${abierto ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                                        <div className={`px-4 pb-4 pt-3 border-t ${i === 0 ? 'border-[#A68966]/20' : 'border-[#5D4E3F]/10'}`}>
+                                                            <p className="text-[8px] font-black uppercase tracking-widest text-[#A68966]/70 mb-2">
+                                                                Datos personales {i === 0 && '(de tu perfil)'}
+                                                            </p>
+
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                {i === 0 ? (
+                                                                    <>
+                                                                        <div className="bg-[#C3B698] rounded-xl text-xs p-3 shadow-sm text-white font-medium truncate">
+                                                                            {generos.find(g => g.id === afi.genero_id)?.nombre || 'Género no registrado'}
+                                                                        </div>
+                                                                        <div className="bg-[#D4CAB5] rounded-xl text-xs p-3 shadow-sm text-[#5D4E3F]/80 font-medium truncate">
+                                                                            {tiposDocumento.find(td => td.id === afi.tipo_documento_id)?.nombre || 'Doc. no registrado'}
+                                                                        </div>
+                                                                        <div className="bg-[#D4CAB5] rounded-xl text-xs p-3 shadow-sm text-[#5D4E3F]/80 font-medium truncate">
+                                                                            {afi.cedula || 'Cédula no registrada'}
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[7px] font-black uppercase tracking-widest text-[#A68966]/70 mb-1">Fecha de nacimiento</p>
+                                                                            <div className="bg-white/70 rounded-xl text-xs p-3 shadow-sm text-[#5D4E3F]/60 font-medium truncate">
+                                                                                {afi.fecha_nacimiento || 'Fecha no registrada'}
+                                                                            </div>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <div>
+                                                                            <select
+                                                                                className={`bg-[#4A412B] text-[#FFFFFF] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-full ${erroresDeEste.genero_id ? 'ring-2 ring-red-400' : ''}`}
+                                                                                value={afi.genero_id}
+                                                                                onChange={e => actualizarCampoAfiliado(i, 'genero_id', e.target.value)}
+                                                                            >
+                                                                                <option value="">Género</option>
+                                                                                {generos.map(g => (
+                                                                                    <option key={g.id} value={g.id}>{g.nombre}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            {erroresDeEste.genero_id && <p className="text-[9px] text-red-500 font-bold mt-1">{erroresDeEste.genero_id}</p>}
+                                                                        </div>
+
+                                                                        <div>
+                                                                            <select
+                                                                                className={`bg-[#675A3C] text-[#FFFFFF] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-full ${erroresDeEste.tipo_documento_id ? 'ring-2 ring-red-400' : ''}`}
+                                                                                value={afi.tipo_documento_id}
+                                                                                onChange={e => actualizarCampoAfiliado(i, 'tipo_documento_id', e.target.value)}
+                                                                            >
+                                                                                <option value="">Tipo doc.</option>
+                                                                                {tiposDocumento.map(td => (
+                                                                                    <option key={td.id} value={td.id}>{td.nombre}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            {erroresDeEste.tipo_documento_id && <p className="text-[9px] text-red-500 font-bold mt-1">{erroresDeEste.tipo_documento_id}</p>}
+                                                                        </div>
+
+                                                                        <div>
+                                                                            <p className="text-[7px] font-black uppercase tracking-widest text-[#A68966]/70 mb-1">Cedula del Afiliado</p>
+                                                                            <input
+                                                                                className={`bg-[#675A3C] text-[#FFFFFF] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-full placeholder:text-[#5D4E3F]/50 ${erroresDeEste.cedula ? 'ring-2 ring-red-400' : ''}`}
+                                                                                placeholder="Cédula"
+                                                                                value={afi.cedula}
+                                                                                onChange={e => actualizarCampoAfiliado(i, 'cedula', e.target.value)}
+                                                                            />
+                                                                            {erroresDeEste.cedula && <p className="text-[9px] text-red-500 font-bold mt-1">{erroresDeEste.cedula}</p>}
+                                                                        </div>
+
+                                                                        <div>
+                                                                            <p className="text-[7px] font-black uppercase tracking-widest text-[#A68966]/70 mb-1">Fecha de nacimiento</p>
+                                                                            <input
+                                                                                type="date"
+                                                                                className={`bg-[#FDFBF9] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-full ${erroresDeEste.fecha_nacimiento ? 'ring-2 ring-red-400' : ''}`}
+                                                                                value={afi.fecha_nacimiento}
+                                                                                onChange={e => actualizarCampoAfiliado(i, 'fecha_nacimiento', e.target.value)}
+                                                                            />
+                                                                            {erroresDeEste.fecha_nacimiento && <p className="text-[9px] text-red-500 font-bold mt-1">{erroresDeEste.fecha_nacimiento}</p>}
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

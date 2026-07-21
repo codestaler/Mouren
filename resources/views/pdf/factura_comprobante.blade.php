@@ -236,7 +236,7 @@
                 <table class="logo-container-table">
                     <tr>
                         <td class="logo-cell">
-                            <img src="{{ public_path('images/logo.png') }}" class="logo-img" alt="Logo Mouren">
+                            <img src="{{ public_path('images/esquina_facturas.png') }}" class="logo-img" alt="Logo Mouren">
                         </td>
                         <td class="text-cell">
                             <h1 class="logo-text">Mouren</h1>

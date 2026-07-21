@@ -12,10 +12,11 @@ import ModalRecuerdos from "./Components/ModalRecuerdos";
 import ModalExitoMouren from "./Components/ModalExitoMouren";
 import ModalErrorMouren from "./Components/ModalErrorMouren";
 import ModalAvisoServicioNoPersonalizable from "./Components/ModalAvisoServicioNoPersonalizable";
+import ServiciosBaseIncluidosPanel from "./Components/ServiciosBaseIncluidosPanel";
 import { Head, usePage, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
 
-export default function DetallesPlan({ suscripcion = null, canciones = [], precioBasePuroPlan = 0, todosLosServicios = [], todosLosRecuerdos = [] }) {
+export default function DetallesPlan({ suscripcion = null, canciones = [], precioBasePuroPlan = 0, todosLosServicios = [], todosLosRecuerdos = [], generos = [], tiposDocumento = [] }) {
     const { auth } = usePage().props;
 
     // --- VALIDACIÓN DE COBERTURA ACTIVA ---
@@ -59,17 +60,19 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
 
     const opcionesColores = [
         { id: 1, nombre: 'Blanco', hex: '#FFFFFF' },
-        { id: 2, nombre: 'Dorado', hex: '#D4AF37' },
-        { id: 3, nombre: 'Cafe', hex: '#494029' },
-        { id: 4, nombre: 'Rosado', hex: '#9f798c' }
+        { id: 2, nombre: 'Dorado', hex: '#edcd64' },
+        { id: 3, nombre: 'Cafe', hex: '#86764b' },
+        { id: 4, nombre: 'Rosado', hex: '#ffb5da' },
+        { id: 5, nombre: 'Azul', hex: '#b5d8ff' }
     ];
 
     const opcionesFlores = [
-        { id: 1, nombre: 'Rosas' },
-        { id: 2, nombre: 'Lirios' },
-        { id: 3, nombre: 'Orquídeas' },
-        { id: 4, nombre: 'Claveles' }
-    ];
+    { id: 1, nombre: 'Rosas',     imagen: 'rosas.png' },
+    { id: 2, nombre: 'Lirios',    imagen: 'lirios.png' },
+    { id: 3, nombre: 'Orquídeas', imagen: 'orquideas.png' },
+    { id: 4, nombre: 'Claveles',  imagen: 'claveles.png' },
+    { id: 5, nombre: 'Crisantemos ',  imagen: 'crisantemos.png' },
+];
 
     // =======================
     // AFILIADOS
@@ -115,7 +118,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
             observacion_funeraria:
                 funeraria.observaciones || '',
             cancion_id:
-                funeraria.cancion_id || ''
+                funeraria.cancion_id || '',
+            genero_id: afi.genero_id || '',
+            tipo_documento_id: afi.tipo_documento_id || '',
+            cedula: afi.cedula || '',
+            fecha_nacimiento: afi.fecha_nacimiento ? afi.fecha_nacimiento.split('T')[0] : ''
         });
 
         abrirModal('FORMULARIO_AFILIADO');
@@ -199,28 +206,26 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     };
 
     const aplicarConfiguracionEstetica = (e) => {
-        e.preventDefault();
+    e.preventDefault();
+    if (!servicioAEditar) return;
 
-        if (!servicioAEditar) return;
-
-        setServiciosExtras(
-            serviciosExtras.map((s) =>
-                s.id === servicioAEditar.id
-                    ? {
-                        ...s,
-                        personalizacion: {
-                            ...(s.personalizacion || {}),
-                            configuracion: {
-                                ...personalizacionEstetica
-                            }
+    setServiciosExtras(
+        serviciosExtras.map((s) =>
+            s.id === servicioAEditar.id
+                ? {
+                    ...s,
+                    personalizacion: {
+                        configuracion: {
+                            ...personalizacionEstetica
                         }
                     }
-                    : s
-            )
-        );
+                }
+                : s
+        )
+    );
 
-        cerrarModal();
-    };
+    cerrarModal();
+};
 
     useEffect(() => {
         if (suscripcion?.afiliados) {
@@ -274,17 +279,22 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 precio: s.precio_pagado,
                 personalizacion: s.personalizacion || null
             })),
-            afiliados: afiliados.map(a => ({
+                       afiliados: afiliados.map(a => ({
                 // Verifica si el campo se llama realmente 'id'. 
                 // Si no, cámbialo por el nombre correcto, ej: a.id_afiliado o a.usuario_id
                 id: a.id || null,
                 nombre: a.nombre,
                 parentesco: a.parentesco,
                 observaciones: a.observacion_funeraria || "Sin observaciones",
-                cancion_id: a.cancion_id // Este es el que agregamos antes
+                cancion_id: a.cancion_id, // Este es el que agregamos antes
+                genero_id: a.genero_id || null,
+                tipo_documento_id: a.tipo_documento_id || null,
+                cedula: a.cedula || null,
+                fecha_nacimiento: a.fecha_nacimiento || null,
             })),
             recuerdos_seleccionados: recuerdosSeleccionados ? [recuerdosSeleccionados.id] : []
         };
+
         {/*console.log("AFILIADOS ENVIADOS");
         console.log(afiliados);
         console.log("SERVICIOS EXTRAS ENVIADOS");
@@ -296,14 +306,15 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         console.log("VISTA SERVICIOS EXTRAS");
         console.log(
             JSON.stringify(serviciosExtras, null, 2)
-        );*/}
+        );
+        
         console.log("SERVICIO PRUEBA");
         serviciosExtras.forEach(servicio => {
             console.log(
                 servicio.nombre,
                 servicio.personalizacion
             );
-        });
+        });*/}
 
         console.log("Payload que se envía:", JSON.stringify(payload, null, 2));
         router.post('/api/personalizacion/gabinete', payload, {
@@ -474,24 +485,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
 
 
                             {/* Panel Servicios Base Incluidos */}
-                            <div className="bg-white p-6 rounded-[30px] border border-[#E3DCcc] shadow-xs">
-                                <h3 className="font-black text-xs uppercase tracking-wider text-[#60533E] border-b pb-2 mb-3">Servicios Base Incluidos (Amparados por Plan Base)</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {serviciosBaseFijos.length === 0 ? (
-                                        <p className="text-xs italic text-gray-400 col-span-2 py-2">No se encontraron coberturas fijas.</p>
-                                    ) : (
-                                        serviciosBaseFijos.map((sb) => (
-                                            <div key={sb.id} className="p-3 bg-[#F2ECD9]/30 rounded-xl border border-[#EAE4D5] flex gap-2 items-start">
-                                                <span className="text-amber-700 font-bold text-xs">✔</span>
-                                                <div>
-                                                    <h4 className="text-[11px] font-black text-[#60533E] uppercase">{sb.nombre}</h4>
-                                                    <p className="text-[10px] text-gray-500 italic mt-0.5">{sb.descripcion || 'Servicio amparado por el plan.'}</p>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
+                            <ServiciosBaseIncluidosPanel serviciosBaseFijos={serviciosBaseFijos} />
                         </div>
                     </div>
 
@@ -511,6 +505,9 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     formAfiliado={formAfiliado}
                     setFormAfiliado={setFormAfiliado}
                     canciones={canciones}
+                    generos={generos}
+                    tiposDocumento={tiposDocumento}
+                    afiliados={afiliados}
                     guardarAfiliadoGabinete={guardarAfiliadoGabinete}
                     cerrarModal={cerrarModal}
                 />

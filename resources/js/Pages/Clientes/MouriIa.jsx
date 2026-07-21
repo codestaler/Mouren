@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import Sidebar from './Sidebar';
+import { Volume2, VolumeX } from 'lucide-react';
 
 export default function MouriIa() {
     const { auth } = usePage().props;
@@ -16,13 +17,63 @@ export default function MouriIa() {
     ]);
     const [nuevoMensaje, setNuevoMensaje] = useState('');
     const [cargando, setCargando] = useState(false);
-    
+
+    // --- NUEVO: Estado y refs de audio ---
+    const [sonidoActivo, setSonidoActivo] = useState(true);
+    const musicaFondoRef = useRef(null);   // <audio> de música de fondo (loop)
+    const sonidoPensandoRef = useRef(null); // <audio> del "blip" cuando Mouri piensa
+    const yaSonoPensandoRef = useRef(false); // evita repetir el sonido en cada render mientras cargando=true
+
     const chatEndRef = useRef(null);
 
     // Auto-scroll al último mensaje
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [mensajes, cargando]);
+
+    // --- NUEVO: Inicia la música de fondo en cuanto el usuario interactúa por primera vez ---
+    // (los navegadores bloquean el autoplay con sonido si no hay interacción previa)
+    useEffect(() => {
+        const iniciarMusica = () => {
+            if (musicaFondoRef.current && sonidoActivo) {
+                musicaFondoRef.current.volume = 0.25; // volumen bajito, es música ambiente
+                musicaFondoRef.current.play().catch(() => {});
+            }
+            window.removeEventListener('click', iniciarMusica);
+        };
+        window.addEventListener('click', iniciarMusica);
+        return () => window.removeEventListener('click', iniciarMusica);
+    }, [sonidoActivo]);
+
+    // --- NUEVO: Reproduce el sonidito cada vez que Mouri empieza a "pensar" ---
+    useEffect(() => {
+        if (cargando && !yaSonoPensandoRef.current) {
+            yaSonoPensandoRef.current = true;
+            if (sonidoActivo && sonidoPensandoRef.current) {
+                sonidoPensandoRef.current.currentTime = 0;
+                sonidoPensandoRef.current.play().catch(() => {});
+            }
+        }
+        if (!cargando) {
+            yaSonoPensandoRef.current = false;
+        }
+    }, [cargando, sonidoActivo]);
+
+    // --- NUEVO: Silenciar / activar todo (música + efectos) ---
+    const toggleSonido = () => {
+        setSonidoActivo(prev => {
+            const nuevoValor = !prev;
+            if (musicaFondoRef.current) {
+                if (nuevoValor) {
+                    musicaFondoRef.current.volume = 0.25;
+                    musicaFondoRef.current.play().catch(() => {});
+                } else {
+                    musicaFondoRef.current.pause();
+                }
+            }
+            return nuevoValor;
+        });
+    };
 
     const enviarMensaje = async (e) => {
         if (e) e.preventDefault();
@@ -37,7 +88,6 @@ export default function MouriIa() {
         setMensajes(prev => [...prev, { id: Date.now(), remitente: 'usuario', texto: mensajeParaEnviar }]);
         
         try {
-            // CORREGIDO: Apuntamos directamente a la ruta raíz web sin el prefijo /api/ que causaba el 404 local
             const response = await fetch('/chat/mouri', { 
                 method: 'POST',
                 headers: {
@@ -79,6 +129,10 @@ export default function MouriIa() {
             
             <div className="absolute inset-0 bg-[url('/images/elementos_dashboard/textura_hojas.png')] opacity-5 pointer-events-none mix-blend-overlay" />
             
+            {/* --- NUEVO: Elementos de audio (pon tus rutas aquí) --- */}
+            <audio ref={musicaFondoRef} loop src="/images/elementos_dashboard/audios/swan_lake.mp3" />
+            <audio ref={sonidoPensandoRef} src="/sounds/mouri_pensando.mp3" />
+
             <Sidebar />
 
             <main className="flex-1 p-6 md:p-10 content-shift transition-all duration-700 ease-in-out flex flex-col h-screen max-h-screen">
@@ -91,8 +145,21 @@ export default function MouriIa() {
                         <p className="text-[11px] italic opacity-70 mt-1">"Donde la tecnología abraza la memoria"</p>
                     </div>
                     
-                    <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold animate-pulse">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Conexión Espiritual Activa
+                    <div className="flex items-center gap-3">
+                        {/* --- NUEVO: Botón mute/unmute --- */}
+                        <button
+                            type="button"
+                            onClick={toggleSonido}
+                            title={sonidoActivo ? 'Silenciar sonidos' : 'Activar sonidos'}
+                            className="flex items-center gap-2 bg-[#5D4E3F]/5 hover:bg-[#5D4E3F]/10 border border-[#5D4E3F]/10 text-[#5D4E3F] px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold transition active:scale-95"
+                        >
+                            {sonidoActivo ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                            {sonidoActivo ? 'Sonido on' : 'Sonido off'}
+                        </button>
+
+                        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold animate-pulse">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Conexión Espiritual Activa
+                        </div>
                     </div>
                 </header>
 
@@ -113,7 +180,7 @@ export default function MouriIa() {
                             <div className={`absolute w-44 h-44 rounded-full bg-gradient-to-tr from-[#A68966] to-[#FFD97D] blur-xl transition-all duration-1000 ${cargando ? 'opacity-40 scale-125 animate-pulse' : 'opacity-20 scale-100'}`} />
                             
                             <img 
-                                src="/images/elementos_dashboard/mouri_ia/mouri_main.png" 
+                                src="/images/elementos_dashboard/mouri_ia/mouri_main.gif" 
                                 className={`w-[300px] object-contain relative z-10 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] transition-all duration-500 ${cargando ? 'animate-bounce' : 'hover:scale-105'}`} 
                                 alt="Mouri" 
                             />
@@ -157,7 +224,7 @@ export default function MouriIa() {
                                 <div 
                                     key={msg.id} 
                                     className={`flex ${msg.remitente === 'usuario' ? 'justify-end' : 'justify-start'} animate-message-in`}
-                                Rim>
+                                >
                                     <div className={`max-w-[85%] p-4 text-xs font-sans leading-relaxed shadow-sm rounded-[25px] ${
                                         msg.remitente === 'usuario'
                                             ? 'bg-[#5D4E3F] text-white rounded-tr-none font-bold'

@@ -30,4 +30,7 @@ class Mascota extends Model
     public function raza() {
     return $this->belongsTo(Raza::class, 'raza_id');
 }
+public function servicioFunerario() {
+    return $this->hasOne(ServicioFunerario::class, 'mascota_id');
+}
 }
