@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Genero; // 👈 FALTABA: sin este import, "Genero::where(...)" en update() rompía con "Class not found"
+use App\Models\Afiliado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -30,21 +31,41 @@ class UserController extends Controller
      */
     public function store(Request $request) {
         $request->validate([
-            'cedula' => 'required|string|unique:users,cedula',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|confirmed|min:6',
-            'tipo_documento_id' => 'required|integer',
-            'genero_id' => 'required|integer',
-            'fecha_nacimiento' => 'required|date',
-            'telefono' => 'required|string',
-            'nombre1' => 'required|string|max:50',
-            'apellido1' => 'required|string|max:50',
-        ], [
-            'cedula.unique' => 'Este número de documento ya se encuentra registrado.',
-            'email.unique' => 'Este correo electrónico ya está en uso.',
-            'password.confirmed' => 'Las contraseñas no coinciden.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
-        ]);
+        'cedula' => [
+            'required',
+            'string',
+            'unique:users,cedula',
+            function ($attribute, $value, $fail) {
+                $afiliado = Afiliado::with('suscripcion.usuario')->where('cedula', $value)->first();
+
+                if ($afiliado) {
+                    $suscripcion = $afiliado->suscripcion;
+                    $titular = $suscripcion?->usuario;
+
+                    if (strtolower(trim($afiliado->parentesco)) === 'titular') {
+                        $fail("Este número de documento ya está registrado como titular de un plan. Si necesitas ayuda para acceder a tu cuenta, contáctanos.");
+                    } else {
+                        $nombreTitular = $titular?->nombre ?? $titular?->name ?? 'un titular registrado';
+$cedulaTitular = $titular?->cedula ?? 'N/A';
+$fail("Este número de documento ya está registrado como beneficiario en el plan de {$nombreTitular} (C.C. {$cedulaTitular}). Si necesitas convertirte en titular de tu propio plan, contáctanos para gestionar el cambio.");
+}
+                }
+            },
+        ],
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|confirmed|min:6',
+        'tipo_documento_id' => 'required|integer',
+        'genero_id' => 'required|integer',
+        'fecha_nacimiento' => 'required|date',
+        'telefono' => 'required|string',
+        'nombre1' => 'required|string|max:50',
+        'apellido1' => 'required|string|max:50',
+    ], [
+        'cedula.unique' => 'Este número de documento ya se encuentra registrado.',
+        'email.unique' => 'Este correo electrónico ya está en uso.',
+        'password.confirmed' => 'Las contraseñas no coinciden.',
+        'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+    ]);
 
         try {
             $nombreCompleto = collect([

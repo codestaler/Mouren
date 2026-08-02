@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Personalizacion;
+use App\Models\Recuerdo;
 use App\Models\Suscripcion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -129,31 +130,30 @@ if ($request->has('afiliados')) {
             }
         }
 
-        // Ahora insertamos/actualizamos el servicio funerario
+        // Calculamos el costo del recuerdo elegido para ESTE afiliado
+        $recuerdoId = $data['recuerdo_id'] ?? null;
+        $costoRecuerdo = 0;
+        if ($recuerdoId) {
+            $recuerdoModel = Recuerdo::find($recuerdoId);
+            $costoRecuerdo = $recuerdoModel ? $recuerdoModel->precio_adicional : 0;
+        }
+
+        // Ahora insertamos/actualizamos el servicio funerario (canción + recuerdo propio)
         \App\Models\ServicioFunerario::updateOrCreate(
             ['afiliado_id' => $afiliadoId], 
             [
-                'observaciones' => $data['observaciones'] ?? "Sin observaciones",
-                'fecha_inicio'  => now(),
-                'cancion_id'    => $data['cancion_id']
+                'observaciones'  => $data['observaciones'] ?? "Sin observaciones",
+                'fecha_inicio'   => now(),
+                'cancion_id'     => $data['cancion_id'],
+                'recuerdo_id'    => $recuerdoId,
+                'costo_recuerdo' => $costoRecuerdo,
             ]
         );
     }
 }
 
-        // 4. Sincronizar Recuerdos
-        if (!empty($request->recuerdos_seleccionados)) {
-            $recuerdoId = $request->recuerdos_seleccionados[0];
-            $suscripcion->recuerdos()->sync([
-                $recuerdoId => [
-                    'costo_unitario' => 0, // Ajustar si tienes el costo real
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]
-            ]);
-        } else {
-            $suscripcion->recuerdos()->detach();
-        }
+        // Nota: ya no sincronizamos recuerdos a nivel de suscripción.
+        // Cada recuerdo vive en el servicio_funerario de cada afiliado (arriba).
 
         return redirect()->back()->with('success', 'Guardado exitoso');
 

@@ -93,9 +93,13 @@ class GestionServicioFunerarioController extends Controller
     public function marcarFallecido(Request $request)
     {
         $request->validate([
-            'afiliado_id' => 'required_without:mascota_id|nullable|exists:afiliados,id',
-            'mascota_id'  => 'required_without:afiliado_id|nullable|exists:mascotas,id',
-            'observacion' => 'nullable|string',
+            'afiliado_id'         => 'required_without:mascota_id|nullable|exists:afiliados,id',
+            'mascota_id'          => 'required_without:afiliado_id|nullable|exists:mascotas,id',
+            'observacion'         => 'nullable|string',
+            'fecha_fallecimiento' => 'required|date|before_or_equal:today',
+        ], [
+            'fecha_fallecimiento.required' => 'Debes indicar la fecha de fallecimiento.',
+            'fecha_fallecimiento.before_or_equal' => 'La fecha de fallecimiento no puede ser futura.',
         ]);
 
         try {
@@ -110,7 +114,10 @@ class GestionServicioFunerarioController extends Controller
                     return back()->with('error', 'Este afiliado ya está marcado como fallecido.');
                 }
 
-                $afiliado->update(['estado' => 'Fallecido']);
+                $afiliado->update([
+                    'estado' => 'Fallecido',
+                    'fecha_fallecimiento' => $request->fecha_fallecimiento,
+                ]);
                 $servicioFunerario = ServicioFunerario::where('afiliado_id', $afiliado->id)->latest()->first();
             } else {
                 $mascota = Mascota::findOrFail($request->mascota_id);
@@ -119,7 +126,10 @@ class GestionServicioFunerarioController extends Controller
                     return back()->with('error', 'Esta mascota ya está marcada como fallecida.');
                 }
 
-                $mascota->update(['estado' => 'Fallecido']);
+                $mascota->update([
+                    'estado' => 'Fallecido',
+                    'fecha_fallecimiento' => $request->fecha_fallecimiento,
+                ]);
                 $servicioFunerario = ServicioFunerario::where('mascota_id', $mascota->id)->latest()->first();
             }
 
@@ -133,7 +143,7 @@ class GestionServicioFunerarioController extends Controller
                 'servicio_funerario_id' => $servicioFunerario->id,
                 'etapa_id'              => $etapaInicial->id,
                 'descripcion'           => $request->observacion ?? 'Fallecimiento registrado en el sistema.',
-                'fecha'                 => now(),
+                'fecha'                 => $request->fecha_fallecimiento,
                 'usuario_responsable'   => auth()->id(),
             ]);
 

@@ -8,7 +8,6 @@ import ModalAfiliado from "./Components/ModalAfiliado";
 import ModalPersonalizacionEstetica from "./Components/ModalPersonalizacionEstetica";
 import ModalCatalogoServicios from "./Components/ModalCatalogoServicios";
 import ModalConfirmarEliminar from "./Components/ModalConfirmarEliminar";
-import ModalRecuerdos from "./Components/ModalRecuerdos";
 import ModalExitoMouren from "./Components/ModalExitoMouren";
 import ModalErrorMouren from "./Components/ModalErrorMouren";
 import ModalAvisoServicioNoPersonalizable from "./Components/ModalAvisoServicioNoPersonalizable";
@@ -26,11 +25,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         suscripcion?.plan?.id === 4
     ) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] font-['Hepta_Slab'] text-[#5D4E3F] flex relative overflow-x-hidden">
+            <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex relative overflow-x-hidden transition-colors duration-500">
                 <Head title="Sin Cobertura Activa - Mouren" />
                 <Sidebar />
                 <main className="flex-1 ml-64 p-10 flex items-center justify-center">
-                    <h2 className="text-2xl font-black text-[#5C4F3C]">Sin Cobertura Activa ☹</h2>
+                    <h2 className="text-2xl font-black text-[#5C4F3C] dark:text-[#EDE4D3]">Sin Cobertura Activa ☹</h2>
                 </main>
             </div>
         );
@@ -39,7 +38,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     // --- ESTADOS ---
     const [serviciosExtras, setServiciosExtras] = useState(suscripcion?.servicios_extras || []);
     const [afiliados, setAfiliados] = useState(suscripcion?.afiliados || []);
-    const [recuerdosSeleccionados, setRecuerdosSeleccionados] = useState(suscripcion?.recuerdos?.length > 0 ? suscripcion.recuerdos[0] : null);
+    // Ya no existe un recuerdo global de la suscripción: cada afiliado trae el suyo (afi.recuerdo_id / afi.recuerdo)
     const [cargandoGuardar, setCargandoGuardar] = useState(false);
     const [cuotaTotalDinamica, setCuotaTotalDinamica] = useState(suscripcion?.cuota_mensual || 0);
     const [datosCargados, setDatosCargados] = useState(false);
@@ -119,6 +118,8 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 funeraria.observaciones || '',
             cancion_id:
                 funeraria.cancion_id || '',
+            recuerdo_id:
+                afi.recuerdo_id || funeraria.recuerdo_id || '',
             genero_id: afi.genero_id || '',
             tipo_documento_id: afi.tipo_documento_id || '',
             cedula: afi.cedula || '',
@@ -238,7 +239,14 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                         afi.servicio_funerario?.observaciones || '',
 
                     cancion_id:
-                        afi.servicio_funerario?.cancion_id || ''
+                        afi.servicio_funerario?.cancion_id || '',
+
+                    // Cada afiliado trae su propio recuerdo (id + objeto completo para mostrarlo)
+                    recuerdo_id:
+                        afi.servicio_funerario?.recuerdo_id || '',
+
+                    recuerdo:
+                        afi.servicio_funerario?.recuerdo || null
                 }));
 
             setAfiliados(afiliadosNormalizados);
@@ -251,7 +259,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     console.log("=== AFILIADOS ===");
     console.log(suscripcion.afiliados[0])
 
-    console.log("=== RECUERDOS ===");
+    console.log("=== TODOS LOS RECUERDOS ===");
     console.log(todosLosRecuerdos);
 
     // --- LÓGICA ---
@@ -261,10 +269,10 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
 
     useEffect(() => {
         if (datosCargados && plan) {
-            const total = calcularTotalSuscripcion(plan, afiliados, serviciosExtras, recuerdosSeleccionados);
+            const total = calcularTotalSuscripcion(plan, afiliados, serviciosExtras);
             setCuotaTotalDinamica(total);
         }
-    }, [afiliados, serviciosExtras, recuerdosSeleccionados, plan]);
+    }, [afiliados, serviciosExtras, plan]);
 
     const abrirModal = (tipo) => setModalConfig({ tipo, visible: true });
     const cerrarModal = () => setModalConfig({ tipo: null, visible: false });
@@ -287,34 +295,13 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 parentesco: a.parentesco,
                 observaciones: a.observacion_funeraria || "Sin observaciones",
                 cancion_id: a.cancion_id, // Este es el que agregamos antes
+                recuerdo_id: a.recuerdo_id || null, // <-- recuerdo propio de este afiliado
                 genero_id: a.genero_id || null,
                 tipo_documento_id: a.tipo_documento_id || null,
                 cedula: a.cedula || null,
                 fecha_nacimiento: a.fecha_nacimiento || null,
             })),
-            recuerdos_seleccionados: recuerdosSeleccionados ? [recuerdosSeleccionados.id] : []
         };
-
-        {/*console.log("AFILIADOS ENVIADOS");
-        console.log(afiliados);
-        console.log("SERVICIOS EXTRAS ENVIADOS");
-        console.log(serviciosExtras)
-        console.log("AFILIADOS FINALES");
-        console.log(JSON.stringify(afiliados, null, 2));
-        console.log("PERSONALIZACIONES");
-        console.log(payload);
-        console.log("VISTA SERVICIOS EXTRAS");
-        console.log(
-            JSON.stringify(serviciosExtras, null, 2)
-        );
-        
-        console.log("SERVICIO PRUEBA");
-        serviciosExtras.forEach(servicio => {
-            console.log(
-                servicio.nombre,
-                servicio.personalizacion
-            );
-        });*/}
 
         console.log("Payload que se envía:", JSON.stringify(payload, null, 2));
         router.post('/api/personalizacion/gabinete', payload, {
@@ -344,11 +331,14 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     console.log(suscripcion.servicios_extras)
 
     return (
-        <div className="min-h-screen bg-[#FFFFFFF] font-['Hepta_Slab'] text-[#5D4E3F] flex relative overflow-x-hidden">
+        // CAMBIO: se agregó soporte de modo oscuro con la misma paleta de MiPlan/Cartera/MouriIa
+        // (dark:bg-[#221D17], dark:text-[#EDE4D3], etc.). El Sidebar ya pone la clase "dark" en
+        // <html> según el tema del usuario, así que aquí solo hacía falta sumar los dark: correspondientes.
+        <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex relative overflow-x-hidden transition-colors duration-500">
             <Head title="Detalles del Plan - Mouren" />
             <Sidebar />
 
-            <div className="absolute top-0 right-12 w-[75%] h-44 pointer-events-none z-0 opacity-100 select-none">
+            <div className="absolute top-0 right-12 w-[75%] h-44 pointer-events-none z-0 opacity-100 dark:opacity-40 select-none">
                 <img src="/images/elementos_dashboard/detalles_plan/flores_colgantes.png" alt="Flores" className="w-full h-full object-contain object-right-top" />
             </div>
 
@@ -356,10 +346,10 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 <div className="max-w-5xl mx-auto">
 
                     <header className="mb-8 text-center md:text-left relative z-20">
-                        <h1 className="text-2xl md:text-3xl font-black text-[#5C4F3C] tracking-tight leading-none">
-                            Personaliza tu plan, <span className="text-[#8B7355] ">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
+                        <h1 className="text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
+                            Personaliza tu plan, <span className="text-[#8B7355] dark:text-[#FFD97D]">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
                         </h1>
-                        <p className="text-[11px] text-[#8A7A65] mt-2 tracking-wide">
+                        <p className="text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
                             "Para que descanses mejor que en vida"
                         </p>
                     </header>
@@ -370,7 +360,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                         <div className="relative w-56 md:w-60 shrink-0 z-10">
 
                             {/* aura artística */}
-                            <div className="absolute inset-0 blur-3xl bg-[#5C4F3C]/10 scale-95 rounded-[40px]" />
+                            <div className="absolute inset-0 blur-3xl bg-[#5C4F3C]/10 dark:bg-white/5 scale-95 rounded-[40px]" />
 
                             <img
                                 src="/images/elementos_dashboard/detalles_plan/mouri_detalles_plan.gif"
@@ -381,6 +371,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 h-full
                 object-contain
                 drop-shadow-[0_30px_50px_rgba(0,0,0,0.25)]
+                dark:drop-shadow-[0_30px_50px_rgba(0,0,0,0.6)]
                 hover:scale-[1.02]
                 transition-transform duration-300
             "
@@ -392,20 +383,21 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         flex-1
         relative
         ml-[-18px] md:ml-[-28px]
-        bg-[#60533E]
+        bg-[#60533E] dark:bg-[#2E2720]
         text-white
         rounded-[26px]
         p-6 md:p-7
         shadow-xl
-        border border-[#7A6A56]
+        border border-[#7A6A56] dark:border-white/10
         overflow-hidden
+        transition-colors duration-500
     ">
 
                             {/* textura artística suave */}
                             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white,transparent_60%)]" />
 
                             {/* conexión visual con la obra */}
-                            <div className="absolute left-0 top-1/2 -translate-x-4 w-8 h-8 bg-[#60533E] rotate-45 border-l border-t border-[#7A6A56]" />
+                            <div className="absolute left-0 top-1/2 -translate-x-4 w-8 h-8 bg-[#60533E] dark:bg-[#2E2720] rotate-45 border-l border-t border-[#7A6A56] dark:border-white/10" />
 
                             {/* glow elegante */}
                             <div className="absolute -top-10 right-10 w-40 h-40 bg-[#C9A86A]/20 blur-3xl rounded-full" />
@@ -457,16 +449,17 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     />
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start relative z-20">
-                        {/* PANEL DE RECUERDOS  */}
+                        {/* PANEL DE RECUERDOS (ahora resumen de recuerdos por protegido) */}
                         <RecuerdoPanel
-                            recuerdosSeleccionados={recuerdosSeleccionados}
-                            abrirModal={abrirModal}
+                            afiliados={afiliados}
+                            todosLosRecuerdos={todosLosRecuerdos}
                         />
 
                         <div className="lg:col-span-2 space-y-6">
                             <AfiliadosPanel
                                 afiliados={afiliados}
                                 canciones={canciones}
+                                todosLosRecuerdos={todosLosRecuerdos}
                                 maxAfiliadosIncluidos={maxAfiliadosIncluidos}
                                 cantidadAfiliadosExtras={cantidadAfiliadosExtras}
                                 iniciarEdicionAfiliado={iniciarEdicionAfiliado}
@@ -490,7 +483,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     </div>
 
                     <div className="mt-10 flex justify-center">
-                        <button onClick={enviarDatosAlGabineteBackend} disabled={cargandoGuardar} className="px-12 py-3.5 bg-[#60533E] text-white rounded-full font-black uppercase text-xs tracking-widest shadow-md transition-all hover:bg-[#473D2D]">
+                        <button onClick={enviarDatosAlGabineteBackend} disabled={cargandoGuardar} className="px-12 py-3.5 bg-[#60533E] dark:bg-[#A68966] text-white rounded-full font-black uppercase text-xs tracking-widest shadow-md transition-all hover:bg-[#473D2D] dark:hover:bg-[#8e7253]">
                             {cargandoGuardar ? 'Guardando en Bóveda...' : 'Guardar Personalización'}
                         </button>
                     </div>
@@ -505,21 +498,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     formAfiliado={formAfiliado}
                     setFormAfiliado={setFormAfiliado}
                     canciones={canciones}
+                    todosLosRecuerdos={todosLosRecuerdos}
                     generos={generos}
                     tiposDocumento={tiposDocumento}
                     afiliados={afiliados}
                     guardarAfiliadoGabinete={guardarAfiliadoGabinete}
-                    cerrarModal={cerrarModal}
-                />
-
-                {/* Selector de Recuerdos */}
-                <ModalRecuerdos
-                    visible={
-                        modalConfig.visible &&
-                        modalConfig.tipo === "SELECHAIN_RECUERDO_BD"
-                    }
-                    todosLosRecuerdos={todosLosRecuerdos}
-                    setRecuerdosSeleccionados={setRecuerdosSeleccionados}
                     cerrarModal={cerrarModal}
                 />
 

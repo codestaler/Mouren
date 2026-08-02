@@ -29,16 +29,16 @@ export default function Contactos() {
             <Navbar />
 
             {/* --- SECCIÓN 1: BANNER PRINCIPAL --- */}
-            <section className="relative h-screen flex flex-col justify-center">
+            <section className="relative min-h-screen h-screen flex flex-col justify-center">
                 <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
                     <img src="/images/imagenes_contactos/fondo_animado_contactos.gif" className="w-full h-full object-cover" alt="Fondo" />
                 </div>
-                <div className="relative z-10 ml-32 w-1/2 bg-white/10 backdrop-blur-[2px] p-8 rounded-3xl">
-                    <h1 className="text-[30px] font-bold mb-4 italic">Contáctanos</h1>
-                    <p className="text-[18px] mb-6 leading-relaxed max-w-[450px]">
+                <div className="relative z-10 mx-4 sm:mx-8 md:ml-16 lg:ml-32 w-[92%] sm:w-[85%] md:w-1/2 bg-white/10 backdrop-blur-[2px] p-5 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl">
+                    <h1 className="text-[22px] sm:text-[26px] md:text-[30px] font-bold mb-4 italic">Contáctanos</h1>
+                    <p className="text-[15px] sm:text-[16px] md:text-[18px] mb-6 leading-relaxed max-w-[450px]">
                         Cada detalle importa: desde la ceremonia hasta el silencio compartido. Estamos aquí para ayudarte en lo que necesites. 🥃✨
                     </p>
-                    <div className="space-y-2 text-[16px] font-bold border-l-4 border-[#A68966] pl-4">
+                    <div className="space-y-2 text-[14px] sm:text-[15px] md:text-[16px] font-bold border-l-4 border-[#A68966] pl-4">
                         <p>📍 Cl. 63 #58B-03, Itagüí</p>
                         <p>📞 WhatsApp: 314 651 75 54</p>
                         <p>✉️ mouren.funeraria@gmail.com</p>
@@ -47,9 +47,9 @@ export default function Contactos() {
             </section>
 
             {/* --- SECCIÓN 2: UBICACIÓN --- */}
-            <section className="relative z-20 py-24 px-12 bg-white/40 backdrop-blur-md flex items-center justify-around border-y border-[#A68966]/20">
-                <div className="w-1/3 ml-32">
-                    <h2 className="text-3xl font-bold mb-4 italic">Nuestra Ubicación</h2>
+            <section className="relative z-20 py-16 md:py-24 px-6 sm:px-8 md:px-12 bg-white/40 backdrop-blur-md flex flex-col md:flex-row items-center justify-around gap-10 md:gap-6 border-y border-[#A68966]/20">
+                <div className="w-full md:w-1/3 md:ml-8 lg:ml-32">
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-4 italic">Nuestra Ubicación</h2>
                     <div className="p-6 bg-[#5D4E3F] text-white rounded-2xl shadow-xl rotate-1">
                         <p className="font-bold text-lg mb-2">📍 Itagüí, Antioquia</p>
                         <p className="text-sm opacity-90 leading-relaxed text-pretty">
@@ -58,26 +58,26 @@ export default function Contactos() {
                         </p>
                     </div>
                 </div>
-                <div className="w-1/2 pr-12">
+                <div className="w-full md:w-1/2 md:pr-6 lg:pr-12">
                     <div className="relative p-4 bg-[#5D4E3F] rounded-lg shadow-2xl -rotate-1">
                         <iframe 
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.5674751493636!2d-75.6033107!3d6.1885973!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e46824962b95111%3A0xc068bc5a0d5c8261!2sCl.%2063%20%2358b-3%2C%20Terranova%2C%20Itag%C3%BC%C3%AD%2C%20Antioquia!5e0!3m2!1ses-419!2sco!4v1710500000000!5m2!1ses-419!2sco" 
-                            className="w-full h-[300px] rounded border-0 grayscale hover:grayscale-0 transition-all duration-500"
+                            className="w-full h-[220px] sm:h-[260px] md:h-[300px] rounded border-0 grayscale hover:grayscale-0 transition-all duration-500"
                             allowFullScreen="" loading="lazy"
                         ></iframe>
                     </div>
                 </div>
             </section>
-
+        
             {/* --- SECCIÓN 3: FORMULARIO MEJORADO --- */}
-            <section className="relative z-20 py-40 px-10 bg-[#F4EDE6] flex flex-col items-center">
+            <section className="relative z-20 py-20 md:py-40 px-4 sm:px-6 md:px-10 bg-[#F4EDE6] flex flex-col items-center">
                 <div className="max-w-2xl w-full">
-                    <div className="text-center mb-10">
-                        <h2 className="text-4xl font-bold italic mb-2">Déjanos tu mensaje</h2>
+                    <div className="text-center mb-8 md:mb-10">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold italic mb-2">Déjanos tu mensaje</h2>
                         <p className="text-sm opacity-70 italic font-bold">Tu tranquilidad es nuestra prioridad.</p>
                     </div>
 
-                    <form onSubmit={submit} className="grid grid-cols-2 gap-6 bg-white/60 p-12 rounded-[40px] shadow-2xl border border-[#A68966]/20 relative overflow-hidden">
+                    <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/60 p-6 sm:p-8 md:p-12 rounded-[24px] sm:rounded-[32px] md:rounded-[40px] shadow-2xl border border-[#A68966]/20 relative overflow-hidden">
                         {/* Decoración sutil de fondo del formulario */}
                         <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#A68966]/10 rounded-full blur-3xl"></div>
                         
@@ -112,7 +112,7 @@ export default function Contactos() {
                         </div>
 
                         <div className="col-span-2 flex flex-col items-center mt-4">
-                            <button type="submit" disabled={processing} className="bg-[#5D4E3F] text-white px-16 py-3 rounded-full hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all font-bold shadow-lg transform hover:scale-105 active:scale-95">
+                            <button type="submit" disabled={processing} className="w-full sm:w-auto bg-[#5D4E3F] text-white px-8 sm:px-12 md:px-16 py-3 rounded-full hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all font-bold shadow-lg transform hover:scale-105 active:scale-95">
                                 {processing ? 'Enviando...' : 'Enviar mensaje'}
                             </button>
                             

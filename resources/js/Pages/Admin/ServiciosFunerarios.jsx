@@ -47,6 +47,7 @@ const TEXTOS = {
         protegidos: 'Protegidos',
         cambiar: 'Cambiar',
         observacionOpcional: 'Observación (opcional)',
+        fechaFallecimientoLabel: 'Fecha de fallecimiento *',
         confirmarFallecimiento: 'Confirmar Fallecimiento',
         procesando: 'Procesando...',
         cerrar: 'Cerrar',
@@ -105,6 +106,7 @@ const TEXTOS = {
         cambiarTitular: '← Change policyholder',
         protegidos: 'Protected members',
         cambiar: 'Change',
+        fechaFallecimientoLabel: 'Date of death *',
         observacionOpcional: 'Note (optional)',
         confirmarFallecimiento: 'Confirm Death',
         procesando: 'Processing...',
@@ -147,12 +149,17 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
     const [busquedaLista, setBusquedaLista] = useState('');
     const [buscando, setBuscando] = useState(false);
     const [observacionFallecido, setObservacionFallecido] = useState('');
+    const [fechaFallecimiento, setFechaFallecimiento] = useState('');
     const [afiliadoAMarcar, setAfiliadoAMarcar] = useState(null);
     const [modalEtapaForm, setModalEtapaForm] = useState(null);
     const [nombreEtapaForm, setNombreEtapaForm] = useState('');
     const [modalSalaForm, setModalSalaForm] = useState(null);
     const [nombreSalaForm, setNombreSalaForm] = useState('');
     const [estadoSalaForm, setEstadoSalaForm] = useState('Disponible');
+    const [modalCambioTitular, setModalCambioTitular] = useState(null); // { suscripcion, motivo }
+    const [afiliadoSucesorId, setAfiliadoSucesorId] = useState('');
+    const [emailNuevoTitular, setEmailNuevoTitular] = useState('');
+    const [fechaFallecimientoTitular, setFechaFallecimientoTitular] = useState('');
 
     const [modalEditarCeremonia, setModalEditarCeremonia] = useState(null);
 
@@ -211,13 +218,14 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
 
     const enviarMarcarFallecido = (e) => {
         e.preventDefault();
-        if (!afiliadoAMarcar) return;
+        if (!afiliadoAMarcar || !fechaFallecimiento) return;
 
         setProcesando(true);
         router.post('/admin/servicios-funerarios/marcar-fallecido', {
             afiliado_id: afiliadoAMarcar.tipo === 'afiliado' ? afiliadoAMarcar.id : null,
             mascota_id: afiliadoAMarcar.tipo === 'mascota' ? afiliadoAMarcar.id : null,
             observacion: observacionFallecido,
+            fecha_fallecimiento: fechaFallecimiento,
         }, {
             preserveScroll: true,
             onFinish: () => {
@@ -227,6 +235,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                 setAfiliadoAMarcar(null);
                 setTextoBusqueda('');
                 setObservacionFallecido('');
+                setFechaFallecimiento('');
             }
         });
     };
@@ -338,6 +347,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
         });
     };
 
+
     const enviarEditarCeremonia = (e) => {
         e.preventDefault();
         confirmarYEjecutar('¿Confirmas guardar los cambios de esta ceremonia?', () => {
@@ -350,6 +360,31 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                 preserveScroll: true,
                 onFinish: () => { setProcesando(false); setModalEditarCeremonia(null); }
             });
+        });
+    };
+
+    const enviarCambioTitular = (e) => {
+        e.preventDefault();
+        if (!afiliadoSucesorId) return;
+        setProcesando(true);
+        router.post('/admin/servicios-funerarios/cambiar-titular', {
+            suscripcion_id: modalCambioTitular.suscripcion.id,
+            nuevo_titular_afiliado_id: afiliadoSucesorId,
+            motivo: modalCambioTitular.motivo,
+            email_nuevo_titular: emailNuevoTitular || null,
+            fecha_fallecimiento: modalCambioTitular.motivo === 'fallecimiento' ? fechaFallecimientoTitular : null,
+        }, {
+            preserveScroll: true,
+            onFinish: () => {
+                setProcesando(false);
+                setModalCambioTitular(null);
+                setAfiliadoSucesorId('');
+                setEmailNuevoTitular('');
+                setFechaFallecimientoTitular('');
+                setTitularSeleccionado(null);
+                setAfiliadoAMarcar(null);
+                setModalFallecido(false);
+            }
         });
     };
 
@@ -604,11 +639,10 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                     <div key={sala.id} className="flex flex-wrap justify-between items-center gap-2 p-3 bg-[#F4EDE6]/50 dark:bg-[#221D17]/60 rounded-xl border border-[#A68966]/10 dark:border-[#4A4033]">
                                         <div>
                                             <span className="text-xs font-bold text-[#5D4E3F] dark:text-[#EDE4D3]">{sala.nombre}</span>
-                                            <span className={`ml-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                                                sala.estado === 'Disponible' ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' :
+                                            <span className={`ml-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${sala.estado === 'Disponible' ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' :
                                                 sala.estado === 'Ocupada' ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' :
-                                                'bg-gray-200 dark:bg-[#4A4033] text-gray-600 dark:text-[#C2B49A]'
-                                            }`}>
+                                                    'bg-gray-200 dark:bg-[#4A4033] text-gray-600 dark:text-[#C2B49A]'
+                                                }`}>
                                                 {sala.estado}
                                             </span>
                                         </div>
@@ -687,6 +721,13 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                                     </span>
                                                 )}
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalCambioTitular({ suscripcion: s, motivo: 'acuerdo' })}
+                                                className="mb-3 text-[10px] font-black text-[#4D78A3] dark:text-[#7FAEDD] hover:underline"
+                                            >
+                                                🔄 Cambiar Titular (por acuerdo)
+                                            </button>
 
                                             {s.facturas && s.facturas.length > 0 && (
                                                 <div className="mb-3 bg-white/60 dark:bg-white/5 rounded-xl p-2.5 space-y-1">
@@ -714,18 +755,27 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
 
                                             <p className="text-[9px] font-black uppercase tracking-widest text-[#A68966]/70 mb-1.5">{t.protegidos}</p>
                                             <div className="space-y-1.5">
-                                                {s.afiliados.map((a) => (
-                                                    <button
-                                                        key={a.id}
-                                                        type="button"
-                                                        disabled={a.estado === 'Fallecido'}
-                                                        onClick={() => setAfiliadoAMarcar({ id: a.id, tipo: 'afiliado', nombre: a.nombre })}
-                                                        className={`w-full text-left p-2.5 rounded-lg text-xs flex justify-between items-center transition-all ${a.estado === 'Fallecido' ? 'bg-gray-100 dark:bg-[#4A4033] text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-[#221D17] hover:bg-[#F4EDE6] dark:hover:bg-[#2E2720] hover:shadow-sm border border-[#E3D9BC] dark:border-[#4A4033] hover:border-[#A68966] text-[#5D4E3F] dark:text-[#EDE4D3]'}`}
-                                                    >
-                                                        <span>{a.nombre} <span className="text-gray-400">({a.parentesco})</span></span>
-                                                        {a.estado === 'Fallecido' && <span className="text-[9px] font-black uppercase">🕯️ Fallecido</span>}
-                                                    </button>
-                                                ))}
+                                                {s.afiliados.map((a) => {
+                                                    const esTitular = a.parentesco?.toLowerCase().trim() === 'titular';
+                                                    return (
+                                                        <button
+                                                            key={a.id}
+                                                            type="button"
+                                                            disabled={a.estado === 'Fallecido'}
+                                                            onClick={() => esTitular
+                                                                ? setModalCambioTitular({ suscripcion: s, motivo: 'fallecimiento' })
+                                                                : setAfiliadoAMarcar({ id: a.id, tipo: 'afiliado', nombre: a.nombre })
+                                                            }
+                                                            className={`w-full text-left p-2.5 rounded-lg text-xs flex justify-between items-center transition-all ${a.estado === 'Fallecido' ? 'bg-gray-100 dark:bg-[#4A4033] text-gray-400 cursor-not-allowed' : esTitular ? 'bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 border border-amber-300 text-[#5D4E3F] dark:text-[#EDE4D3]' : 'bg-white dark:bg-[#221D17] hover:bg-[#F4EDE6] dark:hover:bg-[#2E2720] hover:shadow-sm border border-[#E3D9BC] dark:border-[#4A4033] hover:border-[#A68966] text-[#5D4E3F] dark:text-[#EDE4D3]'}`}
+                                                        >
+                                                            <span>{a.nombre} <span className="text-gray-400">({a.parentesco})</span></span>
+                                                            {a.estado === 'Fallecido'
+                                                                ? <span className="text-[9px] font-black uppercase">🕯️ Fallecido</span>
+                                                                : esTitular && <span className="text-[9px] font-black uppercase text-amber-700">🔄 Requiere Cambio de Titular</span>
+                                                            }
+                                                        </button>
+                                                    );
+                                                })}
                                                 {s.mascotas.map((m) => (
                                                     <button
                                                         key={m.id}
@@ -748,6 +798,19 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                         <p className="text-xs font-black text-[#60533E] dark:text-[#EDE4D3]">{afiliadoAMarcar.nombre}</p>
                                         <button type="button" onClick={() => setAfiliadoAMarcar(null)} className="text-[10px] font-bold text-red-500 hover:underline">{t.cambiar}</button>
                                     </div>
+
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] font-black uppercase text-[#A68966]">{t.fechaFallecimientoLabel}</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            max={new Date().toISOString().split('T')[0]}
+                                            value={fechaFallecimiento}
+                                            onChange={(e) => setFechaFallecimiento(e.target.value)}
+                                            className="p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
+                                        />
+                                    </div>
+
                                     <textarea
                                         value={observacionFallecido}
                                         onChange={(e) => setObservacionFallecido(e.target.value)}
@@ -755,7 +818,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                         className="w-full p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs h-20 resize-none"
                                     />
                                     <div className="flex gap-2 text-[10px] font-black uppercase">
-                                        <button type="submit" disabled={procesando} className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50">
+                                        <button type="submit" disabled={procesando || !fechaFallecimiento} className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50">
                                             {procesando ? t.procesando : t.confirmarFallecimiento}
                                         </button>
                                     </div>
@@ -909,6 +972,78 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                     </form>
                 </div>
             )}
+            {modalCambioTitular && (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <form onSubmit={enviarCambioTitular} className="bg-[#FDFBF7] dark:bg-[#2E2720] p-6 rounded-[28px] max-w-md w-full border-2 border-[#60533E] dark:border-[#4A4033] shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <h3 className="font-black text-sm uppercase text-[#60533E] dark:text-[#D9B44A]">
+                🔄 Cambio de Titular
+            </h3>
+            <p className="text-[10px] text-[#A68966]">
+                {modalCambioTitular.motivo === 'fallecimiento'
+                    ? 'El titular actual será marcado como fallecido. Elige quién asumirá el rol de titular.'
+                    : 'Elige quién asumirá el rol de titular de este plan.'}
+            </p>
+
+            <div className="space-y-1.5">
+                {modalCambioTitular.suscripcion.afiliados
+                    .filter(a => a.parentesco?.toLowerCase().trim() !== 'titular' && a.estado !== 'Fallecido')
+                    .map((a) => (
+                        <label key={a.id} className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold cursor-pointer ${afiliadoSucesorId == a.id ? 'border-[#A68966] bg-[#F4EDE6] dark:bg-[#221D17]' : 'border-[#E3D9BC] dark:border-[#4A4033]'}`}>
+                            <input
+                                type="radio"
+                                name="sucesor"
+                                value={a.id}
+                                checked={afiliadoSucesorId == a.id}
+                                onChange={(e) => setAfiliadoSucesorId(e.target.value)}
+                            />
+                            {a.nombre} <span className="text-gray-400">({a.parentesco})</span>
+                        </label>
+                    ))}
+                {modalCambioTitular.suscripcion.afiliados.filter(a => a.parentesco?.toLowerCase().trim() !== 'titular' && a.estado !== 'Fallecido').length === 0 && (
+                    <p className="text-[11px] text-red-500 font-bold italic">No hay beneficiarios disponibles para asumir el rol de titular.</p>
+                )}
+            </div>
+
+            {modalCambioTitular.motivo === 'fallecimiento' && (
+                <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase text-[#A68966]">Fecha de fallecimiento *</label>
+                    <input
+                        type="date"
+                        required
+                        max={new Date().toISOString().split('T')[0]}
+                        value={fechaFallecimientoTitular}
+                        onChange={(e) => setFechaFallecimientoTitular(e.target.value)}
+                        className="p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
+                    />
+                </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-[#A68966]">
+                    Correo del nuevo titular (solo si no tiene cuenta propia)
+                </label>
+                <input
+                    type="email"
+                    value={emailNuevoTitular}
+                    onChange={(e) => setEmailNuevoTitular(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                    className="p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
+                />
+                <p className="text-[9px] opacity-60">Si el beneficiario ya tiene una cuenta registrada con su cédula, se usará esa cuenta automáticamente y este campo se ignora.</p>
+            </div>
+
+            <div className="flex gap-2 text-[10px] font-black uppercase">
+                <button type="submit" disabled={procesando || !afiliadoSucesorId} className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50">
+                    {procesando ? t.procesando : 'Confirmar Cambio de Titular'}
+                </button>
+                <button type="button" onClick={() => { setModalCambioTitular(null); setAfiliadoSucesorId(''); setEmailNuevoTitular(''); setFechaFallecimientoTitular(''); }} className="flex-1 py-2.5 bg-gray-200 dark:bg-[#4A4033] text-gray-700 dark:text-[#EDE4D3] rounded-xl">
+                    {t.cancelar}
+                </button>
+            </div>
+        </form>
+    </div>
+)}
+
         </div>
     );
 }

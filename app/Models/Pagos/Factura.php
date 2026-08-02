@@ -12,7 +12,7 @@ class Factura extends Model
 
     // 💡 IMPORTANTE: Esto hace que cada vez que envíes la factura a React (Inertia),
     // se incluyan automáticamente los campos de saldo y monto_pagado sin tener que hacer cargas manuales.
-    protected $appends = ['monto_pagado', 'saldo_pendiente'];
+    protected $appends = ['monto_pagado', 'saldo_pendiente', 'ultimo_pago_id'];
 
     // Relación: Una factura pertenece a una suscripción
     public function suscripcion()
@@ -44,4 +44,10 @@ class Factura extends Model
         $saldo = $this->total - $this->monto_pagado;
         return $saldo < 0 ? 0 : $saldo; // Evita números negativos por si acaso
     }
+
+    // 🆕 Guarda el ID del último pago aprobado, para poder generar el link de "Ver comprobante"
+public function getUltimoPagoIdAttribute()
+{
+    return $this->pagos()->where('estado', 'aprobado')->latest('id')->value('id');
+}
 }

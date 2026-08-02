@@ -12,7 +12,8 @@ class Pago extends Model
         'metodo_pago_id', 
         'fecha_pago', 
         'monto', 
-        'estado'
+        'estado',
+        'referencia_mercadopago',
     ];
 
     // Relación: El pago pertenece a una factura específica
@@ -26,4 +27,8 @@ class Pago extends Model
     {
         return $this->belongsTo(MetodoPago::class, 'metodo_pago_id');
     }
+
+    protected $casts = [
+    'fecha_pago' => 'datetime',
+];
 }

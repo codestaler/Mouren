@@ -24,6 +24,8 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VentasController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\OpinionController;
+use App\Http\Controllers\Public\ConsultaPublicaController;
 
 // --- RUTAS PÚBLICAS ---
 Route::get('/', fn() => Inertia::render('Home'))->name('home');
@@ -110,6 +112,7 @@ Route::prefix('admin/servicios-funerarios')->group(function () {
     Route::put('/salas/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'actualizarSala']);
     Route::delete('/salas/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'eliminarSala']);
     Route::put('/ceremonia/{id}', [App\Http\Controllers\Api\Procesos\GestionServicioFunerarioController::class, 'editarCeremonia']);
+    Route::post('/cambiar-titular', [SuscripcionController::class, 'cambiarTitular']);
 });
 
 Route::get('/admin/ventas', [App\Http\Controllers\VentasController::class, 'index'])
@@ -146,6 +149,11 @@ Route::put(
     [VentasController::class, 'anular']
 )->name('admin.facturas.anular');
 
+Route::prefix('admin/notificaciones')->name('admin.notificaciones.')->group(function () {
+    Route::get('/', [NotificacionController::class, 'index'])->name('index');
+    Route::post('/{id}/marcar-leida', [NotificacionController::class, 'marcarLeida'])->name('marcar-leida');
+    Route::post('/marcar-todas-leidas', [NotificacionController::class, 'marcarTodasLeidas'])->name('marcar-todas-leidas');
+});
 
 Route::prefix('admin/ajustes')->name('admin.ajustes.')->group(function () {
     Route::get('/', [App\Http\Controllers\AjustesController::class, 'index'])->name('index');
@@ -234,6 +242,8 @@ Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
     // 🌟 ESTA ES TU RUTA REAL DE INERTIA PARA EL BOTÓN DE REACT
     Route::post('/cliente/pagos/procesar-lote', [PagoController::class, 'store'])->name('cliente.pagos.procesar');
 
+    Route::get('/cliente/pagos/{id}/comprobante', [PagoController::class, 'descargarComprobante'])->name('cliente.pagos.comprobante');
+
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/cliente/pagos/procesar-lote', [PagoController::class, 'store'])->name('cliente.pagos.procesar');
     });
@@ -258,6 +268,29 @@ Schedule::command('mouren:enviar-facturas')->monthlyOn(1, '00:00');
 
 // 🌟 WEBHOOK PÚBLICO: Recibe las confirmaciones automáticas de Mercado Pago (PSE)
 Route::post('/webhooks/mercadopago', [PagoController::class, 'recibirNotificacion'])->name('webhooks.mercadopago');
+
+Route::get('/opiniones', [OpinionController::class, 'index']);
+Route::post('/opiniones', [OpinionController::class, 'store'])->name('opiniones.store');
+Route::get('/pagos-consultas', fn() => Inertia::render('PagosConsultas'))->name('pagos.consultas');
+
+// --- PÁGINA PÚBLICA: PAGOS Y CONSULTAS ---
+Route::get('/pagos-consultas', fn() => Inertia::render('PagosConsultas'))->name('pagos.consultas');
+
+// --- ENDPOINTS PÚBLICOS (con límite de intentos por IP para evitar abuso) ---
+Route::middleware('throttle:20,1')->prefix('consultas')->group(function () {
+
+    // Afiliación
+    Route::post('/afiliacion', [ConsultaPublicaController::class, 'consultarAfiliacion']);
+    Route::post('/afiliacion/certificado', [ConsultaPublicaController::class, 'descargarCertificado']);
+
+    // Pagos (con límite más estricto para el envío de códigos, evita spam de correos)
+    Route::post('/pagos/enviar-codigo', [ConsultaPublicaController::class, 'enviarCodigo'])
+        ->middleware('throttle:5,1');
+    Route::post('/pagos/verificar', [ConsultaPublicaController::class, 'verificarCodigo']);
+    Route::post('/pagos/facturas', [ConsultaPublicaController::class, 'facturas']);
+    Route::post('/pagos/procesar-lote', [ConsultaPublicaController::class, 'procesarLote']);
+});
+
 
 // Comentamos la carga automática original para que no choque con tus controladores personalizados de Inertia
 // require __DIR__.'/auth.php';

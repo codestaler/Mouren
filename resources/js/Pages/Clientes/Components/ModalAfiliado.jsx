@@ -5,6 +5,7 @@ export default function ModalAfiliado({
     formAfiliado,
     setFormAfiliado,
     canciones,
+    todosLosRecuerdos = [],
     generos = [],
     tiposDocumento = [],
     afiliados = [],
@@ -34,6 +35,11 @@ export default function ModalAfiliado({
         e.preventDefault();
 
         if (esTitular) {
+            if (!formAfiliado.recuerdo_id) {
+                setErroresModal({ recuerdo_id: 'Selecciona un recuerdo para el titular' });
+                return;
+            }
+            setErroresModal({});
             guardarAfiliadoGabinete(e);
             return;
         }
@@ -58,6 +64,10 @@ export default function ModalAfiliado({
             if (edad < 6 || edad > 75) {
                 nuevosErrores.fecha_nacimiento = `Mouren solo cubre entre 6 y 75 años (esta persona tiene ${edad})`;
             }
+        }
+
+        if (!formAfiliado.recuerdo_id) {
+            nuevosErrores.recuerdo_id = 'Selecciona un recuerdo para este protegido';
         }
 
         setErroresModal(nuevosErrores);
@@ -171,6 +181,29 @@ export default function ModalAfiliado({
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label className="font-black uppercase text-gray-500 text-[10px]">Recuerdo</label>
+                                <select
+                                    value={formAfiliado.recuerdo_id || ''}
+                                    onChange={(e) => {
+                                        setFormAfiliado({ ...formAfiliado, recuerdo_id: e.target.value });
+                                        setErroresModal(prev => ({ ...prev, recuerdo_id: undefined }));
+                                    }}
+                                    className={inputClase('recuerdo_id')}
+                                >
+                                    <option value="">Seleccione un recuerdo...</option>
+                                    {todosLosRecuerdos?.map((rec) => (
+                                        <option key={rec.id} value={rec.id}>
+                                            {rec.nombre} — ${Number(rec.precio_adicional || 0).toLocaleString('es-CO')}
+                                        </option>
+                                    ))}
+                                </select>
+                                {erroresModal.recuerdo_id && <p className="text-[9px] text-red-500 font-bold">{erroresModal.recuerdo_id}</p>}
+                                <p className="text-[9px] text-[#A68966] italic">
+                                    Este recuerdo es exclusivo para {formAfiliado.nombre || 'este protegido'}, no se comparte con los demás.
+                                </p>
                             </div>
                         </div>
 

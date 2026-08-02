@@ -23,28 +23,28 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
     // --- LÓGICA DE AFILIADO TITULAR AUTOMÁTICO ---
     const FRAMES_TUTORIAL_INSCRIPCION = [
-  {
-    imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/1.gif",
-    tiempo: "Paso 1",
-    etiqueta: "Titular",
-    nota: "Ya apareces registrado automáticamente como titular del plan.",
-    destacado: false,
-  },
-  {
-    imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/2.gif",
-    tiempo: "Paso 2",
-    etiqueta: "Agregar familiar",
-    nota: "Puedes añadir hasta cinco personas protegidas cada persona, cada uno aumenta el costo en base al valor del plan.",
-    destacado: true,
-  },
-  {
-    imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/3.gif",
-    tiempo: "Paso 3",
-    etiqueta: "Completar datos",
-    nota: "Todos los campos son obligatorios para validar la afiliación asegurate de escribir correctamente la cedula de tus afiliados y so nombre.",
-    destacado: false,
-  },
-];
+        {
+            imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/1.gif",
+            tiempo: "Paso 1",
+            etiqueta: "Titular",
+            nota: "Ya apareces registrado automáticamente como titular del plan.",
+            destacado: false,
+        },
+        {
+            imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/2.gif",
+            tiempo: "Paso 2",
+            etiqueta: "Agregar familiar",
+            nota: "Puedes añadir hasta cinco personas protegidas cada persona, cada uno aumenta el costo en base al valor del plan.",
+            destacado: true,
+        },
+        {
+            imagen: "/images/elementos_dashboard/inscripcion_planes/tutorial/3.gif",
+            tiempo: "Paso 3",
+            etiqueta: "Completar datos",
+            nota: "Todos los campos son obligatorios para validar la afiliación asegurate de escribir correctamente la cedula de tus afiliados y so nombre.",
+            destacado: false,
+        },
+    ];
 
     const { data, setData, post, processing, errors } = useForm({
         usuario_id: auth?.user?.id,
@@ -55,6 +55,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                 nombre: nombreTitular,
                 parentesco: 'Titular',
                 cancion_id: '',
+                recuerdo_id: '', // <-- cada afiliado ahora trae su propio recuerdo
                 genero_id: auth?.user?.genero_id || '',
                 tipo_documento_id: auth?.user?.tipo_documento_id || '',
                 cedula: auth?.user?.cedula || '',
@@ -62,7 +63,6 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
             }
         ],
         servicios_adicionales: [],
-        recuerdos_seleccionados: [],
     });
 
     const aplicarCancionATodos = (id) => {
@@ -85,8 +85,9 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
             return acc + (s ? parseFloat(s.precio) : 0);
         }, 0);
 
-        const extraRecuerdos = data.recuerdos_seleccionados.reduce((acc, id) => {
-            const r = recuerdos.find(rec => rec.id === id);
+        // Cada afiliado suma el precio de SU PROPIO recuerdo
+        const extraRecuerdos = data.afiliados.reduce((acc, a) => {
+            const r = recuerdos.find(rec => rec.id === a.recuerdo_id);
             return acc + (r ? parseFloat(r.precio_adicional) : 0);
         }, 0);
 
@@ -94,7 +95,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
     }, [
         data.afiliados.length, // <- IMPORTANTE: usa .length
         JSON.stringify(data.servicios_adicionales), // <- FORZAMOS RE-CALCULO
-        JSON.stringify(data.recuerdos_seleccionados), // <- FORZAMOS RE-CALCULO
+        JSON.stringify(data.afiliados.map(a => a.recuerdo_id)), // <- recalcula si cambia el recuerdo de cualquiera
         plan?.id // <- Dependencia del ID del plan
     ]);
 
@@ -110,6 +111,8 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         }
         return edad;
     };
+
+    console.log(JSON.stringify(servicios, null, 2));
 
     // --- VALIDACIONES ---
     const validarPaso = () => {
@@ -165,8 +168,11 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         if (paso === 2 && !data.cancion_id) {
             return alert("Mouri dice: La música es el lenguaje del alma. Elige una canción para continuar.");
         }
-        if (paso === 3 && data.recuerdos_seleccionados.length === 0) {
-            return alert("Mouri dice: Los objetos de memoria son tesoros. Selecciona al menos uno.");
+        if (paso === 3) {
+            const faltaRecuerdo = data.afiliados.some(a => !a.recuerdo_id);
+            if (faltaRecuerdo) {
+                return alert("Mouri dice: Los objetos de memoria son tesoros. Elige uno para cada uno de tus protegidos.");
+            }
         }
         setPaso(paso + 1);
     };
@@ -211,9 +217,10 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         setData(campo, lista);
     };
 
-    const toggleSeleccionRecuerdo = (id) => {
-        const nuevaLista = data.recuerdos_seleccionados.includes(id) ? [] : [id];
-        setData('recuerdos_seleccionados', nuevaLista);
+    const seleccionarRecuerdoAfiliado = (i, recuerdoId) => {
+        const n = [...data.afiliados];
+        n[i].recuerdo_id = recuerdoId;
+        setData('afiliados', n);
     };
 
     const [errorModal, setErrorModal] = useState({
@@ -270,13 +277,13 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
             <Sidebar onToggle={setIsSidebarOpen} />
             <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
 
-            <main className={`flex-1 transition-all p-6 ${isSidebarOpen ? 'md:ml-72' : 'md:ml-20'}`}>
+            <main className={`flex-1 w-full min-w-0 transition-all p-4 sm:p-6 ${isSidebarOpen ? 'md:ml-72' : 'md:ml-20'}`}>
                 <div className="max-w-6xl mx-auto">
                     <br />
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 sm:mb-10 gap-4">
                         <div>
-                            <h1 className="text-3xl font-black tracking-tighter ">
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter ">
                                 inscribir <span className="text-[#A68966]">plan {plan.nombre}</span>
                             </h1>
                             <p className="text-[10px] uppercase font-bold tracking-[0.4em] opacity-30 mt-2">Paso {paso} de 4</p>
@@ -287,19 +294,19 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                             <p className="text-[10px] font-bold italic leading-tight">
                                 {paso === 1 && " Argg Estás incluido automáticamente como titular de la protección. Agrega a tus seres queridos."}
                                 {paso === 2 && " Oh you can´t read my poker face!! argg verdad que aun sigues hay, la música y los servicios extra hacen que el homenaje sea único."}
-                                {paso === 3 && " Solo puedes elegir un objeto de memoria como tributo principal Argg."}
+                                {paso === 3 && " Cada protegido elige su propio objeto de memoria Argg."}
                                 {paso === 4 && " Lee con atención el compromiso. Estamos aquí para cuidarte Argg."}
                             </p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                        <div className="lg:col-span-7 bg-white p-10 rounded-[50px] shadow-sm border border-[#5D4E3F]/5 min-h-[550px] flex flex-col">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10">
+                        <div className="lg:col-span-7 bg-white p-5 sm:p-6 md:p-10 rounded-[28px] sm:rounded-[36px] md:rounded-[50px] shadow-sm border border-[#5D4E3F]/5 min-h-0 sm:min-h-[550px] flex flex-col">
 
                             {paso === 1 && (
                                 <div className="flex-1">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-2xl font-black lowercase italic">tus protegidos</h2>
+                                    <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+                                        <h2 className="text-xl sm:text-2xl font-black lowercase italic">tus protegidos</h2>
                                         <BotonTutorial
                                             titulo="Cómo inscribir a tus protegidos"
                                             numero="01"
@@ -311,7 +318,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                         <button
                                             disabled={numPersonasActuales >= MAX_PERSONAS}
                                             onClick={() => setData('afiliados', [...data.afiliados, {
-                                                nombre: '', parentesco: '', cancion_id: '',
+                                                nombre: '', parentesco: '', cancion_id: '', recuerdo_id: '',
                                                 genero_id: '', tipo_documento_id: '', cedula: '', fecha_nacimiento: ''
                                             }])}
                                             className={`text-[10px] font-bold uppercase flex items-center gap-2 ${numPersonasActuales >= MAX_PERSONAS ? 'opacity-20' : 'text-[#A68966]'}`}
@@ -330,11 +337,11 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                                                     {/* CABECERA: siempre visible, clic para expandir/colapsar */}
                                                     <div
-                                                        className="flex flex-wrap items-center gap-2 p-4 cursor-pointer"
+                                                        className="flex flex-wrap items-center gap-2 p-3 sm:p-4 cursor-pointer"
                                                         onClick={() => setAfiliadoAbierto(abierto ? -1 : i)}
                                                     >
                                                         <input
-                                                            className={`flex-1 min-w-[140px] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] ${i === 0 ? 'bg-white/70 text-[#5D4E3F]/60 font-medium cursor-not-allowed' : 'bg-[#FDFBF9]'}`}
+                                                            className={`flex-1 min-w-[120px] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] ${i === 0 ? 'bg-white/70 text-[#5D4E3F]/60 font-medium cursor-not-allowed' : 'bg-[#FDFBF9]'}`}
                                                             placeholder="Nombre completo"
                                                             value={afi.nombre}
                                                             readOnly={i === 0}
@@ -349,14 +356,14 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                                                         {i === 0 ? (
                                                             <input
-                                                                className="bg-white/70 border-none rounded-xl text-xs p-3 shadow-sm text-center font-black text-[#A68966] w-36 cursor-not-allowed"
+                                                                className="bg-white/70 border-none rounded-xl text-xs p-3 shadow-sm text-center font-black text-[#A68966] w-28 sm:w-36 cursor-not-allowed"
                                                                 value="Titular"
                                                                 readOnly
                                                                 onClick={e => e.stopPropagation()}
                                                             />
                                                         ) : (
                                                             <select
-                                                                className="bg-[#FDFBF9] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-36"
+                                                                className="bg-[#FDFBF9] border-none rounded-xl text-xs p-3 shadow-sm focus:ring-1 focus:ring-[#A68966] w-28 sm:w-36"
                                                                 value={afi.parentesco}
                                                                 onClick={e => e.stopPropagation()}
                                                                 onChange={e => { const n = [...data.afiliados]; n[i].parentesco = e.target.value; setData('afiliados', n); }}
@@ -391,7 +398,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                                                     {/* CUERPO: datos personales, colapsable */}
                                                     <div className={`overflow-hidden transition-all duration-300 ${abierto ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                                                        <div className={`px-4 pb-4 pt-3 border-t ${i === 0 ? 'border-[#A68966]/20' : 'border-[#5D4E3F]/10'}`}>
+                                                        <div className={`px-3 sm:px-4 pb-4 pt-3 border-t ${i === 0 ? 'border-[#A68966]/20' : 'border-[#5D4E3F]/10'}`}>
                                                             <p className="text-[8px] font-black uppercase tracking-widest text-[#A68966]/70 mb-2">
                                                                 Datos personales {i === 0 && '(de tu perfil)'}
                                                             </p>
@@ -480,8 +487,8 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                             {paso === 2 && (
                                 <div className="flex-1">
-                                    <h2 className="text-2xl font-black lowercase italic mb-8">complementos y música</h2>
-                                    <div className="grid md:grid-cols-2 gap-8">
+                                    <h2 className="text-xl sm:text-2xl font-black lowercase italic mb-6 sm:mb-8">complementos y música</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                         {/* Servicios Extra */}
                                         <div className="space-y-3">
                                             <p className="text-[9px] font-black opacity-30 uppercase tracking-widest text-gray-400">Servicios Extra</p>
@@ -489,12 +496,48 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                 <div
                                                     key={s.id}
                                                     onClick={() => toggleSeleccionMultiple(s.id, 'servicios_adicionales')}
-                                                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${data.servicios_adicionales.includes(s.id) ? 'bg-[#A68966] text-white border-[#A68966]' : 'bg-[#FDFBF9] border-transparent hover:border-[#A68966]/30'}`}
+                                                    className={`
+            relative
+            p-4
+            rounded-2xl
+            border-2
+            cursor-pointer
+            transition-all
+            hover:scale-[1.02]
+
+            ${data.servicios_adicionales.includes(s.id)
+                                                            ? 'bg-[#A68966] text-white border-[#A68966]'
+                                                            : s.personalizable
+                                                                ? 'bg-amber-50 border-amber-400 shadow-lg hover:shadow-xl'
+                                                                : 'bg-[#FDFBF9] border-transparent hover:border-[#A68966]/30'
+                                                        }
+        `}
                                                 >
-                                                    <p className="text-[11px] font-bold">{s.nombre}</p>
-                                                    <p className={`text-[9px] ${data.servicios_adicionales.includes(s.id) ? 'text-white/80' : 'opacity-60'}`}>
+                                                    {s.personalizable === 1 && (
+                                                        <div className="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-2 py-1 rounded-full">
+                                                            ✨ Personalizable
+                                                        </div>
+                                                    )}
+
+                                                    <p className="text-[11px] font-bold">
+                                                        {s.nombre}
+                                                    </p>
+
+                                                    <p className={`text-[9px] ${data.servicios_adicionales.includes(s.id)
+                                                            ? 'text-white/80'
+                                                            : 'opacity-60'
+                                                        }`}>
                                                         +${Number(s.precio).toLocaleString()}
                                                     </p>
+
+                                                    {s.personalizable === 1 && (
+                                                        <p className={`mt-2 text-[8px] font-bold ${data.servicios_adicionales.includes(s.id)
+                                                                ? 'text-white'
+                                                                : 'text-amber-700'
+                                                            }`}>
+                                                            🎨 Este servicio puede personalizarse
+                                                        </p>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -506,19 +549,19 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                 {canciones.map(c => (
                                                     <div
                                                         key={c.id}
-                                                        className={`p-3 rounded-xl flex items-center justify-between border cursor-pointer transition-all ${data.cancion_id === c.id ? 'bg-[#5D4E3F] text-white border-[#5D4E3F]' : 'bg-white hover:border-[#A68966]/30'}`}
+                                                        className={`p-3 rounded-xl flex items-center justify-between gap-2 border cursor-pointer transition-all ${data.cancion_id === c.id ? 'bg-[#5D4E3F] text-white border-[#5D4E3F]' : 'bg-white hover:border-[#A68966]/30'}`}
                                                         onClick={() => {
                                                             setData('cancion_id', c.id);
                                                             aplicarCancionATodos(c.id);
                                                         }}
                                                     >
-                                                        <p className="text-[10px] font-bold truncate flex-1">
+                                                        <p className="text-[10px] font-bold truncate flex-1 min-w-0">
                                                             {c.titulo}
                                                         </p>
                                                         <button
                                                             type="button"
                                                             onClick={(e) => { e.stopPropagation(); toggleMúsica(c); }}
-                                                            className="ml-2"
+                                                            className="ml-2 shrink-0"
                                                         >
                                                             {playingId === c.id ? <Pause size={14} className={data.cancion_id === c.id ? "text-white" : "text-red-400"} /> : <Play size={14} className="text-[#A68966]" />}
                                                         </button>
@@ -532,19 +575,33 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                             {paso === 3 && (
                                 <div className="flex-1">
-                                    <div className="mb-8">
-                                        <h2 className="text-2xl font-black lowercase italic">objetos de memoria</h2>
-                                        <p className="text-[10px] text-[#A68966] font-bold uppercase mt-1">Selección única</p>
+                                    <div className="mb-6 sm:mb-8">
+                                        <h2 className="text-xl sm:text-2xl font-black lowercase italic">objetos de memoria</h2>
+                                        <p className="text-[10px] text-[#A68966] font-bold uppercase mt-1">Cada protegido elige el suyo</p>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        {recuerdos.map(r => (
-                                            <div key={r.id} onClick={() => toggleSeleccionRecuerdo(r.id)} className={`p-6 rounded-[45px] border-2 cursor-pointer text-center transition-all ${data.recuerdos_seleccionados.includes(r.id) ? 'bg-[#5D4E3F] text-white border-[#5D4E3F]' : 'bg-[#FDFBF9] border-transparent'}`}>
-                                                <div className="bg-white rounded-3xl p-3 mb-3 shadow-sm">
-                                                    <img src={`/images/planes/recuerdos/${r.imagen || 'peluche_mouri.png'}`} className="w-20 h-20 mx-auto object-contain" alt={r.nombre} />
-                                                    {/*<img src={`/images/planes/recuerdos/${r.imagen_url || 'peluche_mouri.png'}`} className="w-16 h-16 mx-auto object-contain" alt={r.nombre} />*/}
+
+                                    <div className="space-y-6 max-h-[420px] overflow-y-auto pr-1">
+                                        {data.afiliados.map((afi, i) => (
+                                            <div key={i} className="border border-[#5D4E3F]/10 rounded-3xl p-4">
+                                                <p className="text-[11px] font-black uppercase text-[#5D4E3F] mb-3">
+                                                    {afi.nombre || `Protegido ${i + 1}`}
+                                                    <span className="text-[#A68966] font-bold"> · {afi.parentesco}</span>
+                                                </p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {recuerdos.map(r => (
+                                                        <div
+                                                            key={r.id}
+                                                            onClick={() => seleccionarRecuerdoAfiliado(i, r.id)}
+                                                            className={`p-3 rounded-[24px] border-2 cursor-pointer text-center transition-all ${afi.recuerdo_id === r.id ? 'bg-[#5D4E3F] text-white border-[#5D4E3F]' : 'bg-[#FDFBF9] border-transparent hover:border-[#A68966]/30'}`}
+                                                        >
+                                                            <div className="bg-white rounded-2xl p-2 mb-2 shadow-sm">
+                                                                <img src={`/images/planes/recuerdos/${r.imagen || 'peluche_mouri.png'}`} className="w-12 h-12 mx-auto object-contain" alt={r.nombre} />
+                                                            </div>
+                                                            <p className="text-[10px] font-bold lowercase">{r.nombre}</p>
+                                                            <p className="text-[9px] opacity-60">$ {Number(r.precio_adicional).toLocaleString()}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <p className="text-xs font-bold lowercase">{r.nombre}</p>
-                                                <p className="text-[10px] opacity-40">$ {Number(r.precio_adicional).toLocaleString()}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -554,9 +611,9 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
                             {paso === 4 && (
                                 <div className="flex-1 flex flex-col justify-center">
-                                    <div className="bg-[#FDFBF9] p-10 rounded-[60px] border border-[#A68966]/10 shadow-inner overflow-hidden">
-                                        <ShieldCheck className="mx-auto text-[#A68966] mb-6" size={48} />
-                                        <h2 className="text-2xl font-black lowercase italic mb-6 text-center">compromiso de protección mouren</h2>
+                                    <div className="bg-[#FDFBF9] p-5 sm:p-6 md:p-10 rounded-[32px] sm:rounded-[45px] md:rounded-[60px] border border-[#A68966]/10 shadow-inner overflow-hidden">
+                                        <ShieldCheck className="mx-auto text-[#A68966] mb-6" size={40} />
+                                        <h2 className="text-xl sm:text-2xl font-black lowercase italic mb-6 text-center">compromiso de protección mouren</h2>
 
                                         <div className="max-h-40 overflow-y-auto pr-4 text-[11px] leading-relaxed text-[#5D4E3F]/70 text-justify space-y-3 mb-8 font-sans">
                                             <p>Yo, <strong>{nombreTitular || 'Usuario'}</strong>, acepto los términos de cobertura del Plan {plan.nombre}. Entiendo que la protección para mis {numPersonasActuales} protegidos iniciará tras la validación de mi primer pago.</p>
@@ -564,22 +621,22 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                             <p>La cuota mensual de <strong>${totalCalculado.toLocaleString()}</strong> será facturada según el ciclo elegido.</p>
                                         </div>
 
-                                        <label className="flex items-start gap-4 cursor-pointer p-4 bg-white rounded-3xl border border-[#A68966]/20">
-                                            <input type="checkbox" className="w-5 h-5 mt-1 rounded-lg text-[#A68966] focus:ring-0" checked={aceptoTerminos} onChange={e => setAceptoTerminos(e.target.checked)} />
+                                        <label className="flex items-start gap-3 sm:gap-4 cursor-pointer p-4 bg-white rounded-3xl border border-[#A68966]/20">
+                                            <input type="checkbox" className="w-5 h-5 mt-1 shrink-0 rounded-lg text-[#A68966] focus:ring-0" checked={aceptoTerminos} onChange={e => setAceptoTerminos(e.target.checked)} />
                                             <span className="text-[10px] font-bold leading-tight uppercase tracking-tight">He leído y acepto los términos del contrato de protección y la política de datos de Mouren.</span>
                                         </label>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="mt-auto pt-8 flex justify-between items-center border-t border-[#5D4E3F]/5">
+                            <div className="mt-auto pt-6 sm:pt-8 flex justify-between items-center gap-3 border-t border-[#5D4E3F]/5">
                                 {paso > 1 && (
-                                    <button onClick={() => setPaso(paso - 1)} className="text-[10px] font-black uppercase opacity-20 hover:opacity-100 transition-all tracking-widest">← atrás</button>
+                                    <button onClick={() => setPaso(paso - 1)} className="text-[10px] font-black uppercase opacity-20 hover:opacity-100 transition-all tracking-widest shrink-0">← atrás</button>
                                 )}
                                 <button
                                     onClick={() => paso === 4 ? enviarInscripcion() : validarPaso()}
                                     disabled={processing}
-                                    className="bg-[#5D4E3F] text-white px-12 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] ml-auto shadow-lg hover:bg-[#4A3E32] transition-colors"
+                                    className="bg-[#5D4E3F] text-white px-6 sm:px-12 py-3.5 sm:py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] ml-auto shadow-lg hover:bg-[#4A3E32] transition-colors whitespace-nowrap"
                                 >
                                     {paso === 4 ? (processing ? 'procesando...' : 'activar protección') : 'siguiente'}
                                 </button>
@@ -587,27 +644,27 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                         </div>
 
                         {/* PANEL DE RESUMEN */}
-                        <div className="lg:col-span-5 sticky top-10">
+                        <div className="lg:col-span-5 lg:sticky lg:top-10">
                             <div className="relative group">
-                                <div className="absolute inset-0 bg-[#A68966] rounded-[40px] transform -rotate-3 transition-transform group-hover:rotate-0 duration-500 shadow-xl opacity-20"></div>
-                                <div className="relative bg-[#F4F1ED] border-2 border-[#5D4E3F]/10 rounded-[40px] p-8 shadow-2xl backdrop-blur-sm overflow-hidden">
-                                    <div className="bg-[#5D4E3F] inline-block px-8 py-2 transform -skew-x-12 mb-8 ml-[-20px]">
-                                        <h2 className="text-xl font-black text-[#FDFBF9] lowercase italic transform skew-x-12">tu resumen mouri</h2>
+                                <div className="absolute inset-0 bg-[#A68966] rounded-[28px] sm:rounded-[32px] md:rounded-[40px] transform -rotate-3 transition-transform group-hover:rotate-0 duration-500 shadow-xl opacity-20"></div>
+                                <div className="relative bg-[#F4F1ED] border-2 border-[#5D4E3F]/10 rounded-[28px] sm:rounded-[32px] md:rounded-[40px] p-5 sm:p-6 md:p-8 shadow-2xl backdrop-blur-sm overflow-hidden">
+                                    <div className="bg-[#5D4E3F] inline-block px-6 sm:px-8 py-2 transform -skew-x-12 mb-6 sm:mb-8 ml-[-20px]">
+                                        <h2 className="text-lg sm:text-xl font-black text-[#FDFBF9] lowercase italic transform skew-x-12">tu resumen mouri</h2>
                                     </div>
 
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center border-b-2 border-dashed border-[#5D4E3F]/20 pb-4">
-                                            <div>
+                                    <div className="space-y-5 sm:space-y-6">
+                                        <div className="flex justify-between items-center gap-2 border-b-2 border-dashed border-[#5D4E3F]/20 pb-4">
+                                            <div className="min-w-0">
                                                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#A68966]">Plan Elegido</p>
-                                                <p className="text-lg font-black text-[#5D4E3F] italic">{plan.nombre}</p>
+                                                <p className="text-base sm:text-lg font-black text-[#5D4E3F] italic truncate">{plan.nombre}</p>
                                             </div>
-                                            <Gem className="text-[#A68966] opacity-40" size={32} />
+                                            <Gem className="text-[#A68966] opacity-40 shrink-0" size={28} />
                                         </div>
 
-                                        <div className="bg-white/60 p-5 rounded-2xl border-l-8 border-[#A68966] transform hover:translate-x-2 transition-all">
-                                            <div className="flex justify-between items-center">
+                                        <div className="bg-white/60 p-4 sm:p-5 rounded-2xl border-l-8 border-[#A68966] transform hover:translate-x-2 transition-all">
+                                            <div className="flex justify-between items-center gap-2">
                                                 <span className="text-sm font-black uppercase text-[#5D4E3F]">Beneficiarios</span>
-                                                <span className="text-3xl font-black italic text-[#A68966]">x{numPersonasActuales}</span>
+                                                <span className="text-2xl sm:text-3xl font-black italic text-[#A68966]">x{numPersonasActuales}</span>
                                             </div>
                                             <p className="text-[10px] font-bold opacity-50 mt-1">({MAX_PERSONAS - numPersonasActuales} cupos disponibles)</p>
                                         </div>
@@ -618,16 +675,31 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                 {data.servicios_adicionales.map(id => {
                                                     const s = servicios.find(srv => srv.id === id);
                                                     return s ? (
-                                                        <div key={id} className="flex justify-between text-[10px] font-bold lowercase italic">
-                                                            <span>+ {s.nombre}</span>
-                                                            <span>${Number(s.precio).toLocaleString()}</span>
+                                                        <div key={id} className="flex justify-between gap-2 text-[10px] font-bold lowercase italic">
+                                                            <span className="truncate">+ {s.nombre}</span>
+                                                            <span className="shrink-0">${Number(s.precio).toLocaleString()}</span>
                                                         </div>
                                                     ) : null;
                                                 })}
                                             </div>
                                         )}
 
-                                        <div className="mt-10 relative group cursor-pointer">
+                                        {data.afiliados.some(a => a.recuerdo_id) && (
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black uppercase text-[#A68966]">Recuerdos por protegido:</p>
+                                                {data.afiliados.map((a, i) => {
+                                                    const r = recuerdos.find(rec => rec.id === a.recuerdo_id);
+                                                    return r ? (
+                                                        <div key={i} className="flex justify-between gap-2 text-[10px] font-bold lowercase italic">
+                                                            <span className="truncate">{a.nombre || `Protegido ${i + 1}`}: {r.nombre}</span>
+                                                            <span className="shrink-0">${Number(r.precio_adicional).toLocaleString()}</span>
+                                                        </div>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        )}
+
+                                        <div className="mt-8 sm:mt-10 relative group cursor-pointer">
                                             {/* Fondo decorativo */}
                                             <div className="absolute inset-0 bg-[#5D4E3F] rounded-3xl transform skew-y-3 transition-all duration-500 group-hover:skew-y-2 group-hover:scale-[1.02]"></div>
 
@@ -635,7 +707,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                             <div className="absolute inset-0 rounded-3xl bg-[#A68966]/20 blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
 
                                             {/* Card */}
-                                            <div className="relative overflow-hidden bg-[#FDFBF9] p-8 rounded-3xl transform -translate-y-2 -translate-x-2 transition-all duration-500 group-hover:-translate-y-4 group-hover:-translate-x-4 group-hover:shadow-2xl">
+                                            <div className="relative overflow-hidden bg-[#FDFBF9] p-6 sm:p-8 rounded-3xl transform -translate-y-2 -translate-x-2 transition-all duration-500 group-hover:-translate-y-4 group-hover:-translate-x-4 group-hover:shadow-2xl">
 
                                                 {/* Shine Effect */}
                                                 <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
@@ -645,11 +717,11 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                 </p>
 
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <span className="text-3xl font-black text-[#5D4E3F] transition-transform duration-300 group-hover:scale-110">
+                                                    <span className="text-2xl sm:text-3xl font-black text-[#5D4E3F] transition-transform duration-300 group-hover:scale-110">
                                                         $
                                                     </span>
 
-                                                    <span className="text-5xl font-black text-[#5D4E3F] tracking-tighter transition-all duration-300 group-hover:scale-105">
+                                                    <span className="text-4xl sm:text-5xl font-black text-[#5D4E3F] tracking-tighter transition-all duration-300 group-hover:scale-105">
                                                         {totalCalculado.toLocaleString()}
                                                     </span>
                                                 </div>
@@ -665,22 +737,22 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
             {showSuccessModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#5D4E3F]/90 backdrop-blur-sm p-4">
-                    <div className="bg-white p-12 rounded-[60px] text-center max-w-sm w-full shadow-2xl animate-in zoom-in-95">
-                        <img src="/images/login/mouri_registro_exitoso.png" className="w-32 h-32 mx-auto mb-6" alt="Éxito" />
-                        <h2 className="text-3xl font-black text-[#5D4E3F] lowercase mb-2 italic">¡protección activada!</h2>
+                    <div className="bg-white p-6 sm:p-8 md:p-12 rounded-[36px] sm:rounded-[48px] md:rounded-[60px] text-center max-w-sm w-full shadow-2xl animate-in zoom-in-95">
+                        <img src="/images/login/mouri_registro_exitoso.png" className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6" alt="Éxito" />
+                        <h2 className="text-2xl sm:text-3xl font-black text-[#5D4E3F] lowercase mb-2 italic">¡protección activada!</h2>
                         <button onClick={() => window.location.href = '/cliente/mi-plan'} className="mt-8 bg-[#A68966] text-white w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em]">ir a mi panel</button>
                     </div>
                 </div>
             )}
 
             {errorModal.show && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
-                    <div className="bg-white p-8 rounded-3xl max-w-md w-full text-center">
-                        <h2 className="text-xl font-black text-red-500 mb-4">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white p-6 sm:p-8 rounded-3xl max-w-md w-full text-center">
+                        <h2 className="text-lg sm:text-xl font-black text-red-500 mb-4">
                             Mouri te informa
                         </h2>
 
-                        <p className="text-sm text-gray-700">
+                        <p className="text-sm text-gray-700 break-words">
                             {errorModal.message}
                         </p>
 

@@ -282,7 +282,7 @@ export default function Ajustes({ usuario, generos = [], tiposDocumento = [] }) 
                     <div className="flex-1">
                         <p className="font-black text-[#5D4E3F] dark:text-[#EDE4D3] text-sm mb-1">{t.bienvenidaCuervo}</p>
                         <p className="text-xs text-[#6A5A48] dark:text-[#C2B49A] mb-2">{t.cuervoTexto}</p>
-                        <a href="#" className="text-xs font-bold text-[#4D78A3] dark:text-[#7FAEDD] hover:underline block mb-2">
+                        <a href="https://youtu.be/f4mGl-kc11M?si=s4AslyISPp0O6a9D" className="text-xs font-bold text-[#4D78A3] dark:text-[#7FAEDD] hover:underline block mb-2">
                             {t.cuervoVideo}
                         </a>
                         <p className="text-[10px] italic text-[#A68966] dark:text-[#8F8368]">{t.cuervoRecomendacion}</p>

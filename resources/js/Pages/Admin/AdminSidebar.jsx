@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, usePage, router } from '@inertiajs/react';
+import axios from 'axios';
 
 export default function AdminSidebar() {
     const { url, props } = usePage();
     const [isOpen, setIsOpen] = useState(true);
 
     // 🌗 SINCRONIZACIÓN GLOBAL DE MODO OSCURO
-    // Como AdminSidebar está presente en todas las páginas admin, este es el
-    // punto central donde aplicamos la clase "dark" al <html> según la
-    // preferencia guardada en el usuario (props.auth.user.tema).
     useEffect(() => {
         const tema = props?.auth?.user?.tema || 'claro';
         if (tema === 'oscuro') {
@@ -18,7 +16,69 @@ export default function AdminSidebar() {
         }
     }, [props?.auth?.user?.tema]);
 
-    // Configuración de estados: Blanco puro por defecto. Activo: Amarillo claro brillante (#FFC600)
+    // 🔔 NOTIFICACIONES
+    const [notifAbierta, setNotifAbierta] = useState(false);
+    const [notificaciones, setNotificaciones] = useState([]);
+    const [noLeidas, setNoLeidas] = useState(0);
+    const notifRef = useRef(null);
+
+    const cargarNotificaciones = () => {
+        axios.get('/admin/notificaciones')
+            .then(res => {
+                setNotificaciones(res.data.notificaciones);
+                setNoLeidas(res.data.no_leidas);
+            })
+            .catch(() => {});
+    };
+
+    useEffect(() => {
+        cargarNotificaciones();
+        const intervalo = setInterval(cargarNotificaciones, 30000); // refresca cada 30s
+        return () => clearInterval(intervalo);
+    }, []);
+
+    // Cierra el desplegable si haces click afuera
+    useEffect(() => {
+        const manejarClickAfuera = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setNotifAbierta(false);
+            }
+        };
+        document.addEventListener('mousedown', manejarClickAfuera);
+        return () => document.removeEventListener('mousedown', manejarClickAfuera);
+    }, []);
+
+    const clickNotificacion = (notif) => {
+        if (!notif.leido) {
+            axios.post(`/admin/notificaciones/${notif.id}/marcar-leida`).then(() => {
+                setNotificaciones(prev => prev.map(n => n.id === notif.id ? { ...n, leido: true } : n));
+                setNoLeidas(prev => Math.max(0, prev - 1));
+            });
+        }
+        setNotifAbierta(false);
+        if (notif.enlace) {
+            router.visit(notif.enlace);
+        }
+    };
+
+    const marcarTodasLeidas = () => {
+        axios.post('/admin/notificaciones/marcar-todas-leidas').then(() => {
+            setNotificaciones(prev => prev.map(n => ({ ...n, leido: true })));
+            setNoLeidas(0);
+        });
+    };
+
+    const tiempoRelativo = (fecha) => {
+        const diffMs = Date.now() - new Date(fecha).getTime();
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return 'Ahora mismo';
+        if (mins < 60) return `Hace ${mins} min`;
+        const horas = Math.floor(mins / 60);
+        if (horas < 24) return `Hace ${horas} h`;
+        const dias = Math.floor(horas / 24);
+        return `Hace ${dias} d`;
+    };
+
     const active = (path) =>
         url.startsWith(path)
             ? "border-b-2 border-[#FFC600] text-[#FFC600] font-bold drop-shadow-[0_0_6px_rgba(255,245,204,0.4)]"
@@ -26,6 +86,61 @@ export default function AdminSidebar() {
 
     return (
         <>
+            {/* 🔔 CAMPANITA DE NOTIFICACIONES - fija arriba a la derecha, visible en toda la app admin */}
+            <div ref={notifRef} className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[60]">
+                <button
+                    onClick={() => setNotifAbierta(!notifAbierta)}
+                    className="relative w-11 h-11 rounded-full bg-white dark:bg-[#2E2720] shadow-md border border-[#A68966]/20 dark:border-[#4A4033] flex items-center justify-center text-lg hover:scale-105 transition-all"
+                >
+                    🔔
+                    {noLeidas > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-[#221D17]">
+                            {noLeidas > 9 ? '9+' : noLeidas}
+                        </span>
+                    )}
+                </button>
+
+                {notifAbierta && (
+                    <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white dark:bg-[#2E2720] rounded-2xl shadow-2xl border border-[#A68966]/20 dark:border-[#4A4033] overflow-hidden">
+                        <div className="flex justify-between items-center px-4 py-3 border-b border-[#E8DFC8] dark:border-[#4A4033]">
+                            <h4 className="text-xs font-black text-[#5D4E3F] dark:text-[#EDE4D3] uppercase tracking-wide">Notificaciones</h4>
+                            {noLeidas > 0 && (
+                                <button onClick={marcarTodasLeidas} className="text-[10px] font-bold text-[#4D78A3] dark:text-[#7FAEDD] hover:underline">
+                                    Marcar todas como leídas
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="max-h-80 overflow-y-auto">
+                            {notificaciones.length === 0 ? (
+                                <p className="text-xs text-center text-gray-400 italic py-8">No tienes notificaciones.</p>
+                            ) : (
+                                notificaciones.map((notif) => (
+                                    <button
+                                        key={notif.id}
+                                        onClick={() => clickNotificacion(notif)}
+                                        className={`w-full text-left px-4 py-3 border-b border-[#F4EDE6] dark:border-[#221D17] last:border-0 transition ${
+                                            notif.leido ? 'bg-white dark:bg-[#2E2720] hover:bg-[#F9F6F0] dark:hover:bg-[#221D17]' : 'bg-[#FDF6E9] dark:bg-[#3A322A] hover:bg-[#FBEFD8] dark:hover:bg-[#4A4033]'
+                                        }`}
+                                    >
+                                        <div className="flex items-start gap-2">
+                                            {!notif.leido && <span className="w-2 h-2 rounded-full bg-[#D9B44A] mt-1 shrink-0" />}
+                                            <div className="min-w-0">
+                                                {notif.titulo && (
+                                                    <p className="text-[11px] font-black text-[#5D4E3F] dark:text-[#EDE4D3] truncate">{notif.titulo}</p>
+                                                )}
+                                                <p className="text-[11px] text-[#6A5A48] dark:text-[#C2B49A] line-clamp-2">{notif.mensaje}</p>
+                                                <p className="text-[9px] text-gray-400 mt-1">{tiempoRelativo(notif.fecha)}</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* TIRADOR DE CUERDA */}
             <div
                 onClick={() => setIsOpen(!isOpen)}
@@ -70,19 +185,19 @@ export default function AdminSidebar() {
 
                 <nav className="flex-1 px-6 mt-2 min-w-[240px] z-10">
                     <div className="flex flex-col gap-6 font-['Hepta_Slab'] tracking-wide">
-                        <Link href="/admin/dashboard" className={`text-sm md:text-base w-fit flex items-center gap-2 ${active('/admin/dashboard')}`}>
+                        <Link href="/admin/dashboard" className={`text-sm md:text-sm w-fit flex items-center gap-2 ${active('/admin/dashboard')}`}>
                             Panel Principal
                         </Link>
-                        <Link href="/admin/gestion-usuarios" className={`text-sm md:text-base w-fit ${active('/admin/gestion-usuarios')}`}>
+                        <Link href="/admin/gestion-usuarios" className={`text-sm md:text-sm w-fit ${active('/admin/gestion-usuarios')}`}>
                             Gestión de Usuarios
                         </Link>
-                        <Link href="/admin/servicios-funerarios" className={`text-sm md:text-base w-fit ${active('/admin/servicios-funerarios')}`}>
+                        <Link href="/admin/servicios-funerarios" className={`text-sm md:text-sm w-fit ${active('/admin/servicios-funerarios')}`}>
                             Servicios Funerarios
                         </Link>
-                        <Link href="/admin/ventas" className={`text-sm md:text-base w-fit ${active('/admin/ventas')}`}>
+                        <Link href="/admin/ventas" className={`text-sm md:text-sm w-fit ${active('/admin/ventas')}`}>
                             Informes de Ventas
                         </Link>
-                        <Link href="/admin/ajustes" className={`text-sm md:text-base w-fit ${active('/admin/ajustes')}`}>
+                        <Link href="/admin/ajustes" className={`text-sm md:text-sm w-fit ${active('/admin/ajustes')}`}>
                             Ajustes
                         </Link>
                     </div>

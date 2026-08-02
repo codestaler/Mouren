@@ -16,12 +16,19 @@ class ServicioFunerario extends Model
         'mascota_id',
         'fecha_inicio',
         'cancion_id',
+        'recuerdo_id',
+        'costo_recuerdo',
         'observaciones'
     ];
 
     // Relación con la canción elegida
     public function cancion() {
         return $this->belongsTo(Cancion::class, 'cancion_id');
+    }
+
+    // Relación con el recuerdo elegido para ESTE afiliado/mascota en particular
+    public function recuerdo() {
+        return $this->belongsTo(Recuerdo::class, 'recuerdo_id');
     }
 
     // Relación si el servicio es para una persona

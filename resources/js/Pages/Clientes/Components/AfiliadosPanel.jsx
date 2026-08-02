@@ -1,6 +1,7 @@
 export default function AfiliadosPanel({
     afiliados,
     canciones,
+    todosLosRecuerdos = [],
     maxAfiliadosIncluidos,
     cantidadAfiliadosExtras,
     iniciarEdicionAfiliado,
@@ -40,6 +41,7 @@ export default function AfiliadosPanel({
                             parentesco: '',
                             observacion_funeraria: '',
                             cancion_id: '',
+                            recuerdo_id: '',
                             genero_id: '',
                             tipo_documento_id: '',
                             cedula: '',
@@ -88,6 +90,13 @@ export default function AfiliadosPanel({
                         canciones.find(
                             c => c.id == cancionIdActual
                         )?.titulo || 'Sin canción';
+
+                    // Recuerdo propio de ESTE afiliado (viene embebido o lo buscamos por id)
+                    const recuerdoIdActual = afi.recuerdo_id ?? dataFuneraria.recuerdo_id;
+                    const recuerdoNombre =
+                        afi.recuerdo?.nombre ||
+                        todosLosRecuerdos.find(r => r.id == recuerdoIdActual)?.nombre ||
+                        'Sin recuerdo asignado';
 
                     return (
                         <div
@@ -276,6 +285,21 @@ export default function AfiliadosPanel({
 
                                             <span className="text-[#6A5A48]">
                                                 {cancion}
+                                            </span>
+                                        </div>
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-start
+                                                gap-2
+                                                text-[11px]
+                                            "
+                                        >
+                                            <span>🎁</span>
+
+                                            <span className="text-[#6A5A48]">
+                                                {recuerdoNombre}
                                             </span>
                                         </div>
                                     </div>
