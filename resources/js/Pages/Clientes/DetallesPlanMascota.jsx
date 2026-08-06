@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ResumenCardsMascota from './components/ResumenCardsMascota';
+import ResumenCardsMascota from './Components/ResumenCardsMascota';
 import MascotasPanel from './Components/MascotasPanel';
 import ServiciosExtrasPanel from './Components/ServiciosExtrasPanel';
 import ServiciosBaseIncluidosPanel from './Components/ServiciosBaseIncluidosPanel';
