@@ -48,7 +48,7 @@ Route::apiResource('canciones', CancionController::class);
 Route::apiResource('especies', EspecieController::class);
 Route::apiResource('mascotas', MascotaController::class);
 Route::apiResource('suscripciones', SuscripcionController::class);
-Route::apiResource('afiliados', AfiliadoController::class);
+//Route::apiResource('afiliados', AfiliadoController::class);
 Route::apiResource('servicios-funerarios', ServicioFunerarioController::class);
 Route::apiResource('tokens', TokenController::class);
 Route::apiResource('plan-recuerdos', PlanRecuerdoController::class);
