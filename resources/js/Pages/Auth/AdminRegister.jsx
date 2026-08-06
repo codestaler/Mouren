@@ -115,7 +115,7 @@ export default function AdminRegister({ tiposDocumento, generos }) {
                     <div className="relative flex items-center">
                         <div className="z-10 -mr-16">
                             {/* Puedes usar el mismo gif o uno de Mouri con traje corporativo si lo tienes */}
-                            <img src="/images/login/mouri_registro_exitoso.gif" className="w-64 h-64 drop-shadow-2xl" alt="Mouri" />
+                            <img src="/images/login/mouri_registro_exitoso.webp" className="w-64 h-64 drop-shadow-2xl" alt="Mouri" />
                         </div>
                         <div className="bg-[#5D4E3F] text-white p-10 pl-20 rounded-[40px] shadow-2xl max-w-md border-2 border-[#A68966]">
                             <h2 className="text-[#FFC600] text-4xl font-black italic mb-2">¡Hecho!</h2>

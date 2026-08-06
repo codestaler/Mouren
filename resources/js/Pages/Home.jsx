@@ -7,22 +7,22 @@ export default function Home() {
         {
             titulo: "Plan Descanso Sereno",
             descripcion: "Una despedida sobria, espiritual y elegante. Pensado para quienes valoran la calma, el respeto y la armonía en su último adiós.",
-            imagen: "/images/imagenes_inicio/carrusel/descanso_sereno.gif"
+            imagen: "/images/imagenes_inicio/carrusel/descanso_sereno.webp"
         },
         {
             titulo: "Legado Eterno",
             descripcion: "Celebramos la alegría de haber compartido la vida. Un servicio colorido y lleno de luz para recordar los mejores momentos.",
-            imagen: "/images/imagenes_inicio/carrusel/descanso_sereno.gif"
+            imagen: "/images/imagenes_inicio/carrusel/descanso_sereno.webp"
         },
         {
             titulo: "Tributo a la Vida",
             descripcion: "Celebramos la alegría de haber compartido la vida. Un servicio colorido y lleno de luz para recordar los mejores momentos.",
-            imagen: "/images/imagenes_inicio/carrusel/descanso_sereno.gif"
+            imagen: "/images/imagenes_inicio/carrusel/descanso_sereno.webp"
         },
         {
             titulo: "Huella Eterna ",
             descripcion: "Celebramos la alegría de haber compartido la vida. Un servicio colorido y lleno de luz para recordar los mejores momentos.",
-            imagen: "/images/imagenes_inicio/carrusel/huella_eterna.gif"
+            imagen: "/images/imagenes_inicio/carrusel/huella_eterna.webp"
         }
     ];
 

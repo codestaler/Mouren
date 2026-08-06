@@ -209,11 +209,14 @@ class ConsultaPublicaController extends Controller
             return response()->json(['error' => 'Tu sesión de verificación expiró. Vuelve a solicitar el código.'], 401);
         }
 
-        $facturas = Factura::whereHas('suscripcion', function ($query) use ($usuario) {
-            $query->where('usuario_id', $usuario->id);
-        })
-        ->orderBy('fecha_emision', 'desc')
-        ->get();
+        $facturas = Factura::where(function ($query) use ($usuario) {
+    $query->whereHas('suscripcion', function ($q) use ($usuario) {
+        $q->where('usuario_id', $usuario->id);
+    })->orWhere('usuario_id', $usuario->id);
+})
+->where('estado_factura_id', '!=', 4) // 🆕 nunca mostramos facturas anuladas al público
+->orderBy('fecha_emision', 'desc')
+->get();
 
         return response()->json(['facturas' => $facturas]);
     }
@@ -243,12 +246,14 @@ class ConsultaPublicaController extends Controller
 
         // Seguridad extra: solo facturas que pertenezcan a ESTE usuario
         $facturas = Factura::whereIn('id', $facturaIds)
-            ->whereIn('estado_factura_id', [1, 3])
-            ->whereHas('suscripcion', function ($query) use ($usuario) {
-                $query->where('usuario_id', $usuario->id);
-            })
-            ->get()
-            ->keyBy('id');
+    ->whereIn('estado_factura_id', [1, 3])
+    ->where(function ($query) use ($usuario) {
+        $query->whereHas('suscripcion', function ($q) use ($usuario) {
+            $q->where('usuario_id', $usuario->id);
+        })->orWhere('usuario_id', $usuario->id); // 🆕
+    })
+    ->get()
+    ->keyBy('id');
 
         if ($facturas->isEmpty()) {
             return response()->json(['error' => 'No se encontraron facturas con saldos pendientes válidos para pagar.'], 422);

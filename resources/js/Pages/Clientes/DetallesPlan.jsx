@@ -25,11 +25,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         suscripcion?.plan?.id === 4
     ) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex relative overflow-x-hidden transition-colors duration-500">
+            <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex flex-col md:flex-row relative overflow-x-hidden transition-colors duration-500">
                 <Head title="Sin Cobertura Activa - Mouren" />
                 <Sidebar />
-                <main className="flex-1 ml-64 p-10 flex items-center justify-center">
-                    <h2 className="text-2xl font-black text-[#5C4F3C] dark:text-[#EDE4D3]">Sin Cobertura Activa ☹</h2>
+                <main className="flex-1 w-full min-w-0 p-6 sm:p-10 content-shift transition-all duration-700 ease-in-out flex items-center justify-center">
+                    <h2 className="text-xl sm:text-2xl font-black text-[#5C4F3C] dark:text-[#EDE4D3]">Sin Cobertura Activa ☹</h2>
                 </main>
             </div>
         );
@@ -268,6 +268,19 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     }, []);
 
     useEffect(() => {
+    document.documentElement.style.cursor =
+        "url('/images/elementos_dashboard/cursor.png''), auto";
+
+    document.body.style.cursor =
+        "url('/images/elementos_dashboard/cursor.png'), auto";
+
+    return () => {
+        document.documentElement.style.cursor = "";
+        document.body.style.cursor = "";
+    };
+}, []);
+
+    useEffect(() => {
         if (datosCargados && plan) {
             const total = calcularTotalSuscripcion(plan, afiliados, serviciosExtras);
             setCuotaTotalDinamica(total);
@@ -331,131 +344,104 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     console.log(suscripcion.servicios_extras)
 
     return (
-        // CAMBIO: se agregó soporte de modo oscuro con la misma paleta de MiPlan/Cartera/MouriIa
-        // (dark:bg-[#221D17], dark:text-[#EDE4D3], etc.). El Sidebar ya pone la clase "dark" en
-        // <html> según el tema del usuario, así que aquí solo hacía falta sumar los dark: correspondientes.
-        <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex relative overflow-x-hidden transition-colors duration-500">
+        // 🆕 LAYOUT REESTRUCTURADO al estilo del dashboard de referencia:
+        // columna izquierda ancha (banner + resumen + servicios) y columna derecha
+        // angosta y fija al hacer scroll (lista de miembros + botón de guardar),
+        // manteniendo la paleta y el modo oscuro de Mouren.
+        <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex flex-col md:flex-row relative overflow-x-hidden transition-colors duration-500">
             <Head title="Detalles del Plan - Mouren" />
             <Sidebar />
 
-            <div className="absolute top-0 right-12 w-[75%] h-44 pointer-events-none z-0 opacity-100 dark:opacity-40 select-none">
+            <div className="hidden lg:block absolute top-0 right-12 w-[45%] h-44 pointer-events-none z-0 opacity-100 dark:opacity-40 select-none">
                 <img src="/images/elementos_dashboard/detalles_plan/flores_colgantes.png" alt="Flores" className="w-full h-full object-contain object-right-top" />
             </div>
 
-            <main className="flex-1 ml-64 p-6 md:p-10 relative z-10 mt-2 ">
-                <div className="max-w-5xl mx-auto">
+            <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out relative z-10 mt-2">
+                <div className="max-w-7xl mx-auto">
 
-                    <header className="mb-8 text-center md:text-left relative z-20">
-                        <h1 className="text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
+                    <header className="mb-6 sm:mb-8 text-center md:text-left relative z-20">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
                             Personaliza tu plan, <span className="text-[#8B7355] dark:text-[#FFD97D]">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
                         </h1>
-                        <p className="text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
+                        <p className="text-[10px] sm:text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
                             "Para que descanses mejor que en vida"
                         </p>
                     </header>
 
-                    <div className="flex flex-col md:flex-row items-center gap-0 mb-10 relative z-20">
+                    {/* 🆕 GRID PRINCIPAL DE DOS COLUMNAS */}
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">
 
-                        {/* 🖼️ OBRA (CUERVO / PINCEL / CUADRO) */}
-                        <div className="relative w-56 md:w-60 shrink-0 z-10">
+                        {/* ============ COLUMNA IZQUIERDA: contenido principal ============ */}
+                        <div className="min-w-0 space-y-6 sm:space-y-8 order-2 lg:order-1">
 
-                            {/* aura artística */}
-                            <div className="absolute inset-0 blur-3xl bg-[#5C4F3C]/10 dark:bg-white/5 scale-95 rounded-[40px]" />
+                            {/* 🖼️ BANNER "TU PLAN ES UNA OBRA VIVA" (equivalente al banner "Effective education") */}
+                            <div className="flex flex-col md:flex-row items-center gap-0 relative z-20">
 
-                            <img
-                                src="/images/elementos_dashboard/detalles_plan/mouri_detalles_plan.gif"
-                                alt="Obra"
-                                className="
-                relative
-                w-full
-                h-full
-                object-contain
-                drop-shadow-[0_30px_50px_rgba(0,0,0,0.25)]
-                dark:drop-shadow-[0_30px_50px_rgba(0,0,0,0.6)]
-                hover:scale-[1.02]
-                transition-transform duration-300
-            "
+                                {/* OBRA */}
+                                <div className="relative w-40 sm:w-48 md:w-60 shrink-0 z-10">
+                                    <div className="absolute inset-0 blur-3xl bg-[#5C4F3C]/10 dark:bg-white/5 scale-95 rounded-[40px]" />
+                                    <img
+                                        src="/images/elementos_dashboard/detalles_plan/mouri_detalles_plan.gif"
+                                        alt="Obra"
+                                        className="relative w-full h-full object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.25)] dark:drop-shadow-[0_30px_50px_rgba(0,0,0,0.6)] hover:scale-[1.02] transition-transform duration-300"
+                                    />
+                                </div>
+
+                                {/* TARJETA */}
+                                <div className="flex-1 relative md:ml-[-28px] bg-[#60533E] dark:bg-[#2E2720] text-white rounded-[22px] sm:rounded-[26px] p-5 sm:p-6 md:p-7 shadow-xl border border-[#7A6A56] dark:border-white/10 overflow-hidden transition-colors duration-500">
+                                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white,transparent_60%)]" />
+                                    <div className="hidden md:block absolute left-0 top-1/2 -translate-x-4 w-8 h-8 bg-[#60533E] dark:bg-[#2E2720] rotate-45 border-l border-t border-[#7A6A56] dark:border-white/10" />
+                                    <div className="absolute -top-10 right-10 w-40 h-40 bg-[#C9A86A]/20 blur-3xl rounded-full" />
+
+                                    <div className="relative space-y-3 sm:space-y-4">
+                                        <div className="text-xl sm:text-2xl font-black leading-tight">
+                                            Tu plan es una obra viva:
+                                            <span className="block text-[#F5E6C8] mt-1">
+                                                {plan.nombre || 'Personalizado'}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-[11px] sm:text-[12px] md:text-sm text-[#E9DDC8] italic leading-relaxed">
+                                            “Un homenaje pensado para preservar recuerdos, acompañar historias
+                                            y convertir cada detalle en una composición eterna.”
+                                        </p>
+
+                                        <div className="flex flex-wrap gap-2 sm:gap-3 text-[11px] sm:text-[12px] pt-2 border-t border-white/20">
+                                            <span className="font-black uppercase tracking-widest text-[#F5E6C8]">
+                                                Afiliación:
+                                            </span>
+                                            <span>{maxAfiliadosIncluidos} amparados incluidos</span>
+                                            <span className="text-[#F5E6C8]">
+                                                +${(VALOR_CUOTA_BASE_PLAN + 2000).toLocaleString('es-CO')} c/u
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 📊 RESUMEN — fila compacta tipo "Events" */}
+                            <ResumenCards
+                                cuotaTotalDinamica={cuotaTotalDinamica}
+                                cantidadAfiliados={cantidadAfiliados}
+                                cantidadAfiliadosExtras={cantidadAfiliadosExtras}
+                                cantidadServiciosTotales={cantidadServiciosTotales}
                             />
-                        </div>
 
-                        {/* 📜 TARJETA (SE MANTIENE, PERO MÁS ARTÍSTICA) */}
-                        <div className="
-        flex-1
-        relative
-        ml-[-18px] md:ml-[-28px]
-        bg-[#60533E] dark:bg-[#2E2720]
-        text-white
-        rounded-[26px]
-        p-6 md:p-7
-        shadow-xl
-        border border-[#7A6A56] dark:border-white/10
-        overflow-hidden
-        transition-colors duration-500
-    ">
-
-                            {/* textura artística suave */}
-                            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white,transparent_60%)]" />
-
-                            {/* conexión visual con la obra */}
-                            <div className="absolute left-0 top-1/2 -translate-x-4 w-8 h-8 bg-[#60533E] dark:bg-[#2E2720] rotate-45 border-l border-t border-[#7A6A56] dark:border-white/10" />
-
-                            {/* glow elegante */}
-                            <div className="absolute -top-10 right-10 w-40 h-40 bg-[#C9A86A]/20 blur-3xl rounded-full" />
-
-                            {/* CONTENIDO */}
-                            <div className="relative space-y-4">
-
-                                {/* TITULO ARTÍSTICO */}
-                                <div className="text-2xl md:text-2xl font-black leading-tight">
-                                    Tu plan es una obra viva:
-                                    <span className="block text-[#F5E6C8] mt-1">
-                                        {plan.nombre || 'Personalizado'}
-                                    </span>
-                                </div>
-
-                                {/* FRASE ARTÍSTICA */}
-                                <p className="text-[12px] md:text-sm text-[#E9DDC8] italic leading-relaxed">
-                                    “Un homenaje pensado para preservar recuerdos, acompañar historias
-                                    y convertir cada detalle en una composición eterna.”
-                                </p>
-
-                                {/* REGLA (MEJOR INTEGRADA, NO BLOQUE) */}
-                                <div className="flex flex-wrap gap-3 text-[12px] pt-2 border-t border-white/20">
-
-                                    <span className="font-black uppercase tracking-widest text-[#F5E6C8]">
-                                        Afiliación:
-                                    </span>
-
-                                    <span>
-                                        {maxAfiliadosIncluidos} amparados incluidos
-                                    </span>
-
-                                    <span className="text-[#F5E6C8]">
-                                        +${(VALOR_CUOTA_BASE_PLAN + 2000).toLocaleString('es-CO')} c/u
-                                    </span>
-
-                                </div>
-
+                            {/* 🌿 SERVICIOS — lado a lado en pantallas medianas, como "Timing & progress" */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <ServiciosExtrasPanel
+                                    serviciosExtras={serviciosExtras}
+                                    abrirModal={abrirModal}
+                                    abrirConfiguradorEstetico={abrirConfiguradorEstetico}
+                                    quitarExtraGabinete={quitarExtraGabinete}
+                                />
+                                <ServiciosBaseIncluidosPanel serviciosBaseFijos={serviciosBaseFijos} />
                             </div>
                         </div>
-                    </div>
 
-                    {/* TARJETAS INFORMATIVAS */}
-                    <ResumenCards
-                        cuotaTotalDinamica={cuotaTotalDinamica}
-                        cantidadAfiliados={cantidadAfiliados}
-                        cantidadAfiliadosExtras={cantidadAfiliadosExtras}
-                        cantidadServiciosTotales={cantidadServiciosTotales}
-                    />
+                        {/* ============ COLUMNA DERECHA: lista de miembros + CTA, fija al hacer scroll ============ */}
+                        <div className="min-w-0 space-y-5 order-1 lg:order-2 lg:sticky lg:top-8">
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start relative z-20">
-                        {/* PANEL DE RECUERDOS (ahora resumen de recuerdos por protegido) */}
-                        <RecuerdoPanel
-                            afiliados={afiliados}
-                            todosLosRecuerdos={todosLosRecuerdos}
-                        />
-
-                        <div className="lg:col-span-2 space-y-6">
                             <AfiliadosPanel
                                 afiliados={afiliados}
                                 canciones={canciones}
@@ -468,24 +454,24 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                 setFormAfiliado={setFormAfiliado}
                             />
 
-                            {/* Panel Servicios Extras */}
-                            <ServiciosExtrasPanel
-                                serviciosExtras={serviciosExtras}
-                                abrirModal={abrirModal}
-                                abrirConfiguradorEstetico={abrirConfiguradorEstetico}
-                                quitarExtraGabinete={quitarExtraGabinete}
-                            />
-
-
-                            {/* Panel Servicios Base Incluidos */}
-                            <ServiciosBaseIncluidosPanel serviciosBaseFijos={serviciosBaseFijos} />
+                            {/* 🆕 CTA "Guardar Personalización", estilo tarjeta oscura tipo "Upgrade to Premium" */}
+                            <div className="relative overflow-hidden bg-[#302A1D] dark:bg-[#2E2720] text-white rounded-[24px] p-5 sm:p-6 shadow-xl border border-white/10">
+                                <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-[#A68966] blur-3xl opacity-25 rounded-full pointer-events-none" />
+                                <div className="relative z-10 space-y-3">
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-[#FFD97D]">Bóveda de Mouren</p>
+                                    <p className="text-[11px] text-white/70 leading-relaxed">
+                                        Guarda los cambios para dejar activa la personalización de tu plan.
+                                    </p>
+                                    <button
+                                        onClick={enviarDatosAlGabineteBackend}
+                                        disabled={cargandoGuardar}
+                                        className="w-full px-6 py-3.5 bg-[#A68966] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-md transition-all hover:bg-[#8e7253] disabled:opacity-50"
+                                    >
+                                        {cargandoGuardar ? 'Guardando en Bóveda...' : 'Guardar Personalización →'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div className="mt-10 flex justify-center">
-                        <button onClick={enviarDatosAlGabineteBackend} disabled={cargandoGuardar} className="px-12 py-3.5 bg-[#60533E] dark:bg-[#A68966] text-white rounded-full font-black uppercase text-xs tracking-widest shadow-md transition-all hover:bg-[#473D2D] dark:hover:bg-[#8e7253]">
-                            {cargandoGuardar ? 'Guardando en Bóveda...' : 'Guardar Personalización'}
-                        </button>
                     </div>
                 </div>
 

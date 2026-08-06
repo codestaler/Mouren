@@ -91,6 +91,14 @@ export default function Datos() {
         }
     };
 
+    // 🆕 La cédula ahora se puede editar: solo números, hasta 15 dígitos (holgado a propósito).
+    const handleCedulaChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 15) {
+            setData('cedula', value);
+        }
+    };
+
     useEffect(() => {
         let intervalo;
         if (validandoToken) {
@@ -117,6 +125,11 @@ export default function Datos() {
 
     const handlePreSubmit = (e) => {
         e.preventDefault();
+
+        if (!data.cedula || data.cedula.trim().length < 5) {
+            setErrorFormulario('Por favor ingresa un número de documento válido (mínimo 5 dígitos).');
+            return;
+        }
 
         if (data.telefono.length !== 10) {
             setErrorFormulario('El número de teléfono móvil debe tener exactamente 10 dígitos.');
@@ -180,7 +193,7 @@ export default function Datos() {
             },
             onError: (errors) => {
                 setValidandoToken(false);
-                setErrorCodigo(errors.codigo || errors.telefono || errors.email || 'Verifica los datos ingresados.');
+                setErrorCodigo(errors.codigo || errors.cedula || errors.telefono || errors.email || 'Verifica los datos ingresados.');
             },
         });
     };
@@ -345,13 +358,17 @@ export default function Datos() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Documento de Identidad</label>
-                                            <input type="text" value={data.cedula} className="w-full bg-[#EFECE8] dark:bg-[#3A322A] border border-neutral-300 dark:border-[#4A4033] text-neutral-500 dark:text-[#8F8368] rounded-xl px-4 py-2.5 text-xs cursor-not-allowed font-sans" disabled />
+                                            <label className="block text-[9px] uppercase tracking-wider font-bold mb-1 italic opacity-70">Documento de Identidad *</label>
+                                            <input
+                                                type="text"
+                                                value={data.cedula}
+                                                onChange={handleCedulaChange}
+                                                placeholder="Ej. 1234567890"
+                                                className="w-full bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#A68966]/20 dark:border-[#4A4033] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#A68966] transition-all font-sans"
+                                                required
+                                            />
                                             <p className="text-[10px] text-[#A68966] italic mt-1.5 flex items-start gap-1 leading-snug">
-                                                <span>ℹ️</span> <span>El documento no se puede modificar. Si hay un error, contacta a
-                                                <a href="mailto:soporte@mouren.com?subject=Correccion de Cedula" className="underline font-bold hover:text-[#302A1D] dark:hover:text-[#EDE4D3] transition-colors ml-0.5">
-                                                    Soporte Mouren
-                                                </a>.</span>
+                                                <span>ℹ️</span> <span>Verifica que esté bien escrito: no puede coincidir con el documento de otra persona ya registrada en el sistema.</span>
                                             </p>
                                         </div>
                                         <div>
@@ -422,7 +439,7 @@ export default function Datos() {
                             </div>
 
                             <div className="w-32 h-32 sm:w-40 sm:h-40 bg-[#4A3E32] rounded-full flex items-center justify-center p-3 shadow-lg relative z-10 mb-4 transition-transform duration-500 group-hover:scale-105">
-                                <img src="/images/login/mouri_registro_exitoso.gif" alt="Mascota Mouri" className="w-full h-full object-contain" />
+                                <img src="/images/login/mouri_registro_exitoso.webp" alt="Mascota Mouri" className="w-full h-full object-contain" />
                             </div>
 
                             <div className="relative z-10 max-w-[200px]">

@@ -11,7 +11,7 @@ const planesData = [
         titulo: 'Descanso Sereno',
         precioIndividual: 5000,
         enfoque: 'Un servicio digno, esencial y respetuoso. Diseñado para brindar tranquilidad inmediata y un respaldo sólido en los momentos que más se necesita la guía experta.',
-        mouri: '/images/planes/tarjetas/sereno/logo_descanso_sereno.gif',
+        mouri: '/images/planes/tarjetas/sereno/logo_descanso_sereno.webp',
         tipoNombre: 'Esencial',
         unidad: 'persona',
         detalles: [
@@ -40,7 +40,7 @@ const planesData = [
         titulo: 'Tributo a la Vida',
         precioIndividual: 10000,
         enfoque: 'Una celebración emotiva, personal y de alta gama. Para quienes desean transformar el adiós en un evento memorable lleno de luz, música y detalles únicos.',
-        mouri: '/images/planes/tarjetas/tributo/logo_tributo.gif',
+        mouri: '/images/planes/tarjetas/tributo/logo_tributo.webp',
         tipoNombre: 'Tributo',
         unidad: 'persona',
         detalles: [
@@ -55,7 +55,7 @@ const planesData = [
         titulo: 'Huella Eterna',
         precioIndividual: 13000,
         enfoque: 'Amor y respeto infinito para los compañeros que dejan su marca en el alma. Un adiós digno para nuestras mascotas, tratándolas como los miembros de familia que son.',
-        mouri: '/images/planes/tarjetas/huella/logo_huella_eterna.gif',
+        mouri: '/images/planes/tarjetas/huella/logo_huella_eterna.webp',
         tipoNombre: 'Mascotas',
         unidad: 'mascota',
         detalles: [

@@ -201,7 +201,7 @@ export default function Cartera({ facturas = [] }) {
                 <header className="flex justify-between items-start mb-6 sm:mb-10 animate-fade-in">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter leading-tight">
-                            Estado de Cuenta
+                            Estado de Cuenta - Mercado pago en fase de prueba
                         </h1>
                         <p className="text-[10px] sm:text-[11px] italic opacity-70 mt-1 break-words">Suscripciones y previsión exequial de {nombreParaMostrar}</p>
                     </div>
@@ -212,7 +212,7 @@ export default function Cartera({ facturas = [] }) {
                     {/* SECCIÓN 1: RESUMEN DE CARTERA INTELIGENTE */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                         <div className="md:col-span-2 bg-[#5D4E3F] text-white p-5 sm:p-6 md:p-8 rounded-[28px] sm:rounded-[36px] md:rounded-[45px] shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[180px]">
-                            <img src="/images/elementos_dashboard/flores_main.gif" className="absolute -top-6 -right-8 sm:-top-8 sm:-right-12 w-32 sm:w-[200px] opacity-40 pointer-events-none" alt="" />
+                            <img src="/images/elementos_dashboard/flores_main.webp" className="absolute -top-6 -right-8 sm:-top-8 sm:-right-12 w-32 sm:w-[200px] opacity-40 pointer-events-none" alt="" />
 
                             <div>
                                 <h3 className="text-[9px] sm:text-[10px] uppercase tracking-[2px] sm:tracking-[3px] font-bold text-[#FFD97D] mb-2 italic">Estado de Cartera</h3>

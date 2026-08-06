@@ -8,11 +8,14 @@ use App\Models\Suscripcion; // Referencia a tu modelo de Suscripciones
 class Factura extends Model
 {
     protected $table = 'facturas';
-    protected $fillable = ['suscripcion_id', 'fecha_emision', 'fecha_vencimiento', 'total', 'estado_factura_id'];
+    protected $fillable = [
+    'suscripcion_id', 'usuario_id', 'fecha_emision', 'fecha_vencimiento', 'total', 'estado_factura_id',
+    'cliente_nombre', 'cliente_cedula', 'cliente_telefono', 'cliente_email', 'concepto',
+];
 
     // 💡 IMPORTANTE: Esto hace que cada vez que envíes la factura a React (Inertia),
     // se incluyan automáticamente los campos de saldo y monto_pagado sin tener que hacer cargas manuales.
-    protected $appends = ['monto_pagado', 'saldo_pendiente', 'ultimo_pago_id'];
+    protected $appends = ['monto_pagado', 'saldo_pendiente', 'ultimo_pago_id', 'nombre_cliente']; // 🆕
 
     // Relación: Una factura pertenece a una suscripción
     public function suscripcion()
@@ -49,5 +52,23 @@ class Factura extends Model
 public function getUltimoPagoIdAttribute()
 {
     return $this->pagos()->where('estado', 'aprobado')->latest('id')->value('id');
+}
+
+
+public function usuario()
+{
+    return $this->belongsTo(\App\Models\User::class, 'usuario_id');
+}
+
+// 🆕 Nombre a mostrar, sin importar si viene de suscripción o es venta suelta
+public function getNombreClienteAttribute()
+{
+    if ($this->suscripcion_id && $this->suscripcion?->usuario) {
+        return $this->suscripcion->usuario->nombre ?? $this->suscripcion->usuario->name;
+    }
+    if ($this->usuario_id && $this->usuario) {
+        return $this->usuario->nombre ?? $this->usuario->name;
+    }
+    return $this->cliente_nombre ?? 'Cliente sin nombre';
 }
 }

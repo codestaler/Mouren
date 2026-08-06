@@ -178,6 +178,15 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
 
     /**
      * Actualizar datos del usuario tras validar código (flujo cliente autenticado).
+     *
+     * 🆕 Ahora la cédula SÍ se puede actualizar desde aquí (antes estaba bloqueada
+     * en el frontend). La protegemos con:
+     *   1) El código de verificación por correo que ya existía (sin tocarlo).
+     *   2) Unicidad contra la tabla `users` (que ningún otro usuario la tenga).
+     *   3) Unicidad contra la tabla `afiliados` de OTRAS cuentas (que no sea la
+     *      cédula de un titular o beneficiario de otra familia).
+     * Si el cambio es válido, también sincronizamos la cédula del registro de
+     * "Titular" en `afiliados`, para que no quede desactualizado.
      */
      public function update(Request $request, $id)
     {
@@ -188,9 +197,25 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
                 Rule::unique('users')->ignore($id),
             ],
             'telefono' => 'required|digits:10',
+            'cedula' => [
+                'required',
+                'string',
+                'min:5',
+                Rule::unique('users', 'cedula')->ignore($id),
+                function ($attribute, $value, $fail) use ($id) {
+                    $perteneceAOtro = Afiliado::where('cedula', $value)
+                        ->where('user_id', '!=', $id)
+                        ->exists();
+
+                    if ($perteneceAOtro) {
+                        $fail('Este número de documento ya pertenece a otra persona registrada en el sistema.');
+                    }
+                },
+            ],
             'codigo_ingresado' => 'required',
         ], [
             'email.unique' => 'Esta dirección de correo electrónico ya se encuentra registrada por otro usuario.',
+            'cedula.unique' => 'Este número de documento ya se encuentra registrado por otro usuario.',
         ]);
 
         $codigoGuardado = Session::get('codigo_verificacion');
@@ -212,6 +237,15 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
 
         $user->email = $request->email;
         $user->telefono = $request->telefono;
+
+        if ($request->filled('cedula') && $request->cedula !== $user->cedula) {
+            $user->cedula = $request->cedula;
+
+            // Mantenemos sincronizada la cédula del Titular en su propio registro de afiliado
+            Afiliado::where('user_id', $user->id)
+                ->where('parentesco', 'Titular')
+                ->update(['cedula' => $request->cedula]);
+        }
 
         // 👇 Ahora sí funciona: Genero está importado arriba
         if ($request->filled('genero')) {

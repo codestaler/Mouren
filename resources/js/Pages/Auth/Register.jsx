@@ -111,22 +111,22 @@ export default function Register({ tiposDocumento, generos }) {
     const isSuccess = flash?.message;
 
     return (
-        <div className="relative h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-hidden">
+        <div className="relative min-h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-x-hidden">
             <Head title="Registro - Mouren" />
 
             {/* --- MODAL DE ÉXITO --- */}
             {isSuccess && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
-                    <div className="relative flex items-center">
-                        <div className="z-10 -mr-16">
-                            <img src="/images/login/mouri_registro_exitoso.gif" className="w-64 h-64 drop-shadow-2xl" alt="Mouri" />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in px-4">
+                    <div className="relative flex flex-col sm:flex-row items-center w-full max-w-md sm:max-w-none sm:w-auto">
+                        <div className="z-10 sm:-mr-16 w-40 h-40 sm:w-64 sm:h-64">
+                            <img src="/images/login/mouri_registro_exitoso.webp" className="w-full h-full drop-shadow-2xl" alt="Mouri" />
                         </div>
-                        <div className="bg-[#5D4E3F] text-white p-10 pl-20 rounded-[40px] shadow-2xl max-w-md border-2 border-[#A68966]">
-                            <h2 className="text-[#FFC600] text-4xl font-black italic mb-2">¡Felicidades!</h2>
-                            <p className="text-lg font-medium leading-tight mb-8 lowercase">
+                        <div className="bg-[#5D4E3F] text-white p-6 sm:p-10 sm:pl-20 rounded-[32px] sm:rounded-[40px] shadow-2xl w-full max-w-md border-2 border-[#A68966] -mt-6 sm:mt-0 text-center sm:text-left">
+                            <h2 className="text-[#FFC600] text-3xl sm:text-4xl font-black italic mb-2">¡Felicidades!</h2>
+                            <p className="text-base sm:text-lg font-medium leading-tight mb-6 sm:mb-8 lowercase">
                                 <span className="text-[#EBE3CB] font-bold">{data.nombre1}</span>, ya tienes cuenta. inicia sesión para continuar.
                             </p>
-                            <Link href="/login" className="block w-full bg-[#A68966] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all shadow-lg text-xl lowercase">
+                            <Link href="/login" className="block w-full bg-[#A68966] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all shadow-lg text-lg sm:text-xl lowercase">
                                 inicia sesión ahora
                             </Link>
                         </div>
@@ -136,11 +136,11 @@ export default function Register({ tiposDocumento, generos }) {
 
             {/* --- ALERTA DE ERRORES --- */}
             {hasErrors && (
-                <div className="fixed top-6 right-6 z-50 animate-bounce-in w-[400px]">
-                    <div className="flex items-center p-5 rounded-2xl border-l-8 bg-red-50 border-red-700 text-red-900 shadow-2xl">
-                        <img src="/images/login/mouri_error.png" className="w-20 h-20 mr-4" alt="Error" />
+                <div className="fixed top-4 sm:top-6 right-4 sm:right-6 left-4 sm:left-auto z-50 animate-bounce-in sm:w-[400px]">
+                    <div className="flex items-center p-4 sm:p-5 rounded-2xl border-l-8 bg-red-50 border-red-700 text-red-900 shadow-2xl">
+                        <img src="/images/login/mouri_error.png" className="w-14 h-14 sm:w-20 sm:h-20 mr-3 sm:mr-4 flex-shrink-0" alt="Error" />
                         <div>
-                            <p className="font-bold text-lg italic lowercase">¡alto ahí!</p>
+                            <p className="font-bold text-base sm:text-lg italic lowercase">¡alto ahí!</p>
                             <ul className="text-xs list-disc list-inside opacity-80 lowercase">
                                 {Object.values(errors).map((err, i) => <li key={i}>{err}</li>)}
                             </ul>
@@ -156,24 +156,24 @@ export default function Register({ tiposDocumento, generos }) {
 
             {/* Logo Fijo */}
             <div className="absolute top-0 left-0 z-20">
-                <img src="/images/esquina-decorativa.png" className="w-52 opacity-80" alt="" />
-                <Link href="/" className="absolute top-4 left-4">
-                    <img src="/images/logo.png" className="h-10" alt="Logo" />
+                <img src="/images/esquina-decorativa.png" className="w-32 sm:w-52 opacity-80" alt="" />
+                <Link href="/" className="absolute top-3 left-3 sm:top-4 sm:left-4">
+                    <img src="/images/logo.png" className="h-7 sm:h-10" alt="Logo" />
                 </Link>
             </div>
 
-            <div className="relative z-10 w-full flex h-full">
-                <div className="w-1/2 flex flex-col justify-start pl-52 pt-20">
+            <div className="relative z-10 w-full flex flex-col sm:flex-row min-h-screen sm:h-full pt-24 sm:pt-0">
+                <div className="w-full sm:w-1/2 flex flex-col justify-start px-5 sm:pl-24 md:pl-36 lg:pl-60 sm:pt-8 md:pt-12 lg:pt-16">
 
                     {/* TÍTULO ESTÁTICO (No se mueve con el scroll del form) */}
-                    <div className="mb-6">
-                        <h2 className="text-4xl font-black text-[#5D4E3F] lowercase tracking-tighter">únete a nuestra familia</h2>
-                        <div className="h-1 w-20 bg-[#A68966] mt-2"></div>
+                    <div className="mb-4 sm:mb-6">
+                        <h2 className="text-2xl sm:text-4xl font-black text-[#5D4E3F] lowercase tracking-tighter">únete a nuestra familia</h2>
+                        <div className="h-1 w-16 sm:w-20 bg-[#A68966] mt-2"></div>
                     </div>
 
                     {/* FORMULARIO CON SCROLL */}
-                    <div className="w-full max-w-xl overflow-y-auto pr-4 text-[#5D4E3F] custom-scrollbar pb-20">
-                        <form onSubmit={submit} className="grid grid-cols-2 gap-x-8 gap-y-6 text-base">
+                    <div className="w-full max-w-xl sm:overflow-y-auto sm:max-h-[calc(100vh-16rem)] lg:max-h-[calc(100vh-18rem)] pr-0 sm:pr-4 text-[#5D4E3F] custom-scrollbar pb-10 sm:pb-20">
+                        <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6 text-base">
 
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">tipo de documento</label>
@@ -215,7 +215,7 @@ export default function Register({ tiposDocumento, generos }) {
                                     value={data.apellido2} onChange={e => handleInput(e, 'apellido2', 'no-special')} />
                             </div>
 
-                            <div className="col-span-2">
+                            <div className="col-span-1 sm:col-span-2">
                                 <label className="block font-bold mb-1 text-xs lowercase">fecha de nacimiento</label>
                                 <input type="date" max={today} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.fecha_nacimiento} onChange={e => setData('fecha_nacimiento', e.target.value)} />
@@ -237,7 +237,7 @@ export default function Register({ tiposDocumento, generos }) {
                                 <span className="block text-[10px] text-[#A68966] mt-1 lowercase">10 dígitos, debe iniciar con el número 3</span>
                             </div>
 
-                            <div className="col-span-2">
+                            <div className="col-span-1 sm:col-span-2">
                                 <label className="block font-bold mb-1 text-xs lowercase">correo electrónico</label>
                                 <input type="email" required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.email} onChange={e => handleInput(e, 'email', 'no-spaces')} />
@@ -263,13 +263,13 @@ export default function Register({ tiposDocumento, generos }) {
                                 <span className="block text-[10px] text-[#A68966] mt-1 lowercase">las contraseñas deben ser idénticas</span>
                             </div>
 
-                            <div className="col-span-2 mt-4">
+                            <div className="col-span-1 sm:col-span-2 mt-2 sm:mt-4">
                                 <button type="submit" disabled={processing} className="w-full bg-[#5D4E3F] text-white py-4 rounded-2xl font-bold hover:bg-[#A68966] transition-all transform active:scale-95 disabled:opacity-50 shadow-xl lowercase tracking-widest">
                                     {processing ? 'procesando...' : 'finalizar registro'}
                                 </button>
                             </div>
 
-                            <div className="col-span-2 text-center">
+                            <div className="col-span-1 sm:col-span-2 text-center pb-4 sm:pb-0">
                                 <Link href="/login" className="text-sm font-medium hover:text-[#A68966] transition-colors lowercase">
                                     ¿ya tienes cuenta? <span className="font-bold underline">inicia sesión aquí</span>
                                 </Link>
@@ -278,12 +278,20 @@ export default function Register({ tiposDocumento, generos }) {
                     </div>
                 </div>
 
-                <div className="w-1/2 flex justify-end items-end p-10">
+                <div className="hidden sm:flex w-1/2 justify-end items-end p-10">
                     <Link href="/" className="bg-[#A68966]/90 backdrop-blur-md text-white px-10 py-3 rounded-full font-bold hover:bg-[#5D4E3F] transition shadow-2xl active:scale-95 lowercase">
                         volver al inicio
                     </Link>
                 </div>
             </div>
+
+            {/* Botón "volver" flotante para móvil, ya que el panel derecho se oculta */}
+            <Link
+                href="/"
+                className="sm:hidden fixed bottom-4 right-4 z-20 bg-[#A68966]/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-[#5D4E3F] transition shadow-2xl active:scale-95 lowercase"
+            >
+                volver al inicio
+            </Link>
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -295,6 +303,13 @@ export default function Register({ tiposDocumento, generos }) {
                     0% { opacity: 0; transform: translateX(200px); }
                     60% { opacity: 1; transform: translateX(-20px); }
                     100% { transform: translateX(0); }
+                }
+                @media (max-width: 639px) {
+                    @keyframes bounceInRight {
+                        0% { opacity: 0; transform: translateY(-40px); }
+                        60% { opacity: 1; transform: translateY(6px); }
+                        100% { transform: translateY(0); }
+                    }
                 }
             `}</style>
         </div>

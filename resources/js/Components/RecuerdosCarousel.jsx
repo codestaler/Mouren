@@ -25,13 +25,13 @@ export default function RecuerdosCarousel() {
     };
 
     return (
-        <section className="py-20 bg-[#F4EDE6] relative overflow-hidden">
+        <section className="py-16 sm:py-20 bg-[#F4EDE6] relative overflow-hidden">
             <div className="max-w-[1500px] mx-auto px-4">
                 
                 {/* Títulos y Flechas */}
-                <div className="flex justify-between items-center mb-10 px-4">
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-10 px-2 sm:px-4">
                     <div>
-                        <h2 className="text-3xl font-black text-[#5D4E3F] italic tracking-tighter">
+                        <h2 className="text-2xl sm:text-3xl font-black text-[#5D4E3F] italic tracking-tighter">
                             Nuestros <span className="text-[#A68966]">Recuerdos</span>
                         </h2>
                         <p className="text-[#A68966] font-bold text-[10px]  tracking-widest">Personaliza tu despedida</p>
@@ -55,7 +55,7 @@ export default function RecuerdosCarousel() {
                     {recuerdos.map((item) => (
                         <div 
                             key={item.id}
-                            className="relative min-w-[210px] flex-shrink-0 h-[380px] flex flex-col items-center group transition-all duration-500"
+                            className="relative min-w-[180px] sm:min-w-[210px] flex-shrink-0 h-[340px] sm:h-[380px] flex flex-col items-center group transition-all duration-500"
                             style={{ scrollSnapAlign: 'start' }}
                         >
                             {/* IMAGEN: Ahora más pequeña para que quepan 6 */}
@@ -63,7 +63,7 @@ export default function RecuerdosCarousel() {
                                 <img 
                                     src={item.imagen} 
                                     alt={item.nombre} 
-                                    className="w-32 h-40 object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.3)]"
+                                    className="w-28 h-36 sm:w-32 sm:h-40 object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.3)]"
                                 />
                             </div>
 

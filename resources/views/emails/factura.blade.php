@@ -11,12 +11,18 @@
 </head>
 <body>
     <div class="card">
-        <h2>Hola, {{ $factura->suscripcion->usuario->name }}</h2>
-        <p>Te hacemos llegar tu estado de cuenta mensual correspondiente a tu plan de previsión exequial en <strong>Mouren</strong>.</p>
+        <h2>Hola, {{ $factura->nombre_cliente }}</h2>
+        <p>Te hacemos llegar tu {{ $factura->suscripcion_id ? 'estado de cuenta mensual correspondiente a tu plan de previsión exequial' : 'factura' }} en <strong>Mouren</strong>.</p>
         <p><strong>Total a pagar:</strong> ${{ number_format($factura->total) }}</p>
         <p><strong>Fecha límite:</strong> {{ $factura->fecha_vencimiento }}</p>
-        <p>Adjunto a este correo encontrarás el PDF oficial de tu cobro. Puedes realizar tu pago seguro ingresando a tu portal de clientes.</p>
-        <a href="{{ url('/pagos') }}" class="btn">Ir a Pagar mi Cuota</a>
+        <p>Adjunto a este correo encontrarás el PDF oficial de tu cobro. Puedes realizar tu pago seguro ingresando al portal de pagos.</p>
+
+        @if($factura->suscripcion_id)
+            <a href="{{ url('/pagos') }}" class="btn">Ir a Pagar mi Cuota</a>
+        @else
+            <a href="{{ url('/pagos-consultas') }}" class="btn">Consultar y Pagar</a>
+        @endif
+
         <br><br>
         <small style="opacity: 0.6;">Atentamente,<br>El equipo de soporte de Mouren.</small>
     </div>

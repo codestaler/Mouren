@@ -28,15 +28,15 @@ export default function Login() {
     };
 
     return (
-        <div className="relative h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-hidden">
+        <div className="relative min-h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-x-hidden">
             <Head title="Inicia Sesión - Mouren" />
 
             {/* --- ALERTA FLOTANTE DE ERROR (ESTILO MOUREN) --- */}
             {showErrorToast && (
-                <div className="fixed top-6 right-6 z-50 animate-bounce-in w-[380px]">
-                    <div className="flex items-center p-5 rounded-2xl border-l-8 border-[#5D4E3F] bg-red-50/95 shadow-2xl backdrop-blur-md">
+                <div className="fixed top-4 sm:top-6 right-4 sm:right-6 left-4 sm:left-auto z-50 animate-bounce-in sm:w-[380px]">
+                    <div className="flex items-center p-4 sm:p-5 rounded-2xl border-l-8 border-[#5D4E3F] bg-red-50/95 shadow-2xl backdrop-blur-md">
                         {/* Cuervo triste para errores */}
-                        <div className="flex-shrink-0 w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-white shadow-md mr-4">
+                        <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 border-white overflow-hidden bg-white shadow-md mr-3 sm:mr-4">
                             <img 
                                 src="/images/cuervo_triste.png" 
                                 className="w-full h-full object-contain p-1"
@@ -44,16 +44,16 @@ export default function Login() {
                             />
                         </div>
                         
-                        <div className="flex-1">
-                            <p className="font-bold text-lg text-red-900 leading-tight">
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-base sm:text-lg text-red-900 leading-tight">
                                 ¡Uy! Algo falló
                             </p>
-                            <p className="text-sm text-red-800 font-medium opacity-90">
+                            <p className="text-xs sm:text-sm text-red-800 font-medium opacity-90">
                                 {errors.email || errors.password || "Credenciales incorrectas"}
                             </p>
                         </div>
                         
-                        <button onClick={() => setShowErrorToast(false)} className="text-red-900/50 hover:text-red-900 ml-2">
+                        <button onClick={() => setShowErrorToast(false)} className="text-red-900/50 hover:text-red-900 ml-2 flex-shrink-0">
                             ✕
                         </button>
                     </div>
@@ -71,25 +71,25 @@ export default function Login() {
 
             {/* 2. DECORACIÓN + LOGO */}
             <div className="absolute top-0 right-0 z-20 pointer-events-none">
-                <img src="/images/login/esquina-decorativa-derecha.png" className="w-40 opacity-100" />
-                <img src="/images/logo.png" className="absolute top-8 right-8 h-10 pointer-events-auto" alt="Logo" />
+                <img src="/images/login/esquina-decorativa-derecha.png" className="w-24 sm:w-32 lg:w-40 opacity-100" />
+                <img src="/images/logo.png" className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 h-7 sm:h-8 lg:h-10 pointer-events-auto" alt="Logo" />
             </div>
 
-            <div className="relative z-10 w-full flex h-full">
+            <div className="relative z-10 w-full flex flex-col lg:flex-row min-h-screen lg:h-full">
                 
                 {/* ZONA IZQUIERDA (Botón Volver) */}
-                <div className="w-1/2 relative flex items-end p-12">
-                    <Link href="/" className="group bg-[#A68966]/80 text-white px-8 py-2 rounded-full hover:bg-[#5D4E3F] transition-all duration-300 text-sm font-bold shadow-lg hover:scale-105 active:scale-95">
+                <div className="w-full lg:w-1/2 relative flex items-start lg:items-end justify-start pt-20 px-5 sm:px-8 lg:p-12 order-2 lg:order-1">
+                    <Link href="/" className="group bg-[#A68966]/80 text-white px-6 sm:px-8 py-2 rounded-full hover:bg-[#5D4E3F] transition-all duration-300 text-sm font-bold shadow-lg hover:scale-105 active:scale-95">
                         <span className="mr-2">←</span> Volver al inicio
                     </Link>
                 </div>
 
                 {/* ZONA DERECHA (Formulario) */}
-                <div className="w-1/2 flex flex-col justify-center items-center pr-20">
-                    <div className="w-full max-w-sm bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-gray text-[#5D4E3F]">
-                        <h2 className="text-[25px] font-bold mb-8 text-center tracking-tight ">Inicia Sesión</h2>
+                <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 sm:px-8 lg:pr-20 lg:px-0 pt-8 pb-12 lg:py-0 order-1 lg:order-2">
+                    <div className="w-full max-w-sm bg-white/20 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-gray text-[#5D4E3F]">
+                        <h2 className="text-[22px] sm:text-[25px] font-bold mb-6 sm:mb-8 text-center tracking-tight ">Inicia Sesión</h2>
                         
-                        <form onSubmit={submit} className="flex flex-col gap-6">
+                        <form onSubmit={submit} className="flex flex-col gap-5 sm:gap-6">
                             <div className="group">
                                 <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors">Correo electrónico</label>
                                 <input 
@@ -112,7 +112,7 @@ export default function Login() {
                                 />
                             </div>
 
-                            <div className="flex flex-col items-center gap-4 mt-4">
+                            <div className="flex flex-col items-center gap-4 mt-2 sm:mt-4">
                                 <button 
                                     type="submit" 
                                     disabled={processing}
@@ -121,7 +121,7 @@ export default function Login() {
                                     {processing ? 'COMPROBANDO...' : '¡Ya Estoy Listo!'}
                                 </button>
                                 
-                                <Link href={route('password.request')} className="text-[16px] hover:text-[#A68966] underline decoration-[#A68966]/30 transition-all">
+                                <Link href={route('password.request')} className="text-sm sm:text-[16px] hover:text-[#A68966] underline decoration-[#A68966]/30 transition-all">
                                     ¿Olvidaste tu contraseña?
                                 </Link>
                             </div>
@@ -152,6 +152,14 @@ export default function Login() {
                     0% { opacity: 0; transform: translateX(200px); }
                     60% { opacity: 1; transform: translateX(-20px); }
                     100% { transform: translateX(0); }
+                }
+
+                @media (max-width: 639px) {
+                    @keyframes bounceInRight {
+                        0% { opacity: 0; transform: translateY(-40px); }
+                        60% { opacity: 1; transform: translateY(6px); }
+                        100% { transform: translateY(0); }
+                    }
                 }
 
                 body::-webkit-scrollbar { width: 8px; }

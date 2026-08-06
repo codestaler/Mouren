@@ -24,7 +24,7 @@ export default function ForgotPassword() {
             <div className="bg-white rounded-[45px] p-8 md:p-10 max-w-md w-full shadow-xl border border-[#5D4E3F]/5 text-center relative overflow-hidden">
                 {/* Decoración sutil */}
                 <div className="w-24 h-24 bg-[#FAF8F5] rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
-                    <img src="/images/login/mouri_registro_exitoso.gif" alt="Mouri" className="w-16 h-16 object-contain" />
+                    <img src="/images/login/mouri_registro_exitoso.webp" alt="Mouri" className="w-16 h-16 object-contain" />
                 </div>
 
                 <h1 className="text-xl md:text-2xl font-black text-[#302A1D] mb-2 tracking-tighter">

@@ -14,178 +14,82 @@ export default function ResumenCards({
 
     const getColorServicios = () => {
         if (cantidadServiciosTotales === 0) return "bg-[#C9A18A]";
-        if (cantidadServiciosTotales < 3) return "bg-[#D9BF45]";
-        if (cantidadServiciosTotales < 6) return "bg-[#7FB7A3]";
-        return "bg-[#5E7F72]";
+        if (cantidadServiciosTotales < 3) return "bg-[#D9B44A]";
+        if (cantidadServiciosTotales < 6) return "bg-[#8C6F4F]";
+        return "bg-[#5D4E3F]";
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 relative z-20">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-20">
 
             {/* ================= CUOTA ================= */}
             <div className="
-    relative overflow-visible
-    bg-gradient-to-br from-[#3E3428] via-[#5A4A36] to-[#7A6650]
-    text-white p-6 rounded-[28px]
-    min-h-[125px]
-    flex flex-col justify-between
-    shadow-[0_20px_40px_rgba(0,0,0,0.25)]
-    hover:-translate-y-1 hover:scale-[1.02]
-    transition-all duration-300 group
-">
-
-                {/* textura */}
-                <div className="absolute inset-0 opacity-10 mix-blend-overlay bg-[url('/images/texturas/papel_grano.png')]" />
-
+                relative overflow-visible
+                bg-gradient-to-br from-[#302A1D] via-[#5D4E3F] to-[#8C6F4F]
+                text-white p-5 rounded-[22px]
+                min-h-[100px]
+                flex flex-col justify-between
+                shadow-[0_15px_30px_rgba(0,0,0,0.2)]
+                hover:-translate-y-1 hover:scale-[1.02]
+                transition-all duration-300 group
+            ">
                 {/* glow */}
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#FFC107] blur-3xl opacity-20 rounded-full" />
-
-                {/* imagen decorativa */}
-                <img
-                    src="/images/elementos_dashboard/detalles_plan/flores_esquinas_tarjetas.webp"
-                    className="absolute top-[-15px] right-[-10px] w-44 opacity-70 rotate-6 group-hover:scale-110 transition"
-                />
+                <div className="absolute -top-8 -right-8 w-32 h-32 bg-[#FFD97D] blur-3xl opacity-20 rounded-full pointer-events-none" />
 
                 {/* título */}
-                <span className="text-[12px] uppercase tracking-[0.2em] font-black text-[#FFD36A] z-30">
-                    Cuota Total <br />Dinámica
+                <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#FFD97D] relative z-10">
+                    Cuota Total Dinámica
                 </span>
 
                 {/* valor */}
-                <span className="text-3xl font-black text-left relative z-10">
-                    {Number(cuotaTotalDinamica || 0).toLocaleString("es-CO")}
-                    <span className="text-[10px] ml-1 opacity-80">COP</span>
+                <span className="text-2xl font-black text-left relative z-10">
+                    ${Number(cuotaTotalDinamica || 0).toLocaleString("es-CO")}
+                    <span className="text-[9px] ml-1 opacity-80 font-normal">COP</span>
                 </span>
 
-                {/* ================= TOOLTIP (ESPACIO LIBRE PARA TI) ================= */}
-                {/* Burbuja informativa */}
-                <div
-                    className="
-        absolute
-        -top-28
-        left-1/2
-        -translate-x-1/2
-
-        w-[260px]
-
-        opacity-0
-        scale-95
-        translate-y-2
-
-        group-hover:opacity-100
-        group-hover:scale-100
-        group-hover:translate-y-0
-
-        transition-all
-        duration-300
-
-        pointer-events-none
-        z-50
-    "
-                >
-                    <div
-                        className="
-            relative
-
-            bg-[#FFF9F2]
-            text-[#4A3428]
-
-            rounded-[24px]
-
-            px-5
-            py-4
-
-            border-2
-            border-[#E8D9C6]
-
-            shadow-[0_15px_30px_rgba(0,0,0,0.15)]
-        "
-                    >
-                        {/* comillas decorativas */}
-                        <span
-                            className="
-                absolute
-                top-2
-                left-3
-
-                text-4xl
-                leading-none
-
-                text-[#D9BF45]
-                opacity-40
-                font-black
-            "
-                        >
-                            "
-                        </span>
-
-                        <p
-                            className="
-                text-[12px]
-                leading-relaxed
-                pl-4
-            "
-                        >
-                            Aquí puedes escribir una explicación larga sobre cómo se calcula
-                            esta cuota, qué servicios influyen en el valor final y cualquier
-                            detalle que quieras compartir con el usuario.
+                {/* ================= TOOLTIP ================= */}
+                <div className="
+                    absolute -top-24 left-1/2 -translate-x-1/2 w-[240px]
+                    opacity-0 scale-95 translate-y-2
+                    group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0
+                    transition-all duration-300 pointer-events-none z-50
+                ">
+                    <div className="
+                        relative bg-[#FAF8F5] dark:bg-[#2E2720] text-[#4A3428] dark:text-[#EDE4D3]
+                        rounded-[20px] px-5 py-4 border-2 border-[#A68966]/25 dark:border-white/10
+                        shadow-[0_15px_30px_rgba(0,0,0,0.15)]
+                    ">
+                        <span className="absolute top-2 left-3 text-3xl leading-none text-[#A68966] opacity-40 font-black">"</span>
+                        <p className="text-[11px] leading-relaxed pl-3">
+                            Este valor es variable usa el mismo calculo que el momento de suscribirse, multiplica el valor base del
+                            plan por cada afiliado y lo suma, tambien suma el valor unitario del recuerdo de cada afiliado mas los servicios extras elegidos.
                         </p>
-
-                        {/* piquito tipo comic */}
-                        <div
-                            className="
-                absolute
-                -bottom-3
-                left-1/2
-                -translate-x-1/2
-
-                w-6
-                h-6
-
-                bg-[#FFF9F2]
-
-                border-r-2
-                border-b-2
-                border-[#E8D9C6]
-
-                rotate-45
-            "
-                        />
+                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-[#FAF8F5] dark:bg-[#2E2720] border-r-2 border-b-2 border-[#A68966]/25 dark:border-white/10 rotate-45" />
                     </div>
                 </div>
-
             </div>
 
             {/* ================= AFILIADOS ================= */}
             <div className="
-                relative overflow-visible
-                bg-gradient-to-br from-[#4A3D2F] via-[#6B5642] to-[#A07C8A]
-                text-white p-6 rounded-[28px]
-                min-h-[125px]
+                relative overflow-hidden
+                bg-gradient-to-br from-[#4A3E32] via-[#6E5540] to-[#A68966]
+                text-white p-5 rounded-[22px]
+                min-h-[100px]
                 flex flex-col justify-between
-                shadow-[0_20px_40px_rgba(0,0,0,0.25)]
+                shadow-[0_15px_30px_rgba(0,0,0,0.2)]
                 hover:-translate-y-1 hover:scale-[1.02]
                 transition-all duration-300 group
             ">
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#FFD97D] blur-3xl opacity-15 rounded-full pointer-events-none" />
 
-                <div className="absolute inset-0 opacity-10 mix-blend-overlay bg-[url('/images/texturas/papel_grano.png')]" />
-
-                <div className="absolute bottom-0 right-0 w-40 h-40 bg-[#C49A6C] blur-3xl opacity-20 rounded-full" />
-
-                <img
-                    src="/images/elementos_dashboard/detalles_plan/flores_centro.png"
-                    className="absolute bottom-[-12px] right-[-22px] w-44 opacity-80 "
-                />
-
-                <span className="text-[13px] uppercase tracking-[0.2em] font-black z-30"> 
+                <span className="text-[10px] uppercase tracking-[0.15em] font-black relative z-10">
                     Miembros Registrados
                 </span>
 
-                <span className="text-3xl font-black text-left z-30">
+                <span className="text-2xl font-black text-left relative z-10">
                     {cantidadAfiliados}
-
                     {cantidadAfiliadosExtras > 0 && (
-                        <span className="block text-xs text-[#FFE3A3] mt-1">
+                        <span className="block text-[10px] text-[#FFD97D] mt-0.5 font-bold">
                             +{cantidadAfiliadosExtras} extras
                         </span>
                     )}
@@ -194,45 +98,29 @@ export default function ResumenCards({
 
             {/* ================= SERVICIOS ================= */}
             <div className="
-                relative overflow-visible
-                bg-gradient-to-br from-[#4B3D2F] via-[#6C5A45] to-[#5E7F72]
-                text-white p-6 rounded-[28px]
-                min-h-[125px]
+                relative overflow-hidden
+                bg-gradient-to-br from-[#302A1D] via-[#4A3E32] to-[#5D4E3F]
+                text-white p-5 rounded-[22px]
+                min-h-[100px]
                 flex flex-col justify-between
-                shadow-[0_20px_40px_rgba(0,0,0,0.25)]
+                shadow-[0_15px_30px_rgba(0,0,0,0.2)]
                 hover:-translate-y-1 hover:scale-[1.02]
                 transition-all duration-300 group
             ">
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-[#8C6F4F] blur-3xl opacity-20 rounded-full pointer-events-none" />
 
-                {/* textura */}
-                <div className="absolute inset-0 opacity-10 mix-blend-overlay bg-[url('/images/texturas/papel_grano.png')]" />
-
-                {/* energía visual */}
-                <div className="absolute -top-10 -left-10 w-44 h-44 bg-[#7FB7A3] blur-3xl opacity-20 rounded-full" />
-                <div className="absolute -bottom-10 -right-10 w-44 h-44 bg-[#C9B37E] blur-3xl opacity-20 rounded-full" />
-
-                <img
-                    src="/images/elementos_dashboard/detalles_plan/lirios_colgantes.png"
-                    className="absolute top-[-30px] right-[-15px] w-40 opacity-60 "
-                />
-
-                <span className="text-[13px] uppercase tracking-[0.2em] font-black z-30">
-                    Servicios Activos
+                <span className="text-[10px] uppercase tracking-[0.15em] font-black relative z-10">
+                    Servicios Extras
                 </span>
 
-                {/* número + estado */}
                 <div className="text-left relative z-10">
-                    <span className="text-3xl font-black block">
+                    <span className="text-2xl font-black block">
                         {cantidadServiciosTotales}
                     </span>
-
-                    <span
-                        className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white ${getColorServicios()}`}
-                    >
+                    <span className={`inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white ${getColorServicios()}`}>
                         {getEstadoServicios()}
                     </span>
                 </div>
-
             </div>
 
         </div>

@@ -230,7 +230,7 @@ export default function MiPlan({
                                         {/* Flor decorativa detrás del nombre y la cuota, en la esquina e invertida */}
                                         {suscripcion && (
                                             <img
-                                                src="/images/elementos_dashboard/flores_main.gif"
+                                                src="/images/elementos_dashboard/flores-esquina-bottom.png"
                                                 alt=""
                                                 aria-hidden="true"
                                                 className={`absolute -bottom-8 -left-8 sm:-bottom-4 sm:-left-10 w-32 sm:w-40 opacity-20 pointer-events-none scale-x-[-1] z-0 transition-all ${reproduciendo ? 'brightness-125 contrast-125 opacity-30' : ''}`}
@@ -297,13 +297,13 @@ export default function MiPlan({
                                             <>
                                                 {/* 👉 Personaje para modo claro (cámbialo por tu ilustración) */}
                                                 <img
-                                                    src="/images/elementos_dashboard/mouri_dia.gif"
+                                                    src="/images/elementos_dashboard/mouri_dia.webp"
                                                     alt="Personaje"
                                                     className={`block dark:hidden w-full h-full object-contain p-0 ml-[-180px] transition-all ${reproduciendo ? 'brightness-125 contrast-125' : ''}`}
                                                 />
                                                 {/* 👉 Personaje para modo oscuro (cámbialo por tu ilustración) */}
                                                 <img
-                                                    src="/images/elementos_dashboard/mouri_noche.gif"
+                                                    src="/images/elementos_dashboard/mouri_noche.webp"
                                                     alt="Personaje"
                                                     className={`hidden dark:block w-full h-full object-contain p-0 ml-[-210px] transition-all ${reproduciendo ? 'brightness-125 contrast-125' : ''}`}
                                                 />

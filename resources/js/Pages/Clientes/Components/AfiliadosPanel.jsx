@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 export default function AfiliadosPanel({
     afiliados,
     canciones,
@@ -9,26 +11,23 @@ export default function AfiliadosPanel({
     abrirModal,
     setFormAfiliado
 }) {
-    return (
-        <div
-            className="
-                bg-[#FFFFFF]
-                p-6
-                rounded-[32px]
-                border
-                border-[#E8DFC8]
-                shadow-lg
-            "
-        >
-            {/* Header */}
+    // 🆕 Estado puramente visual: qué tarjeta está expandida mostrando el detalle completo
+    // (observaciones, canción, botones editar/eliminar). No toca ninguna lógica del padre.
+    const [expandidoId, setExpandidoId] = useState(null);
 
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8DFC8]">
-                <div>
-                    <h3 className="font-black text-[16px] tracking-[0.2px] text-[#5A4632]">
+    const toggleExpandido = (id) => {
+        setExpandidoId(prev => (prev === id ? null : id));
+    };
+
+    return (
+        <div className="bg-white dark:bg-[#2E2720] p-5 sm:p-6 rounded-[28px] border border-[#A68966]/15 dark:border-white/10 shadow-lg">
+            {/* Header */}
+            <div className="flex justify-between items-start gap-3 mb-5 pb-4 border-b border-[#A68966]/15 dark:border-white/10">
+                <div className="min-w-0">
+                    <h3 className="font-black text-[15px] tracking-[0.2px] text-[#5D4E3F] dark:text-[#EDE4D3]">
                         Miembros Protegidos
                     </h3>
-
-                    <p className="text-[11px] text-[#B6781D] font-bold mt-1">
+                    <p className="text-[10px] text-[#A68966] font-bold mt-1">
                         ✨ Afiliados extra: {cantidadAfiliadosExtras}
                     </p>
                 </div>
@@ -47,176 +46,53 @@ export default function AfiliadosPanel({
                             cedula: '',
                             fecha_nacimiento: ''
                         });
-
                         abrirModal('FORMULARIO_AFILIADO');
                     }}
-                    className="
-                        px-4
-                        py-2
-                        rounded-2xl
-                        bg-[#5A4632]
-                        text-white
-                        text-[11px]
-                        font-black
-                        uppercase
-                        shadow-md
-                        hover:bg-[#6E5540]
-                        hover:scale-105
-                        hover:shadow-xl
-                        transition-all
-                        duration-300
-                    "
+                    className="shrink-0 px-3 py-2 rounded-xl bg-[#5D4E3F] dark:bg-[#A68966] text-white text-[10px] font-black uppercase shadow-md hover:bg-[#4A3E32] dark:hover:bg-[#8e7253] hover:scale-105 transition-all duration-300"
                 >
-                    + Inscribir Miembro
+                    + Inscribir
                 </button>
             </div>
 
-            {/* Cards */}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Lista compacta, una fila por afiliado */}
+            <div className="space-y-2.5 max-h-[560px] overflow-y-auto pr-1 custom-scrollbar-afiliados">
                 {afiliados.map((afi, idx) => {
-                    const esExtra =
-                        idx >= maxAfiliadosIncluidos;
-
+                    const esExtra = idx >= maxAfiliadosIncluidos;
                     const esFallecido = afi.estado?.toLowerCase() === 'fallecido';
+                    const esTitular = afi.parentesco?.toLowerCase() === 'titular';
+                    const expandido = expandidoId === afi.id;
 
-                    const dataFuneraria =
-                        afi.servicio_funerario || {};
-
+                    const dataFuneraria = afi.servicio_funerario || {};
                     const cancionIdActual = afi.cancion_id ?? dataFuneraria.cancion_id;
                     const observacionesActuales = afi.observacion_funeraria ?? dataFuneraria.observaciones;
+                    const cancion = canciones.find(c => c.id == cancionIdActual)?.titulo || 'Sin canción';
 
-                    const cancion =
-                        canciones.find(
-                            c => c.id == cancionIdActual
-                        )?.titulo || 'Sin canción';
-
-                    // Recuerdo propio de ESTE afiliado (viene embebido o lo buscamos por id)
+                    // 🆕 Recuerdo propio de este afiliado, con imagen + valor, mostrado directo en la fila
                     const recuerdoIdActual = afi.recuerdo_id ?? dataFuneraria.recuerdo_id;
-                    const recuerdoNombre =
-                        afi.recuerdo?.nombre ||
-                        todosLosRecuerdos.find(r => r.id == recuerdoIdActual)?.nombre ||
-                        'Sin recuerdo asignado';
+                    const recuerdo = afi.recuerdo || todosLosRecuerdos.find(r => r.id == recuerdoIdActual);
 
                     return (
                         <div
                             key={afi.id}
-                            className={`
-                                group
-                                relative
-                                overflow-hidden
-                                rounded-[26px]
-                                border
-                                p-4
-                                bg-white
-                                transition-all
-                                duration-300
-                                hover:-translate-y-1
-                                hover:shadow-xl
-
-                               ${
-                                    esFallecido
-                                        ? 'border-[#E8C468] hover:shadow-[0_0_25px_-5px_rgba(232,196,104,0.6)]'
-                                        : esExtra
-                                        ? 'border-[#5A4632]'
-                                        : 'border-[#EFE6D3]'
-                                }
-                            `}
+                            className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${
+                                esFallecido
+                                    ? 'border-[#FFD97D]/60 bg-[#FFFBF0] dark:bg-[#3A322A]'
+                                    : esExtra
+                                    ? 'border-[#5D4E3F]/40 dark:border-[#A68966]/40 bg-white dark:bg-[#221D17]'
+                                    : 'border-[#A68966]/15 dark:border-white/10 bg-white dark:bg-[#221D17]'
+                            }`}
                         >
-                            {/* Franja lateral de color según estado, en vez de manchas degradadas */}
+                            {/* franja lateral de estado */}
+                            <div className={`absolute top-0 left-0 h-full w-1 ${esFallecido ? 'bg-[#FFD97D]' : 'bg-[#5D4E3F] dark:bg-[#A68966]'}`} />
 
-                            <div
-                                className={`
-                                    absolute
-                                    top-0
-                                    left-0
-                                    h-full
-                                    w-1.5
-                                    ${esFallecido ? 'bg-[#E8C468]' : 'bg-[#5A4632]'}
-                                `}
-                            />
-
-                            {esExtra && !esFallecido && (
-                                <div
-                                    className="
-                                        absolute
-                                        top-3
-                                        right-3
-                                        bg-[#5A4632]
-                                        text-white
-                                        px-2
-                                        py-1
-                                        rounded-full
-                                        text-[9px]
-                                        font-black
-                                        uppercase
-                                    "
-                                >
-                                    Extra
-                                </div>
-                            )}
-
-                            {esFallecido && !esExtra && (
-                                <div
-                                    className="
-                                        absolute
-                                        top-3
-                                        right-3
-                                        bg-[#E8C468]
-                                        text-[#5A4020]
-                                        px-2
-                                        py-1
-                                        rounded-full
-                                        text-[9px]
-                                        font-black
-                                        uppercase
-                                    "
-                                >
-                                    En memoria
-                                </div>
-                            )}
-
-                            {/* Overlay de homenaje al hacer hover, solo para fallecidos */}
-                            {esFallecido && (
-                                <div
-                                    className="
-                                        absolute inset-0 z-20
-                                        flex flex-col items-center justify-center gap-2
-                                        bg-[#FFF8E1]
-                                        opacity-0 group-hover:opacity-100
-                                        transition-opacity duration-500
-                                        text-center px-6
-                                    "
-                                >
-                                    <span className="text-2xl">🕯️✨</span>
-                                    <p className="text-[12px] font-black text-[#8A6B22] uppercase tracking-wide">
-                                        En memoria de {afi.nombre}
-                                    </p>
-                                    <p className="text-[10px] italic text-[#8A6B22]/80 leading-snug">
-                                        Su recuerdo permanece protegido y en paz.
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="relative flex gap-4 pl-2">
+                            {/* FILA PRINCIPAL: clic para expandir/colapsar */}
+                            <button
+                                type="button"
+                                onClick={() => toggleExpandido(afi.id)}
+                                className="w-full flex items-center gap-3 p-3 pl-4 text-left"
+                            >
                                 {/* Avatar */}
-
-                                <div
-                                    className={`
-                                        w-14
-                                        h-14
-                                        rounded-full
-                                        flex
-                                        items-center
-                                        justify-center
-                                        shadow-md
-                                        p-2
-                                        ${esFallecido
-                                            ? 'bg-[#E8C468]'
-                                            : 'bg-[#5A4632]'
-                                        }
-                                    `}
-                                >
+                                <div className={`w-11 h-11 shrink-0 rounded-full flex items-center justify-center shadow-sm p-2 ${esFallecido ? 'bg-[#FFD97D]' : 'bg-[#5D4E3F] dark:bg-[#A68966]'}`}>
                                     <img
                                         src="/images/elementos_dashboard/detalles_plan/iconos_afiliados.png"
                                         alt=""
@@ -224,162 +100,106 @@ export default function AfiliadosPanel({
                                     />
                                 </div>
 
-                                <div className="flex-1">
-                                    <h4
-                                        className="
-                                            text-sm
-                                            font-black
-                                            uppercase
-                                            text-[#5A4632]
-                                        "
-                                    >
-                                        {afi.nombre}
-                                    </h4>
-
-                                    <p
-                                        className="
-                                            text-[11px]
-                                            text-[#8C7A67]
-                                            font-semibold
-                                        "
-                                    >
-                                        {afi.parentesco}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="text-[12px] font-black uppercase text-[#5D4E3F] dark:text-[#EDE4D3] truncate">
+                                            {afi.nombre}
+                                        </h4>
+                                        {esExtra && !esFallecido && (
+                                            <span className="shrink-0 bg-[#5D4E3F] dark:bg-[#A68966] text-white px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase">Extra</span>
+                                        )}
+                                        {esFallecido && (
+                                            <span className="shrink-0 bg-[#FFD97D] text-[#5A4020] px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase">En memoria</span>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-[#8C7A67] dark:text-[#C2B49A] font-semibold truncate">
+                                        {afi.parentesco} {afi.estado ? `• ${afi.estado}` : ''}
                                     </p>
 
-                                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                                        esFallecido
-                                            ? 'bg-[#E8C468] text-[#5A4020]'
-                                            : afi.estado?.toLowerCase() === 'activo'
-                                            ? 'bg-[#5A4632] text-white'
-                                            : 'bg-red-100 text-red-600'
-                                    }`}>
-                                        {esFallecido ? '🕯️ ' : ''}{afi.estado || 'Sin estado'}
-                                    </span>
-
-                                    <div className="mt-3 space-y-2">
-                                        <div
-                                            className="
-                                                flex
-                                                items-start
-                                                gap-2
-                                                text-[11px]
-                                            "
-                                        >
-                                            <span>📝</span>
-
-                                            <span className="text-[#6A5A48]">
-                                                {observacionesActuales ||
-                                                    'Sin observaciones'}
-                                            </span>
-                                        </div>
-
-                                        <div
-                                            className="
-                                                flex
-                                                items-start
-                                                gap-2
-                                                text-[11px]
-                                            "
-                                        >
-                                            <span>🎵</span>
-
-                                            <span className="text-[#6A5A48]">
-                                                {cancion}
-                                            </span>
-                                        </div>
-
-                                        <div
-                                            className="
-                                                flex
-                                                items-start
-                                                gap-2
-                                                text-[11px]
-                                            "
-                                        >
-                                            <span>🎁</span>
-
-                                            <span className="text-[#6A5A48]">
-                                                {recuerdoNombre}
-                                            </span>
-                                        </div>
+                                    {/* 🆕 Recuerdo + valor, visible directo en la fila (sin tener que expandir) */}
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                        {recuerdo ? (
+                                            <>
+                                                <img
+                                                    src={`/images/planes/recuerdos/${recuerdo.imagen || 'default.png'}`}
+                                                    alt=""
+                                                    className="w-4 h-4 object-contain shrink-0"
+                                                    onError={(e) => { e.target.src = "/images/planes/recuerdos/default.png"; }}
+                                                />
+                                                <span className="text-[9px] text-[#6A5A48] dark:text-[#C2B49A] truncate">{recuerdo.nombre}</span>
+                                                <span className="text-[9px] font-black text-[#A68966] shrink-0">
+                                                    +${Number(recuerdo.precio_adicional || 0).toLocaleString('es-CO')}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <span className="text-[9px] text-[#8C7A67] dark:text-[#8F8368] italic">Sin recuerdo asignado</span>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Footer */}
+                                <span className={`shrink-0 text-[#A68966] text-xs transition-transform duration-300 ${expandido ? 'rotate-180' : ''}`}>▾</span>
+                            </button>
 
-                            <div
-                                className="
-                                    mt-4
-                                    pt-3
-                                    border-t
-                                    border-[#EFE6D3]
-                                    flex
-                                    justify-between
-                                    items-center
-                                    gap-3
-                                    relative
-                                    pl-2
-                                "
-                            >
-                                {esFallecido ? (
-                                    <p className="text-[10px] italic text-[#8A6B22] font-bold">
-                                        🕊️ Registro conservado, sin cambios permitidos
-                                    </p>
-                                ) : (
-                                    <div />
-                                )}
+                            {/* DETALLE EXPANDIBLE: observaciones, canción, editar/eliminar */}
+                            <div className={`grid transition-all duration-300 ease-out ${expandido ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                <div className="overflow-hidden">
+                                    <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[#A68966]/10 dark:border-white/10 ml-1">
+                                        {esFallecido ? (
+                                            <p className="text-[10px] italic text-[#8A6B22] dark:text-[#FFD97D] font-bold flex items-center gap-1.5 pt-2">
+                                                🕊️ Registro conservado, sin cambios permitidos
+                                            </p>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-start gap-2 text-[10px] pt-2">
+                                                    <span>📝</span>
+                                                    <span className="text-[#6A5A48] dark:text-[#C2B49A]">{observacionesActuales || 'Sin observaciones'}</span>
+                                                </div>
+                                                <div className="flex items-start gap-2 text-[10px]">
+                                                    <span>🎵</span>
+                                                    <span className="text-[#6A5A48] dark:text-[#C2B49A]">{cancion}</span>
+                                                </div>
+                                            </>
+                                        )}
 
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() =>
-                                            iniciarEdicionAfiliado(afi)
-                                        }
-                                        disabled={esFallecido}
-                                        className={`
-                                            px-3
-                                            py-1.5
-                                            rounded-xl
-                                            font-bold
-                                            text-[11px]
-                                            transition
-                                            ${esFallecido
-                                                ? 'bg-[#E8C468]/30 text-[#8A6B22]/50 cursor-not-allowed'
-                                                : 'bg-[#5A4632] text-white hover:bg-[#6E5540]'
-                                            }
-                                        `}
-                                    >
-                                        Editar
-                                    </button>
+                                        <div className="flex gap-2 pt-2">
+                                            <button
+                                                onClick={() => iniciarEdicionAfiliado(afi)}
+                                                disabled={esFallecido}
+                                                className={`flex-1 px-3 py-1.5 rounded-xl font-bold text-[10px] transition ${
+                                                    esFallecido
+                                                        ? 'bg-[#FFD97D]/20 text-[#8A6B22] dark:text-[#FFD97D]/50 cursor-not-allowed'
+                                                        : 'bg-[#5D4E3F] dark:bg-[#A68966] text-white hover:bg-[#4A3E32] dark:hover:bg-[#8e7253]'
+                                                }`}
+                                            >
+                                                Editar
+                                            </button>
 
-                                    {afi.parentesco?.toLowerCase() !== 'titular' && (
-                                        <button
-                                            onClick={() =>
-                                                ventanaConfirmarQuitar(afi)
-                                            }
-                                            disabled={esFallecido}
-                                            className={`
-                                                px-3
-                                                py-1.5
-                                                rounded-xl
-                                                font-bold
-                                                text-[11px]
-                                                transition
-                                                ${esFallecido
-                                                    ? 'bg-[#E8C468]/30 text-[#8A6B22]/50 cursor-not-allowed'
-                                                    : 'bg-[#D96C4F]/15 text-[#C24D35] hover:bg-[#D96C4F]/25'
-                                                }
-                                            `}
-                                        >
-                                            Eliminar
-                                        </button>
-                                    )}
+                                            {!esTitular && (
+                                                <button
+                                                    onClick={() => ventanaConfirmarQuitar(afi)}
+                                                    disabled={esFallecido}
+                                                    className={`flex-1 px-3 py-1.5 rounded-xl font-bold text-[10px] transition ${
+                                                        esFallecido
+                                                            ? 'bg-[#FFD97D]/20 text-[#8A6B22] dark:text-[#FFD97D]/50 cursor-not-allowed'
+                                                            : 'bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20'
+                                                    }`}
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     );
                 })}
             </div>
+
+            <style>{`
+                .custom-scrollbar-afiliados::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar-afiliados::-webkit-scrollbar-thumb { background: #A68966; border-radius: 10px; }
+            `}</style>
         </div>
     );
 }

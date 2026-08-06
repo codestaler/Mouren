@@ -47,12 +47,13 @@ class GenerarFacturasMensuales extends Command
 
             // 2. Insertamos la factura en la BD asociando el modelo correcto de Mouren
             $factura = Factura::create([
-                'suscripcion_id'     => $suscripcion->id,
-                'fecha_emision'      => Carbon::now()->format('Y-m-d'),
-                'fecha_vencimiento'  => Carbon::now()->addDays(10)->format('Y-m-d'),
-                'total'              => $valorTotal, // Toma el valor exacto (24900, 16350 o 8200)
-                'estado_factura_id'  => 1, // 1 = Pendiente
-            ]);
+    'suscripcion_id'     => $suscripcion->id,
+    'usuario_id'         => $cliente->id, // 🆕 consistente con las facturas manuales
+    'fecha_emision'      => Carbon::now()->format('Y-m-d'),
+    'fecha_vencimiento'  => Carbon::now()->addDays(10)->format('Y-m-d'),
+    'total'              => $valorTotal, // Toma el valor exacto (24900, 16350 o 8200)
+    'estado_factura_id'  => 1, // 1 = Pendiente
+]);
 
             try {
                 // 3. Enviamos el correo adjuntando la factura real

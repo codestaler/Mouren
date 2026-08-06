@@ -53,7 +53,7 @@ export default function PlanesIndex({ planes }) {
                                         src={rutaImagen} 
                                         className="absolute right-[-20px] bottom-[-30px] w-40 opacity-20 grayscale group-hover:rotate-12 group-hover:scale-110 transition-all duration-700 pointer-events-none z-0" 
                                         alt={plan.nombre}
-                                        onError={(e) => { e.target.src = '/images/elementos_dashboard/inscripcion_planes/mouri_planes.gif'; }}
+                                        onError={(e) => { e.target.src = '/images/elementos_dashboard/inscripcion_planes/mouri_planes.webp'; }}
                                     />
                                 </div>
 

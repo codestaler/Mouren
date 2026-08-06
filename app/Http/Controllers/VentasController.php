@@ -35,7 +35,8 @@ class VentasController extends Controller
         $ultimasFacturas = Factura::with([
     'suscripcion.usuario',
     'suscripcion.plan',
-    'estado'
+    'estado',
+    'usuario', // 🆕
 ])
 ->latest()
 ->take(10)
@@ -69,23 +70,100 @@ $metodosPago = MetodoPago::all();
 
     public function store(Request $request)
 {
-    $request->validate([
-        'suscripcion_id'     => 'required|exists:suscripciones,id',
-        'fecha_emision'      => 'required|date',
-        'fecha_vencimiento'  => 'required|date|after_or_equal:fecha_emision',
-        'total'              => 'required|numeric|min:0',
-    ]);
+    if ($request->filled('suscripcion_id')) {
+        // ✅ MODO 1: factura de una suscripción existente
+        $request->validate([
+            'suscripcion_id'     => 'required|exists:suscripciones,id',
+            'fecha_emision'      => 'required|date',
+            'fecha_vencimiento'  => 'required|date|after_or_equal:fecha_emision',
+            'total'              => 'required|numeric|min:0',
+        ]);
 
-    Factura::create([
-        'suscripcion_id'     => $request->suscripcion_id,
-        'fecha_emision'      => $request->fecha_emision,
-        'fecha_vencimiento'  => $request->fecha_vencimiento,
-        'total'              => $request->total,
-        'estado_factura_id'  => 1, // Pendiente
-    ]);
+        $suscripcion = \App\Models\Suscripcion::with('usuario')->findOrFail($request->suscripcion_id);
 
-    return back()->with('success', 'Factura creada correctamente.');
+        $factura = Factura::create([
+            'suscripcion_id'     => $request->suscripcion_id,
+            'usuario_id'         => $suscripcion->usuario_id,
+            'fecha_emision'      => $request->fecha_emision,
+            'fecha_vencimiento'  => $request->fecha_vencimiento,
+            'total'              => $request->total,
+            'estado_factura_id'  => 1,
+        ]);
+
+        $correoDestino = $suscripcion->usuario?->email;
+
+    } elseif ($request->filled('usuario_id')) {
+        // 🆕 MODO 2: cliente con cuenta registrada, pero SIN suscripción activa
+        $request->validate([
+            'usuario_id'         => 'required|exists:users,id',
+            'concepto'           => 'required|string|max:255',
+            'fecha_emision'      => 'required|date',
+            'fecha_vencimiento'  => 'required|date|after_or_equal:fecha_emision',
+            'total'              => 'required|numeric|min:0',
+        ]);
+
+        $usuarioSeleccionado = \App\Models\User::findOrFail($request->usuario_id);
+
+        $factura = Factura::create([
+            'suscripcion_id'     => null,
+            'usuario_id'         => $request->usuario_id,
+            'cliente_nombre'     => $usuarioSeleccionado->nombre ?? $usuarioSeleccionado->name,
+            'cliente_cedula'     => $usuarioSeleccionado->cedula,
+            'cliente_telefono'   => $usuarioSeleccionado->telefono,
+            'cliente_email'      => $usuarioSeleccionado->email,
+            'concepto'           => $request->concepto,
+            'fecha_emision'      => $request->fecha_emision,
+            'fecha_vencimiento'  => $request->fecha_vencimiento,
+            'total'              => $request->total,
+            'estado_factura_id'  => 1,
+        ]);
+
+        $correoDestino = $usuarioSeleccionado->email;
+
+    } else {
+        // 🆕 MODO 3: cliente totalmente externo, sin cuenta en el sistema
+        $request->validate([
+            'cliente_nombre'     => 'required|string|max:150',
+            'cliente_cedula'     => 'required|string|max:20',
+            'cliente_telefono'   => 'nullable|string|max:20',
+            'cliente_email'      => 'nullable|email',
+            'concepto'           => 'required|string|max:255',
+            'fecha_emision'      => 'required|date',
+            'fecha_vencimiento'  => 'required|date|after_or_equal:fecha_emision',
+            'total'              => 'required|numeric|min:0',
+        ]);
+
+        $factura = Factura::create([
+            'suscripcion_id'     => null,
+            'cliente_nombre'     => $request->cliente_nombre,
+            'cliente_cedula'     => $request->cliente_cedula,
+            'cliente_telefono'   => $request->cliente_telefono,
+            'cliente_email'      => $request->cliente_email,
+            'concepto'           => $request->concepto,
+            'fecha_emision'      => $request->fecha_emision,
+            'fecha_vencimiento'  => $request->fecha_vencimiento,
+            'total'              => $request->total,
+            'estado_factura_id'  => 1,
+        ]);
+
+        $correoDestino = $request->cliente_email;
+    }
+
+    // 🆕 Enviamos el correo con la factura adjunta, reutilizando el mismo Mailable
+    // que ya usa el comando automático mensual. Si no hay correo, simplemente no se envía.
+    if ($correoDestino) {
+        try {
+            \Illuminate\Support\Facades\Mail::to($correoDestino)->send(new \App\Mail\FacturaMensualMail($factura));
+        } catch (\Exception $e) {
+            \Log::error("Error enviando correo de factura manual #{$factura->id}: " . $e->getMessage());
+            // No interrumpimos el flujo: la factura ya se creó correctamente,
+            // solo el correo falló (se puede reenviar manualmente después si hace falta).
+        }
+    }
+
+    return back()->with('success', 'Factura creada correctamente.' . (!$correoDestino ? ' (Sin correo para notificar)' : ''));
 }
+
 public function exportarExcel()
 {
     return Excel::download(
@@ -126,5 +204,21 @@ public function anular($id)
     $factura->save();
 
     return back()->with('success', 'Factura anulada correctamente.');
+}
+
+public function buscarUsuarioRegistrado(Request $request)
+{
+    $query = trim($request->input('query', ''));
+
+    if (strlen($query) < 2) {
+        return response()->json([], 200);
+    }
+
+    $usuarios = \App\Models\User::where('cedula', 'like', "%{$query}%")
+        ->orWhere('nombre', 'like', "%{$query}%")
+        ->limit(10)
+        ->get(['id', 'nombre', 'cedula', 'email']);
+
+    return response()->json($usuarios, 200);
 }
 }

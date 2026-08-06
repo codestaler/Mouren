@@ -149,6 +149,8 @@ Route::put(
     [VentasController::class, 'anular']
 )->name('admin.facturas.anular');
 
+Route::get('/admin/ventas/buscar-usuario', [VentasController::class, 'buscarUsuarioRegistrado']);
+
 Route::prefix('admin/notificaciones')->name('admin.notificaciones.')->group(function () {
     Route::get('/', [NotificacionController::class, 'index'])->name('index');
     Route::post('/{id}/marcar-leida', [NotificacionController::class, 'marcarLeida'])->name('marcar-leida');
@@ -260,6 +262,12 @@ Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
     Route::get('/mi-plan-mascota', [SuscripcionMascotaController::class, 'miPlanMascota'])->name('mi.plan.mascota');
     Route::post('/suscripcion-mascota', [SuscripcionMascotaController::class, 'store'])->name('suscripcion.mascota.store');
     Route::post('/suscripciones-mascota', [SuscripcionMascotaController::class, 'store'])->name('suscripciones_mascota.store');
+    Route::get('/detalles-mascota', [SuscripcionMascotaController::class, 'detalles'])
+    ->name('detalles.mascota');
+
+Route::post('/api/personalizacion/gabinete-mascota', [SuscripcionMascotaController::class, 'actualizar'])
+    ->name('personalizacion.mascota.actualizar');
+
 });
 
 Route::get('/canciones', [CancionController::class, 'index']);

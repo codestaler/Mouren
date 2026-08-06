@@ -32,7 +32,7 @@ export default function ResetPassword({ token, email }) {
                 
                 {/* El gif de Mouri */}
                 <div className="w-24 h-24 bg-[#FAF8F5] rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
-                    <img src="/images/login/mouri_registro_exitoso.gif" alt="Mouri" className="w-16 h-16 object-contain" />
+                    <img src="/images/login/mouri_registro_exitoso.webp" alt="Mouri" className="w-16 h-16 object-contain" />
                 </div>
 
                 {/* Títulos de la interfaz */}

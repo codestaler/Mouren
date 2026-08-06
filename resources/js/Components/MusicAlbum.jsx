@@ -27,20 +27,20 @@ export default function MusicAlbum() {
     };
 
     return (
-        <section className="py-40 pb-64 bg-white relative overflow-hidden flex items-center min-h-[600px]">
+        <section className="pt-16 pb-24 sm:pt-20 sm:pb-32 lg:py-40 lg:pb-64 bg-white relative overflow-hidden flex flex-col lg:flex-row lg:items-center min-h-0 lg:min-h-[600px]">
             {/* LADO IZQUIERDO: MOURI Y TEXTO EXPLICATIVO */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center">
-                <div className="bg-[#5D4E3F] py-12 pl-8 pr-16 rounded-tr-[120px] rounded-br-[120px] shadow-2xl border-r-8 border-[#A68966] flex flex-col items-center max-w-[400px]">
+            <div className="relative lg:absolute lg:left-0 lg:top-1/2 lg:-translate-y-1/2 z-10 flex items-center justify-center px-4 sm:px-8 lg:px-0 mb-12 lg:mb-0">
+                <div className="bg-[#5D4E3F] w-full max-w-[400px] py-8 px-6 sm:py-10 sm:px-8 lg:py-12 lg:pl-8 lg:pr-16 rounded-[30px] lg:rounded-none lg:rounded-tr-[120px] lg:rounded-br-[120px] shadow-2xl border-4 border-[#A68966] lg:border-0 lg:border-r-8 flex flex-col items-center">
                     
                     {/* --- CORRECCIÓN: CUERVO MÁS GRANDE Y SALIDO POR ARRIBA --- */}
                     <img 
                         src="/images/planes/album/mouri_con_notas_violin.gif" 
                         alt="Mouri" 
-                        className="w-80 h-auto drop-shadow-2xl mb-8 -mt-36 z-40 relative" 
+                        className="w-48 sm:w-64 lg:w-80 h-auto drop-shadow-2xl mb-6 lg:mb-8 -mt-16 sm:-mt-20 lg:-mt-36 z-40 relative" 
                     />
 
                     <div className="text-center text-white relative z-10">
-                        <h3 className="text-[#FFC600] font-black tracking-tighter text-xl mb-2">Sinfonía del Recuerdo</h3>
+                        <h3 className="text-[#FFC600] font-black tracking-tighter text-lg sm:text-xl mb-2">Sinfonía del Recuerdo</h3>
                         <p className="text-[11px] italic opacity-90 leading-relaxed font-medium mb-4">
                             "La música expresa aquello que no puede decirse con palabras y sobre lo que es imposible permanecer en silencio." 
                             <br/><br/>
@@ -56,23 +56,23 @@ export default function MusicAlbum() {
             </div>
 
             {/* LADO DERECHO: DISCOS */}
-            <div className="max-w-7xl mx-auto w-full pl-[420px] pr-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 lg:pl-[420px] lg:pr-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 sm:gap-x-12 gap-y-16 sm:gap-y-20">
                     {musicTracks.map((track) => (
                         <div key={track.id} className="group relative flex items-center justify-center">
                             
                             {/* VINILO */}
-                            <div className={`absolute left-4 w-40 h-40 bg-[#1a1a1a] rounded-full border-[6px] border-[#222] shadow-2xl transition-all duration-1000 
-                                ${playingId === track.id ? 'translate-x-24 rotate-[720deg]' : 'group-hover:translate-x-16'}`}>
+                            <div className={`absolute left-4 w-32 h-32 sm:w-36 sm:h-36 lg:w-40 lg:h-40 bg-[#1a1a1a] rounded-full border-[6px] border-[#222] shadow-2xl transition-all duration-1000 
+                                ${playingId === track.id ? 'translate-x-20 sm:translate-x-24 rotate-[720deg]' : 'group-hover:translate-x-14 sm:group-hover:translate-x-16'}`}>
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-12 h-12 bg-[#A68966] rounded-full border-4 border-white/10"></div>
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#A68966] rounded-full border-4 border-white/10"></div>
                                 </div>
                             </div>
                             
                             {/* PORTADA UNIFICADA */}
                             <div 
                                 onClick={() => togglePlay(track)}
-                                className="relative z-20 w-44 h-44 bg-[#F4EDE6] shadow-2xl rounded-sm overflow-hidden border-2 border-white cursor-pointer"
+                                className="relative z-20 w-36 h-36 sm:w-40 sm:h-40 lg:w-44 lg:h-44 bg-[#F4EDE6] shadow-2xl rounded-sm overflow-hidden border-2 border-white cursor-pointer"
                             >
                                 <img src={albumCover} alt="Portada Album" className="w-full h-full object-cover" />
                                 
@@ -84,7 +84,7 @@ export default function MusicAlbum() {
                             </div>
 
                             {/* TÍTULO CANCIÓN */}
-                            <div className="absolute -bottom-10 left-0 w-44 text-center">
+                            <div className="absolute -bottom-10 left-0 w-36 sm:w-40 lg:w-44 text-center">
                                 <p className="text-[10px] font-black text-[#5D4E3F] tracking-widest italic leading-tight">
                                     {track.title}
                                 </p>

@@ -46,7 +46,7 @@ export const DAY_BG = {
   3: "/images/mouri-game/fondo_pereza.gif",
   4: "/images/mouri-game/fondo_envidia.gif",
   5: "/images/mouri-game/fondo_avaricia.gif",
-  6: "/images/mouri-game/fondo_ira.gif",
+  6: "/images/mouri-game/fondo_ira.webp",
   7: "/images/mouri-game/fondo_orgullo.gif",
 };
 

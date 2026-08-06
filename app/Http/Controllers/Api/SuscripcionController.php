@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
 
 class SuscripcionController extends Controller
 {
@@ -270,7 +271,6 @@ return redirect()->route('mi.plan')->with('activado', true);
 
         return $pdf->download('certificado-afiliacion-mouren-' . $usuario->cedula . '.pdf');
     }
-
     public function cambiarTitular(Request $request)
 {
     $request->validate([
@@ -288,11 +288,11 @@ return redirect()->route('mi.plan')->with('activado', true);
         ->firstOrFail();
 
     if (strtolower(trim($afiliadoSucesor->parentesco)) === 'titular') {
-        return back()->withErrors(['error' => 'Esta persona ya es el titular actual.']);
+        return back()->with('error', 'Esta persona ya es el titular actual.');
     }
 
     if (strtolower($afiliadoSucesor->estado) === 'fallecido') {
-        return back()->withErrors(['error' => 'No puedes asignar como titular a un beneficiario marcado como fallecido.']);
+        return back()->with('error', 'No puedes asignar como titular a un beneficiario marcado como fallecido.');
     }
 
     try {
@@ -300,24 +300,21 @@ return redirect()->route('mi.plan')->with('activado', true);
 
         $antiguoTitularUserId = $suscripcion->usuario_id;
 
-        // Capturamos el registro del titular ANTERIOR antes de sobreescribir nada
         $afiliadoTitularAnterior = Afiliado::where('suscripcion_id', $suscripcion->id)
             ->where('user_id', $antiguoTitularUserId)
             ->whereRaw('LOWER(TRIM(parentesco)) = ?', ['titular'])
             ->first();
 
-        // 1. ¿El sucesor ya tiene su propia cuenta (registrada con su cédula)?
         $nuevoUsuario = $afiliadoSucesor->cedula
             ? \App\Models\User::where('cedula', $afiliadoSucesor->cedula)->first()
             : null;
 
         $cuentaNueva = false;
 
-        // 2. Si no tiene cuenta, la creamos
         if (!$nuevoUsuario) {
             if (!$request->email_nuevo_titular) {
                 DB::rollBack();
-                return back()->withErrors(['error' => 'Este beneficiario no tiene una cuenta propia todavía. Debes indicar un correo electrónico para crearle una.']);
+                return back()->with('error', 'Este beneficiario no tiene una cuenta propia todavía. Debes indicar un correo electrónico para crearle una.');
             }
 
             $nuevoUsuario = \App\Models\User::create([
@@ -335,35 +332,76 @@ return redirect()->route('mi.plan')->with('activado', true);
             $cuentaNueva = true;
         }
 
-        // 3. Reasignamos la suscripción al nuevo titular
         $suscripcion->update(['usuario_id' => $nuevoUsuario->id]);
-
-        // 4. Todos los afiliados de esta suscripción ahora "pertenecen" al nuevo titular
         Afiliado::where('suscripcion_id', $suscripcion->id)->update(['user_id' => $nuevoUsuario->id]);
+        // 🆕 Transferimos TAMBIÉN cualquier otra suscripción activa que tuviera el titular anterior
+// (por ejemplo, el plan de mascota "Huella Eterna"), para que el cambio quede completo
+// sin tener que repetir el proceso manualmente para cada plan.
+$otrasSuscripciones = Suscripcion::where('usuario_id', $antiguoTitularUserId)
+    ->where('id', '!=', $suscripcion->id)
+    ->get();
 
-        // 5. El sucesor pasa a ser el Titular
+foreach ($otrasSuscripciones as $otra) {
+    $otra->update(['usuario_id' => $nuevoUsuario->id]);
+    Afiliado::where('suscripcion_id', $otra->id)->update(['user_id' => $nuevoUsuario->id]);
+    \App\Models\Mascota::where('suscripcion_id', $otra->id)->update(['user_id' => $nuevoUsuario->id]);
+}
         $afiliadoSucesor->update(['parentesco' => 'Titular']);
 
-        // 6. Si fue por fallecimiento, marcamos al titular anterior en SU registro de afiliado
-if ($request->motivo === 'fallecimiento' && $afiliadoTitularAnterior) {
-    $afiliadoTitularAnterior->update([
-        'estado' => 'Fallecido',
-        'fecha_fallecimiento' => $request->fecha_fallecimiento,
-    ]);
+        if ($request->motivo === 'fallecimiento' && $afiliadoTitularAnterior) {
+            $afiliadoTitularAnterior->update([
+                'estado' => 'Fallecido',
+                'fecha_fallecimiento' => $request->fecha_fallecimiento,
+            ]);
 
-    // 🆕 Desactivamos la cuenta del titular anterior, ya que falleció
-    \App\Models\User::where('id', $antiguoTitularUserId)->update(['estado_id' => 2]); // 2 = Inactivo
-}
+            \App\Models\User::where('id', $antiguoTitularUserId)->update(['estado_id' => 2]);
 
-        // 7. Notificamos al nuevo titular por correo
-        Mail::raw(
-            $cuentaNueva
-                ? "Hola {$nuevoUsuario->nombre},\n\nA partir de ahora eres el titular del plan de previsión exequial familiar. Hemos creado tu cuenta en Mouren.\nPara ingresar por primera vez, usa la opción \"Recuperar contraseña\" con este correo: {$nuevoUsuario->email}.\n\n— El equipo de Mouren"
-                : "Hola {$nuevoUsuario->nombre},\n\nTu cuenta existente en Mouren ha sido vinculada como titular del plan de previsión exequial familiar.\n\n— El equipo de Mouren",
-            function ($message) use ($nuevoUsuario) {
-                $message->to($nuevoUsuario->email)->subject('Ahora eres el titular de tu plan Mouren');
+            // 🆕 Generamos la trazabilidad, igual que hace marcarFallecido()
+            $servicioFunerario = \App\Models\ServicioFunerario::where('afiliado_id', $afiliadoTitularAnterior->id)->latest()->first();
+
+            if ($servicioFunerario) {
+                $etapaInicial = \App\Models\Procesos\EtapaServicio::where('nombre', 'Fallecimiento Registrado')->first();
+
+                if ($etapaInicial) {
+                    \App\Models\Procesos\TrazabilidadServicio::create([
+                        'servicio_funerario_id' => $servicioFunerario->id,
+                        'etapa_id'              => $etapaInicial->id,
+                        'descripcion'           => 'Fallecimiento registrado por cambio de titular. Nuevo titular: ' . $nuevoUsuario->nombre,
+                        'fecha'                 => $request->fecha_fallecimiento,
+                        'usuario_responsable'   => auth()->id(),
+                    ]);
+                }
             }
-        );
+        }
+
+        if ($cuentaNueva) {
+    // 🆕 Generamos un token de recuperación REAL de Laravel, para que el botón funcione de verdad
+    $token = Password::createToken($nuevoUsuario);
+    $urlRecuperacion = route('password.reset', ['token' => $token]) . '?email=' . urlencode($nuevoUsuario->email);
+
+    Mail::html(
+        "<div style='font-family:sans-serif;color:#5D4E3F;max-width:480px;margin:0 auto;'>
+            <p>Hola {$nuevoUsuario->nombre},</p>
+            <p>A partir de ahora eres el <strong>titular</strong> del plan de previsión exequial familiar en Mouren. Hemos creado tu cuenta.</p>
+            <p>Para ingresar por primera vez, crea tu contraseña haciendo clic en el siguiente botón:</p>
+            <p style='text-align:center;margin:30px 0;'>
+                <a href='{$urlRecuperacion}' style='background:#5D4E3F;color:#ffffff;padding:12px 28px;border-radius:24px;text-decoration:none;font-weight:bold;display:inline-block;'>Crear mi contraseña</a>
+            </p>
+            <p style='font-size:12px;opacity:0.7;'>Si el botón no funciona, copia y pega este enlace en tu navegador:<br>{$urlRecuperacion}</p>
+            <p>— El equipo de Mouren</p>
+        </div>",
+        function ($message) use ($nuevoUsuario) {
+            $message->to($nuevoUsuario->email)->subject('Ahora eres el titular de tu plan Mouren');
+        }
+    );
+} else {
+    Mail::raw(
+        "Hola {$nuevoUsuario->nombre},\n\nTu cuenta existente en Mouren ha sido vinculada como titular del plan de previsión exequial familiar.\n\n— El equipo de Mouren",
+        function ($message) use ($nuevoUsuario) {
+            $message->to($nuevoUsuario->email)->subject('Ahora eres el titular de tu plan Mouren');
+        }
+    );
+}
 
         DB::commit();
 
@@ -372,7 +410,8 @@ if ($request->motivo === 'fallecimiento' && $afiliadoTitularAnterior) {
     } catch (\Exception $e) {
         DB::rollBack();
         \Log::error('Error en cambio de titular: ' . $e->getMessage());
-        return back()->withErrors(['error' => 'Ocurrió un error al procesar el cambio de titular.']);
+        return back()->with('error', 'Ocurrió un error al procesar el cambio de titular: ' . $e->getMessage());
     }
 }
+
 }
