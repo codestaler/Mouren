@@ -240,7 +240,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
     const enviarInscripcion = () => {
 
-        post(route('suscripciones.store'), {
+        post(route('cliente.suscripciones.store'), {
 
             data: {
                 ...data,

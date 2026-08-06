@@ -181,7 +181,7 @@ Route::delete('/admin/tipos-documento/{id}', [UserController::class, 'eliminarTi
 
 });
 
-Route::post('/suscripciones/store', [SuscripcionController::class, 'store'])->name('suscripciones.store');
+Route::post('/suscripciones/store', [SuscripcionController::class, 'store'])->name('cliente.suscripciones.store');
 // --- RUTAS PROTEGIDAS (PARA USUARIOS LOGUEADOS) ---
 Route::middleware(['auth', 'verified'])->group(function () {
     
