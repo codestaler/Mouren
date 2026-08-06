@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calcularTotalSuscripcion } from "../../utils/calculadoraCostos";
 import RecuerdoPanel from "./Components/RecuerdoPanel";
-import ResumenCards from './components/ResumenCards';
+import ResumenCards from './Components/ResumenCards';
 import ServiciosExtrasPanel from './Components/ServiciosExtrasPanel';
 import AfiliadosPanel from "./Components/AfiliadosPanel";
 import ModalAfiliado from "./Components/ModalAfiliado";
