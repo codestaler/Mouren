@@ -221,7 +221,7 @@ Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // --- PROCESO DE INSCRIPCIÓN A PLANES ---
-    Route::get('/planes-disponibles', [PlanController::class, 'index'])->name('planes.index');
+    Route::get('/planes-disponibles', [PlanController::class, 'index'])->name('planes.disponibles');
     Route::get('/planes/inscribir/{id}', [PlanController::class, 'inscribir'])->name('planes.inscribir');
     Route::post('/suscripciones/store', [SuscripcionController::class, 'store'])->name('suscripciones.store');
 
