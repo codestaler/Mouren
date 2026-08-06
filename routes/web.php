@@ -181,6 +181,7 @@ Route::delete('/admin/tipos-documento/{id}', [UserController::class, 'eliminarTi
 
 });
 
+Route::post('/suscripciones/store', [SuscripcionController::class, 'store'])->name('suscripciones.store');
 // --- RUTAS PROTEGIDAS (PARA USUARIOS LOGUEADOS) ---
 Route::middleware(['auth', 'verified'])->group(function () {
     
@@ -223,7 +224,7 @@ Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
     // --- PROCESO DE INSCRIPCIÓN A PLANES ---
     Route::get('/planes-disponibles', [PlanController::class, 'index'])->name('planes.disponibles');
     Route::get('/planes/inscribir/{id}', [PlanController::class, 'inscribir'])->name('planes.inscribir');
-    Route::post('/suscripciones/store', [SuscripcionController::class, 'store'])->name('suscripciones.store');
+    
 
     Route::patch('/afiliados/{afiliado}', function (Request $request, Afiliado $afiliado) {
         $afiliado->update(['nombre' => $request->nombre]);
