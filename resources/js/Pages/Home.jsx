@@ -73,7 +73,7 @@ export default function Home() {
             </section>
 
             {/* 4. SECCIÓN VIDEO Y "ABOUT US" */}
-            <section className="relative w-full min-h-screen py-16 md:py-24 bg-cover bg-center" style={{ backgroundImage: "url('/images/imagenes_inicio/papel_espacio_video_inicio.jpg')" }}>
+            <section className="relative w-full min-h-screen py-16 md:py-24 bg-cover bg-center" style={{ backgroundImage: "url('/images/imagenes_inicio/papel_espacio_video_inicio.png')" }}>
                 <img src="/images/imagenes_inicio/borde_papel.png" className="absolute top-0 left-0 w-full z-30 -translate-y-6 md:-translate-y-12" alt="Borde" />
                 <div className="container mx-auto px-4 sm:px-8 md:px-12 relative z-20 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-16">
                     <div className="w-full lg:w-1/2 flex justify-center">
@@ -98,7 +98,6 @@ export default function Home() {
                         <p className="text-lg sm:text-xl font-bold pt-4"> En los momentos mas dificiles estamos contigo siempre</p>
                     </div>
                 </div>
-                <img src="/images/imagenes_inicio/cuervo_cine.png" className="hidden md:block absolute bottom-10 left-4 md:left-10 w-40 md:w-56 lg:w-72 z-30 pointer-events-none" alt="Mouri Cine" />
             </section>
 
             {/* 5. SECCIÓN PLANES */}
