@@ -10,6 +10,7 @@ class Servicio extends Model
         'nombre',
         'descripcion',
         'precio',
+        'aplica_a',
         'personalizable'
     ];
 

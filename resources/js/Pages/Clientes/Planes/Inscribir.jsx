@@ -3,7 +3,7 @@ import { Head, useForm, usePage, router } from '@inertiajs/react';
 import Sidebar from '@/Pages/Clientes/Sidebar';
 import { BotonTutorial } from './TutorialAnimacionModal';
 import {
-    Trash2, Plus, Play, Pause, Sparkles, ShieldCheck, Gem
+    Trash2, Plus, Play, Pause, Sparkles, ShieldCheck, Gem, Search
 } from 'lucide-react';
 
 export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], canciones = [], generos = [], tiposDocumento = [] }) {
@@ -71,6 +71,8 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
     // --- LÓGICA DE CÁLCULO ---
     const MAX_PERSONAS = 5;
+    // 🆕 Detecta si este plan es de mascota o humano (misma regla que usa el backend: plan_id === 4)
+    const tipoPlanActual = plan?.id === 4 ? 'mascota' : 'humano';
     const numPersonasActuales = data.afiliados.length;
 
     // Cambia esto en tu código:
@@ -98,6 +100,25 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         JSON.stringify(data.afiliados.map(a => a.recuerdo_id)), // <- recalcula si cambia el recuerdo de cualquiera
         plan?.id // <- Dependencia del ID del plan
     ]);
+
+    // 🆕 Servicios disponibles para agregar en el paso 2: excluye los que ya vienen
+    // incluidos en el plan base, filtra por tipo de plan (humano/mascota/ambos) y
+    // por el texto de búsqueda que escriba el usuario.
+    const [busquedaServicio, setBusquedaServicio] = useState('');
+
+    const serviciosDisponiblesPaso2 = useMemo(() => {
+        let lista = servicios || [];
+
+        lista = lista.filter(s => !plan.servicios?.some(ps => Number(ps.id) === Number(s.id)));
+        lista = lista.filter(s => !s.aplica_a || s.aplica_a === 'ambos' || s.aplica_a === tipoPlanActual);
+
+        if (busquedaServicio.trim()) {
+            const q = busquedaServicio.trim().toLowerCase();
+            lista = lista.filter(s => s.nombre.toLowerCase().includes(q));
+        }
+
+        return lista;
+    }, [servicios, plan.servicios, tipoPlanActual, busquedaServicio]);
 
 
     const calcularEdad = (fechaNacimiento) => {
@@ -196,7 +217,6 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
             setErroresAfiliados(copia);
         }
     };
-
 
     const toggleMúsica = (cancion) => {
         if (playingId === cancion.id) {
@@ -490,56 +510,74 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                     <h2 className="text-xl sm:text-2xl font-black lowercase italic mb-6 sm:mb-8">complementos y música</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                         {/* Servicios Extra */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 flex flex-col min-h-0">
                                             <p className="text-[9px] font-black opacity-30 uppercase tracking-widest text-gray-400">Servicios Extra</p>
-                                            {servicios.filter(s => !plan.servicios?.some(ps => ps.id === s.id)).map(s => (
-                                                <div
-                                                    key={s.id}
-                                                    onClick={() => toggleSeleccionMultiple(s.id, 'servicios_adicionales')}
-                                                    className={`
+
+                                            {/* 🆕 Buscador de servicios */}
+                                            <div className="relative">
+                                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A68966]/50" />
+                                                <input
+                                                    type="text"
+                                                    value={busquedaServicio}
+                                                    onChange={(e) => setBusquedaServicio(e.target.value)}
+                                                    placeholder="Buscar servicio..."
+                                                    className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E3D9BC] rounded-xl text-[10px] font-bold text-[#5D4E3F] placeholder:opacity-40 focus:ring-2 focus:ring-[#A68966]/40 outline-none"
+                                                />
+                                            </div>
+
+                                            <div className="max-h-[320px] overflow-y-auto pr-1 space-y-2.5">
+                                                {serviciosDisponiblesPaso2.length === 0 && (
+                                                    <p className="text-center text-[10px] text-gray-400 italic py-8">
+                                                        No hay servicios adicionales disponibles{busquedaServicio && ' para tu búsqueda'}.
+                                                    </p>
+                                                )}
+
+                                                {serviciosDisponiblesPaso2.map(s => {
+                                                    const seleccionado = data.servicios_adicionales.includes(s.id);
+                                                    return (
+                                                        <div
+                                                            key={s.id}
+                                                            onClick={() => toggleSeleccionMultiple(s.id, 'servicios_adicionales')}
+                                                            className={`
             relative
-            p-4
+            p-3.5
             rounded-2xl
             border-2
             cursor-pointer
             transition-all
-            hover:scale-[1.02]
+            hover:scale-[1.01]
 
-            ${data.servicios_adicionales.includes(s.id)
-                                                            ? 'bg-[#A68966] text-white border-[#A68966]'
-                                                            : s.personalizable
-                                                                ? 'bg-amber-50 border-amber-400 shadow-lg hover:shadow-xl'
-                                                                : 'bg-[#FDFBF9] border-transparent hover:border-[#A68966]/30'
-                                                        }
+            ${seleccionado
+                                                                    ? 'bg-[#A68966] text-white border-[#A68966] shadow-md'
+                                                                    : s.personalizable
+                                                                        ? 'bg-amber-50 border-amber-300 hover:shadow-md'
+                                                                        : 'bg-[#FDFBF9] border-transparent hover:border-[#A68966]/30'
+                                                                }
         `}
-                                                >
-                                                    {s.personalizable === 1 && (
-                                                        <div className="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-2 py-1 rounded-full">
-                                                            ✨ Personalizable
+                                                        >
+                                                            {Boolean(Number(s.personalizable)) && (
+                                                                <span className={`absolute top-2 right-2 text-[8px] font-black px-2 py-0.5 rounded-full ${seleccionado ? 'bg-white/20 text-white' : 'bg-amber-400 text-white'}`}>
+                                                                    ✨ Personalizable
+                                                                </span>
+                                                            )}
+
+                                                            <p className="text-[11px] font-bold pr-16">
+                                                                {s.nombre}
+                                                            </p>
+
+                                                            {s.descripcion && (
+                                                                <p className={`text-[9px] mt-1 line-clamp-2 ${seleccionado ? 'text-white/80' : 'text-[#8C7A67]'}`}>
+                                                                    {s.descripcion}
+                                                                </p>
+                                                            )}
+
+                                                            <p className={`text-[10px] font-black mt-2 ${seleccionado ? 'text-white' : 'text-[#A68966]'}`}>
+                                                                +${Number(s.precio).toLocaleString('es-CO')}
+                                                            </p>
                                                         </div>
-                                                    )}
-
-                                                    <p className="text-[11px] font-bold">
-                                                        {s.nombre}
-                                                    </p>
-
-                                                    <p className={`text-[9px] ${data.servicios_adicionales.includes(s.id)
-                                                            ? 'text-white/80'
-                                                            : 'opacity-60'
-                                                        }`}>
-                                                        +${Number(s.precio).toLocaleString()}
-                                                    </p>
-
-                                                    {s.personalizable === 1 && (
-                                                        <p className={`mt-2 text-[8px] font-bold ${data.servicios_adicionales.includes(s.id)
-                                                                ? 'text-white'
-                                                                : 'text-amber-700'
-                                                            }`}>
-                                                            🎨 Este servicio puede personalizarse
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            ))}
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
 
                                         {/* Canción Especial */}

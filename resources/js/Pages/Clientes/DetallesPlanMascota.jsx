@@ -264,7 +264,7 @@ export default function DetallesPlanMascota({
                                 <ServiciosExtrasPanel
                                     serviciosExtras={serviciosExtras}
                                     abrirModal={abrirModal}
-                                    abrirConfiguradorEstetico={() => {}}
+                                    abrirConfiguradorEstetico={() => { }}
                                     quitarExtraGabinete={quitarExtraGabinete}
                                 />
                                 <ServiciosBaseIncluidosPanel serviciosBaseFijos={serviciosBaseFijos} />
@@ -337,6 +337,8 @@ export default function DetallesPlanMascota({
                     todosLosServicios={todosLosServicios}
                     agregarExtraCatalogo={agregarExtraCatalogo}
                     cerrarModal={cerrarModal}
+                    tipoPlan="mascota"
+                    serviciosBase={serviciosBaseFijos}
                 />
             </main>
         </div>

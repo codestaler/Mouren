@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
+import BordePapel from '@/Components/BordePapel';
 
 export default function Home() {
     const planesData = [
@@ -74,17 +75,17 @@ export default function Home() {
 
             {/* 4. SECCIÓN VIDEO Y "ABOUT US" */}
             <section className="relative w-full min-h-screen py-16 md:py-24 bg-cover bg-center" style={{ backgroundImage: "url('/images/imagenes_inicio/papel_espacio_video_inicio.png')" }}>
-                <img src="/images/imagenes_inicio/borde_papel.png" className="absolute top-0 left-0 w-full z-30 -translate-y-6 md:-translate-y-12" alt="Borde" />
+                <BordePapel posicion="top" />
                 <div className="container mx-auto px-4 sm:px-8 md:px-12 relative z-20 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-16">
                     <div className="w-full lg:w-1/2 flex justify-center">
-                        <div className="relative aspect-[4/3] w-full max-w-lg bg-[#D4C3A3] p-3 sm:p-4 shadow-xl border-4 border-[#A65966]/20 rounded-md">
+                        <div className="relative aspect-[4/3] w-full max-w-lg bg-[#4A412F] p-3 sm:p-4 shadow-xl ">
                             <video controls className="w-full h-full object-cover rounded shadow-inner">
-                                <source src="/videos/mouri_el_cuervo_video.mp4" type="video/mp4" />
+                                <source src="/images/imagenes_inicio/video_main.mp4" type="video/mp4" />
                             </video>
                         </div>
                     </div>
                     <div className="w-full lg:w-1/2 text-white space-y-3 lg:ml-14 text-center lg:text-left">
-                        <h4 className="text-xl sm:text-2xl font-medium tracking-tight">About Us</h4>
+                        <h4 className="text-xl sm:text-2xl font-medium tracking-tight">Sobre Mouren</h4>
                         <h2 className="text-xl sm:text-2xl font-extrabold leading-tight">Acompañándote en cada despedida</h2>
                         <h3 className="text-xl sm:text-2xl font-bold text-[#F5AD27]">Un homenaje digno para quienes amas</h3>
                         <p className="text-base sm:text-lg leading-relaxed max-w-md mx-auto lg:mx-0">Te brindamos acompañamiento humano, servicios integrales y apoyo constante para honrar la vida de tus seres queridos con respeto, amor y tranquilidad.</p>
@@ -103,7 +104,7 @@ export default function Home() {
             {/* 5. SECCIÓN PLANES */}
             <section className="relative w-full bg-[#5D4E3F] text-[#F4EDE6] overflow-visible flex flex-col lg:flex-row min-h-[500px]">
                 {/* Borde Superior */}
-                <img src="/images/imagenes_inicio/borde_papel.png" className="absolute top-0 left-0 w-full z-30 -translate-y-6 md:-translate-y-12" alt="Borde" />
+                <BordePapel posicion="top" />
 
                 {/* Lado Izquierdo: Texto */}
                 <div className="w-full lg:w-3/5 flex flex-col justify-center px-6 sm:px-10 lg:pl-32 lg:pr-12 py-16 md:py-24 relative z-20 text-center lg:text-left">
@@ -129,7 +130,7 @@ export default function Home() {
                 </div>
 
                 {/* Borde Inferior */}
-                <img src="/images/imagenes_inicio/borde_papel.png" className="absolute bottom-0 left-0 w-full z-30 rotate-180 translate-y-6 md:translate-y-12" alt="Borde" />
+                <BordePapel posicion="bottom" />
             </section>
 
             {/* 6. CARRUSEL ARTÍSTICO */}
@@ -159,11 +160,7 @@ export default function Home() {
             <section className="relative w-full bg-[#5D4E3F] text-[#F4EDE6] overflow-visible py-16 md:py-24">
 
                 {/* Borde Superior Rasgado */}
-                <img
-                    src="/images/imagenes_inicio/borde_papel.png"
-                    alt="Borde superior"
-                    className="absolute top-0 left-0 w-full z-30 -translate-y-6 md:-translate-y-12"
-                />
+                <BordePapel posicion="top" />
 
                 <div className="container mx-auto px-4 sm:px-8 md:px-12 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16">
 
@@ -216,11 +213,7 @@ export default function Home() {
                 </div>
 
                 {/* Borde Inferior Rasgado */}
-                <img
-                    src="/images/imagenes_inicio/borde_papel.png"
-                    alt="Borde inferior"
-                    className="absolute bottom-0 left-0 w-full z-30 rotate-180 translate-y-6 md:translate-y-12"
-                />
+                <BordePapel posicion="bottom" />
             </section>
 
             {/* SECCIÓN FINAL: GRACIAS (CLOSE) */}

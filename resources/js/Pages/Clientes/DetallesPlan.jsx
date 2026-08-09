@@ -66,12 +66,12 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     ];
 
     const opcionesFlores = [
-    { id: 1, nombre: 'Rosas',     imagen: 'rosas.png' },
-    { id: 2, nombre: 'Lirios',    imagen: 'lirios.png' },
-    { id: 3, nombre: 'Orquídeas', imagen: 'orquideas.png' },
-    { id: 4, nombre: 'Claveles',  imagen: 'claveles.png' },
-    { id: 5, nombre: 'Crisantemos ',  imagen: 'crisantemos.png' },
-];
+        { id: 1, nombre: 'Rosas', imagen: 'rosas.png' },
+        { id: 2, nombre: 'Lirios', imagen: 'lirios.png' },
+        { id: 3, nombre: 'Orquídeas', imagen: 'orquideas.png' },
+        { id: 4, nombre: 'Claveles', imagen: 'claveles.png' },
+        { id: 5, nombre: 'Crisantemos ', imagen: 'crisantemos.png' },
+    ];
 
     // =======================
     // AFILIADOS
@@ -207,26 +207,26 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     };
 
     const aplicarConfiguracionEstetica = (e) => {
-    e.preventDefault();
-    if (!servicioAEditar) return;
+        e.preventDefault();
+        if (!servicioAEditar) return;
 
-    setServiciosExtras(
-        serviciosExtras.map((s) =>
-            s.id === servicioAEditar.id
-                ? {
-                    ...s,
-                    personalizacion: {
-                        configuracion: {
-                            ...personalizacionEstetica
+        setServiciosExtras(
+            serviciosExtras.map((s) =>
+                s.id === servicioAEditar.id
+                    ? {
+                        ...s,
+                        personalizacion: {
+                            configuracion: {
+                                ...personalizacionEstetica
+                            }
                         }
                     }
-                }
-                : s
-        )
-    );
+                    : s
+            )
+        );
 
-    cerrarModal();
-};
+        cerrarModal();
+    };
 
     useEffect(() => {
         if (suscripcion?.afiliados) {
@@ -268,17 +268,17 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     }, []);
 
     useEffect(() => {
-    document.documentElement.style.cursor =
-        "url('/images/elementos_dashboard/cursor.png''), auto";
+        document.documentElement.style.cursor =
+            "url('/images/elementos_dashboard/cursor.png''), auto";
 
-    document.body.style.cursor =
-        "url('/images/elementos_dashboard/cursor.png'), auto";
+        document.body.style.cursor =
+            "url('/images/elementos_dashboard/cursor.png'), auto";
 
-    return () => {
-        document.documentElement.style.cursor = "";
-        document.body.style.cursor = "";
-    };
-}, []);
+        return () => {
+            document.documentElement.style.cursor = "";
+            document.body.style.cursor = "";
+        };
+    }, []);
 
     useEffect(() => {
         if (datosCargados && plan) {
@@ -300,7 +300,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 precio: s.precio_pagado,
                 personalizacion: s.personalizacion || null
             })),
-                       afiliados: afiliados.map(a => ({
+            afiliados: afiliados.map(a => ({
                 // Verifica si el campo se llama realmente 'id'. 
                 // Si no, cámbialo por el nombre correcto, ej: a.id_afiliado o a.usuario_id
                 id: a.id || null,
@@ -553,6 +553,8 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     todosLosServicios={todosLosServicios}
                     agregarExtraCatalogo={agregarExtraCatalogo}
                     cerrarModal={cerrarModal}
+                    tipoPlan="humano"
+                    serviciosBase={serviciosBaseFijos}  
                 />
             </main>
         </div>

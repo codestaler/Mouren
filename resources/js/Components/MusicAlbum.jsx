@@ -5,7 +5,7 @@ const musicTracks = [
     { id: 2, title: 'Eterna Luz', file: '/images/planes/album/Eterna_luz.mp4' },
     { id: 3, title: 'S.E.N.A', file: '/images/planes/album/S.E.N.A.mp3' },
     { id: 4, title: 'siste fest', file: '/images/planes/album/siste fest.mp3' },
-    { id: 5, title: 'Susurro del Alma', file: '/images/planes/album/tributo.mpeg' },
+    { id: 5, title: 'Susurro del Alma', file: '/images/planes/album/susurro.mp3' },
     { id: 6, title: 'Renacer Eterno', file: '/images/planes/album/renacer_eterno.mp3' },
 ];
 

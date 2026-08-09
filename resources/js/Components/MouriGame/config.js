@@ -20,7 +20,7 @@ export const ASSETS = {
   mouriVolador: "/images/mouri-game/mouri_volador.gif",
   mouriAuto: "/images/mouri-game/mouri_auto.gif",
   girasol: "/images/mouri-game/flor_amarilla.gif",
-  rosa: "/images/mouri-game/rosa_amarilla.gif",
+  rosa: "/images/mouri-game/rosa.gif",
   lavanda: "/images/mouri-game/flor_morada.gif",
   margarita: "/images/mouri-game/flor_azul.gif",
   marchita: "🥀",
@@ -85,28 +85,8 @@ export const VOLUMEN_SONIDOS = 0.6;
  * { imagen, texto }. Vacío = va directo al título. Se avanza con clic/ENTER. */
 export const INTRO_SLIDES = [
   {
-  imagen: "/images/mouri-game/intro/1.jpg",
-  texto: "Hace mucho tiempo, en el limbo habia un cuervo llamado Mouri el cual tenia el sueño de montar una funeraria en el mundo humano con la cual querian salvar a la gente del pecado y ayudarles en el duelo.",
-  },
-  {
-  imagen: "/images/mouri-game/intro/2.jpg",
-  texto: "Pero cuando los 7 pecados capitales y reyes del infierno escucharon esto pusieron a mouri en la mira, no dejarian que mouri salvara a la gente del pecado",
-  },
-  {
-  imagen: "/images/mouri-game/intro/3.jpg",
-  texto: "Mouri fue secuestrado y puesto en el primer anillo del inframundo como pricionero por alterar el orden dijeron !!!Un cuervo no ayudara a los pecaminosos humanos!!!",
-  },
-  {
-  imagen: "/images/mouri-game/intro/4.jpg",
-  texto: "Pero sus amigos cuervos no dejarian que se llevaran a Mouri iban a salvar a la humanidad del pecado por eso todos los cuervos reunieron un poder en 4 flores representando, la huella eterna, el descanso sereno, el legado eterno y el tributo a la vida.",
-  },
-  {
-  imagen: "/images/mouri-game/intro/5.jpg",
-  texto: "Y cuando mouri estaba apunto de ser ejecutado",
-  },
-  {
-  imagen: "/images/mouri-game/intro/6.jpg",
-  texto: "Aparecieron las 4 flores con el poder de sus amigos los cuervos y la esperanza y todos estuvieron dispuestos a acabar con los 7 pecados capitales y es tu deber guiar a mouri en su camino a derrotarlos..",
+  imagen: "/images/mouri-game/video_intro.mp4",
+  texto: "La historia de Mouri.",
   },
 ];
 
