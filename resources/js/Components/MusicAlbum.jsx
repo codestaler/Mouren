@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Volume2, Volume1, VolumeX } from 'lucide-react';
 
 const musicTracks = [
     { id: 1, title: 'Descanso Sereno', file: '/images/planes/album/Descanso_Sereno.mp4' },
@@ -14,17 +15,35 @@ export default function MusicAlbum() {
     const audioRef = useRef(new Audio());
     const albumCover = "/images/planes/album/portada_album.png"; // Tu nueva ruta
 
+    // 🆕 Control único de volumen para todo el álbum (0 a 1)
+    const [volumen, setVolumen] = useState(0.3);
+    const [silenciado, setSilenciado] = useState(false);
+
+    // Mantiene el <audio> siempre sincronizado con el estado del control,
+    // sin importar si cambias el volumen mientras suena una canción o no.
+    useEffect(() => {
+        audioRef.current.volume = silenciado ? 0 : volumen;
+    }, [volumen, silenciado]);
+
     const togglePlay = (track) => {
         if (playingId === track.id) {
             audioRef.current.pause();
             setPlayingId(null);
         } else {
             audioRef.current.src = track.file;
-            audioRef.current.volume = 0.3;
+            audioRef.current.volume = silenciado ? 0 : volumen;
             audioRef.current.play();
             setPlayingId(track.id);
         }
     };
+
+    const cambiarVolumen = (e) => {
+        setSilenciado(false);
+        setVolumen(Number(e.target.value));
+    };
+
+    const nivelMostrado = silenciado ? 0 : volumen;
+    const IconoVolumen = nivelMostrado === 0 ? VolumeX : nivelMostrado < 0.5 ? Volume1 : Volume2;
 
     return (
         <section className="pt-16 pb-24 sm:pt-20 sm:pb-32 lg:py-40 lg:pb-64 bg-white relative overflow-hidden flex flex-col lg:flex-row lg:items-center min-h-0 lg:min-h-[600px]">
@@ -39,7 +58,7 @@ export default function MusicAlbum() {
                         className="w-48 sm:w-64 lg:w-80 h-auto drop-shadow-2xl mb-6 lg:mb-8 -mt-16 sm:-mt-20 lg:-mt-36 z-40 relative" 
                     />
 
-                    <div className="text-center text-white relative z-10">
+                    <div className="text-center text-white relative z-10 w-full">
                         <h3 className="text-[#FFC600] font-black tracking-tighter text-lg sm:text-xl mb-2">Sinfonía del Recuerdo</h3>
                         <p className="text-[11px] italic opacity-90 leading-relaxed font-medium mb-4">
                             "La música expresa aquello que no puede decirse con palabras y sobre lo que es imposible permanecer en silencio." 
@@ -51,6 +70,44 @@ export default function MusicAlbum() {
                         <p className="text-[10px] text-[#A68966] font-black uppercase tracking-widest leading-tight border-t border-[#A68966]/30 pt-4 mt-4">
                             Estas son algunas de las melodías que podemos interpretar y que vienen incluidas en nuestro plan Excelencia y Tributo.
                         </p>
+
+                        {/* 🆕 MEDIDOR DE VOLUMEN ÚNICO */}
+                        <div className="mt-6 pt-5 border-t border-[#A68966]/30 flex items-center gap-3 w-full max-w-[240px] mx-auto">
+                            <button
+                                type="button"
+                                onClick={() => setSilenciado(!silenciado)}
+                                aria-label={silenciado ? 'Activar sonido' : 'Silenciar'}
+                                className="shrink-0 w-9 h-9 rounded-full bg-[#A68966]/20 hover:bg-[#A68966]/40 flex items-center justify-center text-[#FFC600] transition-all active:scale-90"
+                            >
+                                <IconoVolumen size={16} />
+                            </button>
+
+                            <div className="relative flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+                                <div
+                                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#A68966] to-[#FFC600] transition-[width] duration-100"
+                                    style={{ width: `${nivelMostrado * 100}%` }}
+                                />
+                                {/* Marcador circular que se mueve con el nivel */}
+                                <div
+                                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#FFC600] shadow-md border-2 border-[#5D4E3F] pointer-events-none transition-[left] duration-100"
+                                    style={{ left: `${nivelMostrado * 100}%` }}
+                                />
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.01"
+                                    value={nivelMostrado}
+                                    onChange={cambiarVolumen}
+                                    aria-label="Volumen del álbum"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                            </div>
+
+                            <span className="text-[9px] font-black text-[#A68966] w-8 text-right shrink-0">
+                                {Math.round(nivelMostrado * 100)}%
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

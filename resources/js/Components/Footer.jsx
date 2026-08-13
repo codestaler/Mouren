@@ -58,7 +58,7 @@ const Footer = () => {
                             <li><a href="#" className="hover:text-[#FFC600] transition">Equipo de trabajo</a></li>
                             <li><a href="#" className="hover:text-[#FFC600] transition">Valores</a></li>
                         </ul>
-                    </div>Detalles
+                    </div>
 
                     {/* Redes Sociales */}
                     <div>
@@ -79,7 +79,16 @@ const Footer = () => {
                             <p>314-6517-554</p>
                             <div className="pt-4">
                                 <p className="text-sm font-semibold mb-2">Regulados por</p>
-                                <div className="w-24 h-10 bg-white/10 rounded flex items-center justify-center italic text-[10px]">Logo Entidad</div>
+                                {/* 🆕 CORREGIDO: antes era un placeholder de texto, ahora la imagen real.
+                                    Ruta convertida de C:\mouren\public\... a la ruta web /images/... 
+                                    (todo lo que está dentro de /public se sirve desde la raíz del sitio) */}
+                                <div className="w-32 h-14 rounded flex items-center justify-center p-1">
+                                    <img
+                                        src="/images/imagenes_inicio/logo_superintendencia_industria_comercio.png"
+                                        alt="Superintendencia de Industria y Comercio"
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

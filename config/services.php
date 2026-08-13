@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'brevo' => [
+    'dsn' => env('MAILER_DSN'),
+],
+
 ];

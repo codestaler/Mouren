@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import BordePapel from '@/Components/BordePapel';
@@ -47,9 +48,12 @@ export default function Home() {
                     <p className="text-base sm:text-[17px] md:text-[18px] text-gray-700 mb-6 md:mb-8 leading-relaxed max-w-[400px] mx-auto md:mx-0">
                         En Mouren entendemos que despedir a un ser querido es uno de los momentos más difíciles de la vida. Por eso estamos aquí para acompañarte con respeto, tranquilidad y apoyo, brindando soluciones que honran la memoria.
                     </p>
-                    <button className="bg-[#5D4E3F] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full shadow-lg hover:bg-[#FFC600] transition">
+                    <a
+                        href="https://wa.me/573247697844?text=Hola%2C%20quiero%20más%20información%20de%20Mouren%20☺️"
+                        className="inline-block bg-[#5D4E3F] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full shadow-lg hover:bg-[#FFC600] transition"
+                    >
                         Hablar con un asesor
-                    </button>
+                    </a>
                 </div>
             </main>
 
@@ -62,9 +66,13 @@ export default function Home() {
                         <br /><br />
                         Además, contamos con cobertura a nivel nacional y opciones de inhumación o cremación, garantizando un servicio digno, respetuoso y profesional que honra la memoria de quienes siempre vivirán en nuestros recuerdos.
                     </p>
-                    <button className="bg-[#5D4E3F] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full hover:bg-[#A68966] transition shadow-md">
+                    {/* 🆕 CORREGIDO: antes era <a> anidado dentro de <button> (HTML inválido, a veces no navegaba) */}
+                    <Link
+                        href="/quienes-somos"
+                        className="inline-block bg-[#5D4E3F] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full hover:bg-[#A68966] transition shadow-md"
+                    >
                         ¿Quieres conocer mas sobre nosotros?
-                    </button>
+                    </Link>
                 </div>
                 <div className="w-full sm:w-2/3 lg:w-1/3 flex flex-col items-center lg:mr-18 gap-3">
                     <img src="/images/imagenes_inicio/pedazo_papel_mensaje.png" className="w-40 sm:w-52 md:w-60 rotate-6 z-30" alt="Papel" />
@@ -115,9 +123,13 @@ export default function Home() {
                     <p className="text-base sm:text-lg leading-relaxed opacity-90 mb-8 md:mb-10">
                         Desde ceremonias tradicionales hasta despedidas llenas de personalidad, en Mouren encontrarás la opción perfecta para ti y tus seres queridos.
                     </p>
-                    <button className="w-fit mx-auto lg:mx-0 bg-[#A68966]/60 text-[#F4EDE6] px-8 sm:px-10 py-2.5 sm:py-3 rounded-full hover:bg-[#FFC600] hover:text-[#5D4E3F] transition shadow-md font-semibold">
+                    {/* 🆕 CORREGIDO: antes no tenía href/Link, no llevaba a ningún lado */}
+                    <Link
+                        href="/planes"
+                        className="w-fit mx-auto lg:mx-0 inline-block text-center bg-[#A68966]/60 text-[#F4EDE6] px-8 sm:px-10 py-2.5 sm:py-3 rounded-full hover:bg-[#FFC600] hover:text-[#5D4E3F] transition shadow-md font-semibold"
+                    >
                         Ver todos los planes →
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Lado Derecho: GIF */}
@@ -146,7 +158,13 @@ export default function Home() {
                         <div className="relative z-20 p-6 sm:p-8 md:p-12 flex flex-col justify-center h-full text-[#FFFFFF] space-y-3 md:space-y-4">
                             <h3 className="text-xl sm:text-2xl md:text-3xl font-bold italic">🕊️ {planesData[indicePlan].titulo}</h3>
                             <p className="text-sm sm:text-base md:text-lg leading-relaxed max-w-sm font-medium">{planesData[indicePlan].descripcion}</p>
-                            <button className="w-fit border-2 border-[#FFC200] px-5 sm:px-8 py-1.5 sm:py-2 rounded-full hover:bg-[#FFFFF] hover:text-black transition font-bold text-sm sm:text-base">Ver el plan →</button>
+                            {/* 🆕 CORREGIDO: antes no tenía href/Link, no llevaba a ningún lado */}
+                            <Link
+                                href="/planes"
+                                className="w-fit inline-block border-2 border-[#FFC200] px-5 sm:px-8 py-1.5 sm:py-2 rounded-full hover:bg-[#FFFFFF] hover:text-black transition font-bold text-sm sm:text-base"
+                            >
+                                Ver el plan →
+                            </Link>
                         </div>
                     </div>
                     <button onClick={siguientePlan} className="shrink-0 bg-[#5D4E3F] text-white p-2 sm:p-2.5 rounded-full shadow-lg hover:scale-110 transition">→</button>

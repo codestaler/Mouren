@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\Servicio;
 use App\Models\Recuerdo;
 use App\Models\Cancion;
+use App\Models\Suscripcion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -24,8 +25,29 @@ class PlanController extends Controller
             return response()->json($planes, 200);
         }
 
+        $user = auth()->user();
+
+        // 🆕 Verificamos qué tipo de plan(es) ya tiene activo el usuario,
+        // para que la vista pueda ocultar lo que no le corresponde ver.
+        $tieneHumano = false;
+        $tieneMascota = false;
+
+        if ($user) {
+            $tieneHumano = Suscripcion::where('usuario_id', $user->id)
+                ->where('estado', 'activo')
+                ->where('plan_id', '!=', 4)
+                ->exists();
+
+            $tieneMascota = Suscripcion::where('usuario_id', $user->id)
+                ->where('estado', 'activo')
+                ->where('plan_id', 4)
+                ->exists();
+        }
+
         return Inertia::render('Clientes/Planes/Index', [
-            'planes' => $planes
+            'planes'       => $planes,
+            'tieneHumano'  => $tieneHumano,  // 🆕
+            'tieneMascota' => $tieneMascota, // 🆕
         ]);
     }
 
@@ -33,27 +55,48 @@ class PlanController extends Controller
      * Mostrar formulario de inscripción (El que necesitas para /planes/inscribir/{id})
      */
     public function inscribir($id)
-{
-    // 1. Buscamos el plan específico con sus servicios base
-    $plan = Plan::with('servicios')->findOrFail($id);
+    {
+        // 1. Buscamos el plan específico con sus servicios base
+        $plan = Plan::with('servicios')->findOrFail($id);
 
-    // 2. Obtenemos el resto de catálogos para los pasos del formulario
-    $servicios = Servicio::all();
-    $recuerdos = Recuerdo::all();
-    $canciones = Cancion::all();
-    $generos = \App\Models\Genero::all();
-    $tiposDocumento = \App\Models\TipoDocumento::all();
+        $user = auth()->user();
+        $esPlanMascota = ((int) $plan->id) === 4;
 
-    // 3. Enviamos todo a la vista de React
-    return Inertia::render('Clientes/Planes/Inscribir', [
-        'plan'      => $plan,
-        'servicios' => $servicios,
-        'recuerdos' => $recuerdos,
-        'canciones' => $canciones,
-        'generos'   => $generos,
-        'tiposDocumento' => $tiposDocumento,
-    ]);
-}
+        // 🆕 GUARD: si el usuario ya tiene un plan activo de este mismo tipo
+        // (humano u mascota), no lo dejamos entrar de nuevo al formulario
+        // aunque escriba la URL directamente.
+        $yaTieneEsteTipo = Suscripcion::where('usuario_id', $user->id)
+            ->where('estado', 'activo')
+            ->when($esPlanMascota, fn($q) => $q->where('plan_id', 4))
+            ->when(!$esPlanMascota, fn($q) => $q->where('plan_id', '!=', 4))
+            ->exists();
+
+        if ($yaTieneEsteTipo) {
+            return redirect()
+                ->route($esPlanMascota ? 'mi.plan.mascota' : 'mi.plan')
+                ->with('error', $esPlanMascota
+                    ? 'Ya tienes un plan de mascota activo. No puedes inscribirte a otro.'
+                    : 'Ya tienes un plan activo. No puedes inscribirte a otro plan humano.'
+                );
+        }
+
+        // 2. Obtenemos el resto de catálogos para los pasos del formulario
+        $servicios = Servicio::all();
+        $recuerdos = Recuerdo::all();
+        $canciones = Cancion::all();
+        $generos = \App\Models\Genero::all();
+        $tiposDocumento = \App\Models\TipoDocumento::all();
+
+        // 3. Enviamos todo a la vista de React
+        return Inertia::render('Clientes/Planes/Inscribir', [
+            'plan'      => $plan,
+            'servicios' => $servicios,
+            'recuerdos' => $recuerdos,
+            'canciones' => $canciones,
+            'generos'   => $generos,
+            'tiposDocumento' => $tiposDocumento,
+        ]);
+    }
 
     /**
      * Crear un plan (Admin / API)
@@ -66,11 +109,11 @@ class PlanController extends Controller
         ]);
 
         $plan = Plan::create($request->all());
-        
+
         if ($request->wantsJson()) {
             return response()->json($plan, 201);
         }
-        
+
         return back()->with('message', 'Plan creado exitosamente');
     }
 
@@ -107,7 +150,7 @@ class PlanController extends Controller
     public function destroy($id)
     {
         Plan::destroy($id);
-        
+
         if (request()->wantsJson()) {
             return response()->json(['mensaje' => 'Plan eliminado'], 200);
         }

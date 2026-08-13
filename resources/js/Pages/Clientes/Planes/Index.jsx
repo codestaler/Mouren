@@ -3,9 +3,17 @@ import { Head, Link } from '@inertiajs/react';
 import Sidebar from '@/Pages/Clientes/Sidebar'; 
 import { ShieldCheck, Download, CheckCircle2 } from 'lucide-react';
 
-export default function PlanesIndex({ planes }) {
+export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota = false }) {
     // Este estado atrapará lo que el Sidebar mande
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    // 🆕 Filtramos las tarjetas que el usuario ya no debería ver:
+    // - si ya tiene un plan humano activo (id 1, 2 o 3), no mostramos ninguno de esos
+    // - si ya tiene el plan de mascota (id 4 / "Huella Eterna"), no lo mostramos
+    const planesVisibles = planes.filter((plan) => {
+        const esPlanMascotas = plan.nombre.toLowerCase().includes('huella eterna');
+        return esPlanMascotas ? !tieneMascota : !tieneHumano;
+    });
 
     return (
         <div className="flex min-h-screen bg-white font-['Hepta_Slab'] text-[#5D4E3F]">
@@ -25,10 +33,32 @@ export default function PlanesIndex({ planes }) {
                     <p className="text-[12px] md:text-sm italic opacity-60 max-w-md">
                         selecciona el camino que mejor proteja tu legado y el de tu familia. 
                     </p>
+
+                    {/* 🆕 Avisos suaves cuando se ocultó alguna categoría */}
+                    {(tieneHumano || tieneMascota) && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {tieneHumano && (
+                                <Link
+                                    href="/mi-plan"
+                                    className="text-[9px] font-bold uppercase tracking-widest bg-[#F4EDE6] text-[#5D4E3F] px-3 py-2 rounded-full hover:bg-[#E3D9BC] transition"
+                                >
+                                    ✓ Ya tienes un plan activo — ver mi plan
+                                </Link>
+                            )}
+                            {tieneMascota && (
+                                <Link
+                                    href="/mi-plan-mascota"
+                                    className="text-[9px] font-bold uppercase tracking-widest bg-[#F4EDE6] text-[#5D4E3F] px-3 py-2 rounded-full hover:bg-[#E3D9BC] transition"
+                                >
+                                    ✓ Ya tienes plan de mascota — ver mi plan
+                                </Link>
+                            )}
+                        </div>
+                    )}
                 </header>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl pb-20">
-                    {planes.map((plan) => {
+                    {planesVisibles.map((plan) => {
                         const cuota = Number(plan.cuota_base) || 0;
                         const nombreLimpio = plan.nombre.toLowerCase().replace('plan ', '').replace(/ /g, '_');
                         const rutaImagen = `/images/planes/mouri_${nombreLimpio}.png`;
@@ -100,6 +130,16 @@ export default function PlanesIndex({ planes }) {
                             </div>
                         );
                     })}
+
+                    {/* 🆕 Estado vacío: si ya tiene ambos tipos de plan, no queda ninguna tarjeta que mostrar */}
+                    {planesVisibles.length === 0 && (
+                        <div className="col-span-full text-center py-16">
+                            <ShieldCheck className="w-10 h-10 text-[#A68966] mx-auto mb-3 opacity-40" />
+                            <p className="text-[11px] font-bold uppercase tracking-widest opacity-40">
+                                Ya tienes cobertura activa en todos los planes disponibles.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
