@@ -8,6 +8,8 @@ use App\Models\Mascota;
 use App\Models\Ceremonia;
 use App\Models\SalaVelacion;
 use App\Models\ServicioFunerario;
+use App\Models\MetaIngreso;
+use App\Models\Pagos\Pago;
 use Illuminate\Http\Request; // <-- Asegúrate de incluir Request para los filtros
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -20,6 +22,12 @@ class DashboardController extends Controller
         // 0. Captura de filtros para el calendario interactivo
         $mesFiltro = $request->input('mes', Carbon::now()->month);
         $anioFiltro = $request->input('anio', Carbon::now()->year);
+
+        // 🆕 Filtro de periodo para la tarjeta "Ingresos vs Meta" (dia | semana | mes | anio)
+        $periodo = $request->input('periodo', 'mes');
+        if (!in_array($periodo, ['dia', 'semana', 'mes', 'anio'])) {
+            $periodo = 'mes';
+        }
 
         // 1. Conteo Real de la Base de Datos
         $totalUsuarios = User::count();
@@ -95,14 +103,51 @@ class DashboardController extends Controller
             })
             ->values();
 
-        // 5. CÁLCULO REAL DE INGRESOS
-        $ingresosMesReal = DB::table('suscripciones')
-            ->where('estado', 'Activo')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year) 
-            ->sum('cuota_mensual');
+        // 5. CÁLCULO REAL DE INGRESOS — 🆕 ahora suma PAGOS REALES (tabla `pagos`,
+        // estado = 'aprobado'), no la cuota de suscripciones activas. Esto refleja
+        // dinero que efectivamente entró, filtrado por el periodo elegido.
+        $consultaIngresos = Pago::where('estado', 'aprobado');
 
-        // 6. SALAS DE VELACIÓN OCUPADAS REALES
+        switch ($periodo) {
+            case 'dia':
+                $consultaIngresos->whereDate('fecha_pago', Carbon::today());
+                break;
+            case 'semana':
+                $consultaIngresos->whereBetween('fecha_pago', [
+                    Carbon::now()->startOfWeek(),
+                    Carbon::now()->endOfWeek(),
+                ]);
+                break;
+            case 'anio':
+                $consultaIngresos->whereYear('fecha_pago', Carbon::now()->year);
+                break;
+            case 'mes':
+            default:
+                $consultaIngresos->whereMonth('fecha_pago', Carbon::now()->month)
+                                  ->whereYear('fecha_pago', Carbon::now()->year);
+                break;
+        }
+
+        $ingresosPeriodoReal = (float) $consultaIngresos->sum('monto');
+
+        // 🆕 6. META DE INGRESOS: el admin la guarda para el mes actual desde el dashboard.
+        // Si nunca ha configurado una, usamos 2.500.000 (el valor que ya traía el sistema).
+        $metaMensualGuardada = MetaIngreso::where('mes', Carbon::now()->month)
+            ->where('anio', Carbon::now()->year)
+            ->value('monto');
+
+        $metaMensual = $metaMensualGuardada !== null ? (float) $metaMensualGuardada : 2500000;
+
+        // La meta siempre se guarda a nivel MENSUAL. Para que la barra de progreso
+        // tenga sentido cuando el admin mira Día/Semana/Año, la prorrateamos:
+        $metaPeriodo = match ($periodo) {
+            'dia'    => $metaMensual / 30,
+            'semana' => $metaMensual / 4.345, // semanas promedio por mes
+            'anio'   => $metaMensual * 12,
+            default  => $metaMensual, // mes
+        };
+
+        // 7. SALAS DE VELACIÓN OCUPADAS REALES
         $salasOcupadas = SalaVelacion::where('estado', 'Ocupada')->count();
         $totalSalas = SalaVelacion::count() ?: 5; 
 
@@ -111,22 +156,40 @@ class DashboardController extends Controller
             'totalPersonas' => $totalPersonas,
             'totalMascotas' => $totalMascotas,
             'planMasElegido' => $planMasElegido,
-            'ingresosMes' => (float) $ingresosMesReal, 
-            'metaMes' => 2500000,
+            'ingresosMes' => $ingresosPeriodoReal,
+            'metaMes' => round($metaPeriodo),
+            'metaMensualConfigurada' => $metaMensual, // 🆕 valor "crudo" mensual, para precargar el modal de edición
             'salasOcupadas' => $salasOcupadas, 
             'totalSalas' => $totalSalas
         ];
 
-        // 7. RETORNO ÚNICO AL FINAL DEL FLUJO
+        // 8. RETORNO ÚNICO AL FINAL DEL FLUJO
         return Inertia::render('Admin/Dashboard', [
             'metricas' => $metricas,
             'ceremoniasIniciales' => $ceremoniasIniciales,
             'serviciosEnProceso' => $serviciosEnProceso,
             'filtros' => [
                 'mes' => (int)$mesFiltro,
-                'anio' => (int)$anioFiltro
+                'anio' => (int)$anioFiltro,
+                'periodo' => $periodo, // 🆕
             ]
         ]);
+    }
+
+    // 🆕 Guarda o actualiza la meta de ingresos del MES ACTUAL (siempre mensual,
+    // aunque el admin esté viendo "Día" o "Año" en pantalla — la meta base es mensual).
+    public function actualizarMeta(Request $request)
+    {
+        $request->validate([
+            'monto' => 'required|numeric|min:0',
+        ]);
+
+        MetaIngreso::updateOrCreate(
+            ['mes' => Carbon::now()->month, 'anio' => Carbon::now()->year],
+            ['monto' => $request->monto]
+        );
+
+        return back()->with('success', 'Meta de ingresos actualizada correctamente.');
     }
 
 public function gestionUsuarios()

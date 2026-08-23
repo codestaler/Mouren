@@ -102,6 +102,22 @@ export default function InformesVentas() {
         esClienteExterno,
     });
 
+    // 🆕 Clases reutilizables para las etiquetas de estado (más discretas, sin negrilla fuerte)
+    const claseEstado = (nombreEstado) => {
+        switch (nombreEstado) {
+            case "Pagado":
+                return "bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400";
+            case "Pendiente":
+                return "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400";
+            case "Abonado":
+                return "bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400";
+            case "Anulado":
+                return "bg-gray-200 dark:bg-[#4A4033] text-gray-700 dark:text-[#C2B49A]";
+            default:
+                return "bg-gray-100 dark:bg-[#4A4033] text-gray-600 dark:text-[#C2B49A]";
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#F4EDE6] dark:bg-[#221D17] font-['Hepta_Slab'] flex relative text-[#5D4E3F] dark:text-[#EDE4D3] transition-colors duration-500">
 
@@ -234,32 +250,38 @@ export default function InformesVentas() {
 
                 </div>
 
-                {/* TABLA */}
+                {/* ============================================================= */}
+                {/*  TABLA — fuente neutral, encabezados discretos, menos negrilla */}
+                {/* ============================================================= */}
 
-                <div className="bg-white dark:bg-[#2E2720] border border-transparent dark:border-[#4A4033] rounded-2xl shadow mt-10 overflow-hidden overflow-x-auto">
+                <div className="bg-white dark:bg-[#2E2720] border border-transparent dark:border-[#4A4033] rounded-2xl shadow mt-10 overflow-hidden overflow-x-auto font-sans">
 
-                    <div className="px-6 py-5 border-b dark:border-[#4A4033]">
+                    <div className="flex items-center justify-between px-6 py-5 border-b dark:border-[#4A4033]">
 
-                        <h2 className="text-2xl font-bold text-[#5D4E3F] dark:text-[#EDE4D3]">
+                        <h2 className="text-xl font-semibold text-[#5D4E3F] dark:text-[#EDE4D3] tracking-tight">
                             Últimas Facturas
                         </h2>
 
+                        <span className="text-xs text-[#8C7A67] dark:text-[#C2B49A]">
+                            {facturasFiltradas.length} {facturasFiltradas.length === 1 ? 'resultado' : 'resultados'}
+                        </span>
+
                     </div>
 
-                    <table className="w-full min-w-[800px]">
+                    <table className="w-full min-w-[800px] text-sm">
 
                         <thead className="bg-[#F2ECE5] dark:bg-[#221D17]">
 
                             <tr>
 
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Factura</th>
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Suscripción</th>
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Tiular Suscripcion</th>
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Plan Elegido</th>
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Emisión</th>
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Valor</th>
-                                <th className="text-left p-4 text-[#5D4E3F] dark:text-[#EDE4D3]"> Estado </th>
-                                <th className="text-center p-4 text-[#5D4E3F] dark:text-[#EDE4D3]">Acciones</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Factura</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Suscripción</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Titular Suscripción</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Plan Elegido</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Emisión</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Valor</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Estado</th>
+                                <th className="text-center p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Acciones</th>
 
                             </tr>
 
@@ -271,13 +293,26 @@ export default function InformesVentas() {
 
                                 <tr>
 
+                                    {/* 🆕 CORREGIDO: colSpan estaba en 4, pero la tabla tiene 8 columnas —
+                                        el mensaje quedaba descuadrado a la izquierda */}
                                     <td
-                                        colSpan="4"
-                                        className="text-center py-10 text-gray-500 dark:text-[#C2B49A]"
+                                        colSpan="8"
+                                        className="text-center py-12 text-gray-500 dark:text-[#C2B49A] text-sm"
                                     >
                                         No existen facturas registradas.
                                     </td>
 
+                                </tr>
+
+                            ) : facturasFiltradas.length === 0 ? (
+
+                                <tr>
+                                    <td
+                                        colSpan="8"
+                                        className="text-center py-12 text-gray-500 dark:text-[#C2B49A] text-sm"
+                                    >
+                                        No hay facturas que coincidan con tu búsqueda.
+                                    </td>
                                 </tr>
 
                             ) : (
@@ -286,52 +321,37 @@ export default function InformesVentas() {
 
                                     <tr
                                         key={factura.id}
-                                        className="border-b dark:border-[#4A4033] hover:bg-[#FAF7F2] dark:hover:bg-[#221D17] text-[#5D4E3F] dark:text-[#EDE4D3]"
+                                        className="border-b last:border-b-0 dark:border-[#4A4033] hover:bg-[#FAF7F2] dark:hover:bg-[#221D17] text-[#5D4E3F] dark:text-[#EDE4D3] transition-colors"
                                     >
 
-                                        <td className="p-4">
+                                        <td className="p-4 text-[#8C7A67] dark:text-[#C2B49A] font-normal">
                                             #{factura.id}
                                         </td>
 
-                                        <td className="p-4">
+                                        <td className="p-4 font-normal">
                                             {factura.suscripcion?.usuario?.nombre || factura.cliente_nombre || '—'}
                                         </td>
 
-                                        <td className="p-4">
+                                        <td className="p-4 font-normal">
                                             {factura.suscripcion_id ?? <span className="text-[10px] italic opacity-60">Venta directa</span>}
                                         </td>
 
-                                        <td className="p-4">
+                                        <td className="p-4 font-normal">
                                             {factura.suscripcion?.plan?.nombre || factura.concepto || '—'}
                                         </td>
 
-                                        <td className="p-4">
+                                        <td className="p-4 font-normal text-[#8C7A67] dark:text-[#C2B49A]">
                                             {factura.fecha_emision}
                                         </td>
 
-                                        <td className="p-4 font-semibold">
+                                        <td className="p-4 font-medium">
                                             {dinero(factura.total)}
                                         </td>
 
                                         <td className="p-4">
 
                                             <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold
-
-                                                ${factura.estado?.nombre === "Pagado"
-                                                        ? "bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400"
-
-                                                        : factura.estado?.nombre === "Pendiente"
-                                                            ? "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400"
-
-                                                            : factura.estado?.nombre === "Abonado"
-                                                                ? "bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400"
-
-                                                                : factura.estado?.nombre === "Anulado"
-                                                                    ? "bg-gray-200 dark:bg-[#4A4033] text-gray-700 dark:text-[#C2B49A]"
-
-                                                                    : "bg-gray-100 dark:bg-[#4A4033] text-gray-600 dark:text-[#C2B49A]"
-                                                    }`}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium ${claseEstado(factura.estado?.nombre)}`}
                                             >
 
                                                 {factura.estado?.nombre}
@@ -345,7 +365,8 @@ export default function InformesVentas() {
 
                                                 <button
                                                     onClick={() => setFacturaSeleccionada(factura)}
-                                                    className="bg-blue-100 dark:bg-blue-950/40 hover:bg-blue-200 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                                    title="Ver factura"
+                                                    className="bg-blue-100 dark:bg-blue-950/40 hover:bg-blue-200 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg transition-colors"
                                                 >
                                                     👁
                                                 </button>
@@ -353,7 +374,8 @@ export default function InformesVentas() {
                                                 <a
                                                     href={`/admin/facturas/${factura.id}/pdf`}
                                                     target="_blank"
-                                                    className="bg-green-100 dark:bg-green-950/40 hover:bg-green-200 text-green-700 dark:text-green-400 px-3 py-1 rounded-lg"
+                                                    title="Descargar PDF"
+                                                    className="bg-green-100 dark:bg-green-950/40 hover:bg-green-200 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-lg transition-colors"
                                                 >
                                                     📄
                                                 </a>
@@ -366,7 +388,8 @@ export default function InformesVentas() {
                                                         router.put(`/admin/facturas/${factura.id}/anular`);
 
                                                     }}
-                                                    className="bg-red-100 dark:bg-red-950/40 hover:bg-red-200 text-red-700 dark:text-red-400 px-3 py-1 rounded-lg"
+                                                    title="Anular factura"
+                                                    className="bg-red-100 dark:bg-red-950/40 hover:bg-red-200 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-lg transition-colors"
                                                 >
                                                     🚫
                                                 </button>

@@ -17,7 +17,7 @@ const TEXTOS = {
         diasSemana: ['Dom', 'Lun', 'Mar', 'Mier', 'Jue', 'Vier', 'Sab'],
         ocupacionSalas: 'Ocupacion de salas de velacion',
         salasOcupadas: 'Salas ocupadas',
-        ingresosVsMeta: 'Ingresos del mes vs Meta',
+        ingresosVsMeta: 'Ingresos vs Meta',
         completado: 'Completado',
         mouriStatus: 'Mouri-Status: Clima Operativo',
         topPlan: 'Top Plan',
@@ -31,6 +31,11 @@ const TEXTOS = {
         ceremoniasDelDia: 'Ceremonias del Día',
         de: 'de',
         entendido: 'Entendido',
+        editarMeta: 'Editar meta mensual',
+        nuevaMeta: 'Nueva meta mensual',
+        guardar: 'Guardar',
+        cancelar: 'Cancelar',
+        metaGuardada: 'La meta se actualiza siempre a nivel mensual, aunque estés viendo Día, Semana o Año.',
     },
     en: {
         bienvenido: 'Welcome,',
@@ -44,7 +49,7 @@ const TEXTOS = {
         diasSemana: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
         ocupacionSalas: 'Wake room occupancy',
         salasOcupadas: 'Rooms occupied',
-        ingresosVsMeta: 'Monthly income vs Goal',
+        ingresosVsMeta: 'Income vs Goal',
         completado: 'Completed',
         mouriStatus: 'Mouri-Status: Operating climate',
         topPlan: 'Top Plan',
@@ -58,6 +63,11 @@ const TEXTOS = {
         ceremoniasDelDia: 'Ceremonies for Day',
         de: 'of',
         entendido: 'Got it',
+        editarMeta: 'Edit monthly goal',
+        nuevaMeta: 'New monthly goal',
+        guardar: 'Save',
+        cancelar: 'Cancel',
+        metaGuardada: 'The goal is always saved monthly, even while viewing Day, Week or Year.',
     },
 };
 
@@ -70,6 +80,14 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
     const [mesActivo, setMesActivo] = useState(filtros?.mes || new Date().getMonth() + 1);
     const [anioActivo, setAnioActivo] = useState(filtros?.anio || new Date().getFullYear());
 
+    // 🆕 Periodo activo para la tarjeta de Ingresos vs Meta
+    const [periodoActivo, setPeriodoActivo] = useState(filtros?.periodo || 'mes');
+
+    // 🆕 Modal para editar la meta mensual
+    const [mostrarModalMeta, setMostrarModalMeta] = useState(false);
+    const [metaInput, setMetaInput] = useState(metricas?.metaMensualConfigurada || 2500000);
+    const [guardandoMeta, setGuardandoMeta] = useState(false);
+
     const [ceremonias, setCeremonias] = useState(ceremoniasIniciales || []);
     const [diaSeleccionado, setDiaSeleccionado] = useState(null);
     const [eventosDelDia, setEventosDelDia] = useState([]);
@@ -81,6 +99,11 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
     useEffect(() => {
         setCeremonias(ceremoniasIniciales);
     }, [ceremoniasIniciales]);
+
+    // 🆕 Mantiene el input del modal sincronizado si el backend trae un valor nuevo
+    useEffect(() => {
+        setMetaInput(metricas?.metaMensualConfigurada || 2500000);
+    }, [metricas?.metaMensualConfigurada]);
 
     useEffect(() => {
         const html = document.documentElement;
@@ -114,10 +137,40 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
         setMesActivo(nuevoMes);
         setAnioActivo(nuevoAnio);
 
-        router.get(window.location.pathname, { mes: nuevoMes, anio: nuevoAnio }, {
+        router.get(window.location.pathname, { mes: nuevoMes, anio: nuevoAnio, periodo: periodoActivo }, {
             preserveState: true,
             preserveScroll: true,
             only: ['ceremoniasIniciales', 'filtros']
+        });
+    };
+
+    // 🆕 Cambia el periodo de la tarjeta "Ingresos vs Meta" (Día/Semana/Mes/Año)
+    const cambiarPeriodo = (nuevoPeriodo) => {
+        if (nuevoPeriodo === periodoActivo) return;
+
+        setPeriodoActivo(nuevoPeriodo);
+
+        router.get(window.location.pathname, { mes: mesActivo, anio: anioActivo, periodo: nuevoPeriodo }, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['metricas', 'filtros']
+        });
+    };
+
+    // 🆕 Guarda la nueva meta mensual
+    const guardarMeta = () => {
+        if (!metaInput || Number(metaInput) < 0) return;
+
+        setGuardandoMeta(true);
+
+        router.put('/admin/dashboard/meta', { monto: metaInput }, {
+            preserveScroll: true,
+            only: ['metricas'],
+            onSuccess: () => {
+                setGuardandoMeta(false);
+                setMostrarModalMeta(false);
+            },
+            onError: () => setGuardandoMeta(false),
         });
     };
 
@@ -154,6 +207,14 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
         }
     };
 
+    // 🆕 Opciones del filtro de periodo (etiqueta + valor que espera el backend)
+    const opcionesPeriodo = [
+        { valor: 'dia', etiqueta: t.dia },
+        { valor: 'semana', etiqueta: t.semana },
+        { valor: 'mes', etiqueta: t.mes },
+        { valor: 'anio', etiqueta: t.anio },
+    ];
+
     return (
         <div className="min-h-screen bg-[#F4EDE6] dark:bg-[#221D17] font-['Hepta_Slab'] flex relative transition-colors duration-500">
             <Head title="Panel Administrativo - Mouren" />
@@ -171,11 +232,23 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="bg-[#5D4E3F] dark:bg-[#3A322A] text-[#F4EDE6] px-4 py-2 rounded-full text-xs font-bold flex gap-2 shadow-inner cursor-pointer">
-                            <span className="opacity-60 hover:opacity-100">{t.dia}</span> |
-                            <span className="opacity-60 hover:opacity-100">{t.semana}</span> |
-                            <span className="border-b-2 border-[#FFC600]">{t.mes}</span> |
-                            <span className="opacity-60 hover:opacity-100">{t.anio}</span>
+                        {/* 🆕 CONECTADO: ahora cada botón dispara cambiarPeriodo() y refleja cuál está activo */}
+                        <div className="bg-[#5D4E3F] dark:bg-[#3A322A] text-[#F4EDE6] px-4 py-2 rounded-full text-xs font-bold flex gap-2 shadow-inner select-none">
+                            {opcionesPeriodo.map((opcion, idx) => (
+                                <React.Fragment key={opcion.valor}>
+                                    <button
+                                        type="button"
+                                        onClick={() => cambiarPeriodo(opcion.valor)}
+                                        className={`transition ${periodoActivo === opcion.valor
+                                            ? 'border-b-2 border-[#FFC600]'
+                                            : 'opacity-60 hover:opacity-100'
+                                            }`}
+                                    >
+                                        {opcion.etiqueta}
+                                    </button>
+                                    {idx < opcionesPeriodo.length - 1 && <span className="opacity-40">|</span>}
+                                </React.Fragment>
+                            ))}
                         </div>
                     </div>
                 </header>
@@ -274,9 +347,25 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
                             </div>
                         </div>
 
+                        {/* 🆕 Ingresos vs Meta — ahora dinámico según el periodo y con botón de edición */}
                         <div className="bg-white dark:bg-[#2E2720] rounded-[30px] p-6 flex flex-col justify-between shadow-sm border border-[#A68966]/20 dark:border-[#4A4033]">
                             <div className="flex justify-between items-start">
-                                <h4 className="text-sm font-bold max-w-[140px] leading-tight text-[#5D4E3F] dark:text-[#EDE4D3]">{t.ingresosVsMeta}</h4>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-bold max-w-[140px] leading-tight text-[#5D4E3F] dark:text-[#EDE4D3]">
+                                        {t.ingresosVsMeta}
+                                        <span className="block text-[9px] font-normal opacity-50 normal-case mt-0.5">
+                                            {opcionesPeriodo.find(o => o.valor === periodoActivo)?.etiqueta}
+                                        </span>
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMostrarModalMeta(true)}
+                                        title={t.editarMeta}
+                                        className="w-6 h-6 shrink-0 rounded-full bg-[#F4EDE6] dark:bg-[#221D17] hover:bg-[#A68966]/30 flex items-center justify-center text-[10px] transition"
+                                    >
+                                        ✏️
+                                    </button>
+                                </div>
                                 <div className="text-right">
                                     <span className="text-sm font-black block text-[#5D4E3F] dark:text-[#EDE4D3]">{porcentajeIngresos}%</span>
                                     <span className="text-[10px] text-green-700 dark:text-green-400 opacity-80 font-bold">{t.completado}</span>
@@ -456,6 +545,53 @@ export default function Dashboard({ metricas, ceremoniasIniciales, serviciosEnPr
                         >
                             {t.entendido}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 🆕 MODAL: Editar meta mensual */}
+            {mostrarModalMeta && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[#F4EDE6] dark:bg-[#2E2720] border-2 border-[#5D4E3F] dark:border-[#4A4033] rounded-[30px] w-full max-w-sm p-6 shadow-2xl text-[#5D4E3F] dark:text-[#EDE4D3]">
+
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-lg font-black tracking-tight">{t.editarMeta}</h4>
+                            <button
+                                onClick={() => setMostrarModalMeta(false)}
+                                className="w-8 h-8 rounded-full bg-[#5D4E3F] dark:bg-[#3A322A] text-white font-bold flex items-center justify-center hover:bg-red-800 transition shadow"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <label className="text-xs font-bold uppercase tracking-wide opacity-70">{t.nuevaMeta}</label>
+                        <input
+                            type="number"
+                            min="0"
+                            value={metaInput}
+                            onChange={(e) => setMetaInput(e.target.value)}
+                            className="w-full mt-2 bg-white dark:bg-[#221D17] border border-[#A68966]/30 dark:border-[#4A4033] rounded-xl p-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#A68966]/40"
+                        />
+
+                        <p className="text-[10px] opacity-60 italic mt-3 leading-snug">
+                            {t.metaGuardada}
+                        </p>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => setMostrarModalMeta(false)}
+                                className="px-4 py-2.5 rounded-xl border border-[#5D4E3F]/20 dark:border-[#4A4033] text-xs font-bold"
+                            >
+                                {t.cancelar}
+                            </button>
+                            <button
+                                onClick={guardarMeta}
+                                disabled={guardandoMeta}
+                                className="px-5 py-2.5 rounded-xl bg-[#5D4E3F] dark:bg-[#3A322A] text-white text-xs font-bold hover:bg-[#A68966] transition disabled:opacity-50"
+                            >
+                                {guardandoMeta ? '...' : t.guardar}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

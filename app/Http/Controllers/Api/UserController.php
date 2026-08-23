@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Genero; // 👈 FALTABA: sin este import, "Genero::where(...)" en update() rompía con "Class not found"
 use App\Models\Afiliado;
+use App\Services\NotificacionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -91,6 +92,14 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
                 'fecha_nacimiento' => $request->fecha_nacimiento,
                 'telefono' => $request->telefono,
             ]);
+
+            // 🆕 Notificamos a los administradores del nuevo registro
+            NotificacionService::avisarAdmins(
+                'Nuevo usuario registrado',
+                "{$user->nombre} se registró en Mouren.",
+                'registro',
+                '/admin/gestion-usuarios'
+            );
 
             // 4. Correo de bienvenida
             Mail::raw(

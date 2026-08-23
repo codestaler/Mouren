@@ -402,8 +402,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                         </div>
 
                                         <p className="text-[11px] sm:text-[12px] md:text-sm text-[#E9DDC8] italic leading-relaxed">
-                                            “Un homenaje pensado para preservar recuerdos, acompañar historias
-                                            y convertir cada detalle en una composición eterna.”
+                                            “Gestiona tu plan”
                                         </p>
 
                                         <div className="flex flex-wrap gap-2 sm:gap-3 text-[11px] sm:text-[12px] pt-2 border-t border-white/20">

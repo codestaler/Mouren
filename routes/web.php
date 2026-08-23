@@ -78,6 +78,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Conectamos el Dashboard directamente a tu controlador personalizado
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::put('/admin/dashboard/meta', [DashboardController::class, 'actualizarMeta'])->name('admin.dashboard.meta');
 
     // Ruta para listar a todos los usuarios
     Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');

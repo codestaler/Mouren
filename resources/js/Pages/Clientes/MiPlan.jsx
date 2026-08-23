@@ -517,7 +517,7 @@ export default function MiPlan({
                 <div className="fixed inset-0 z-[999] flex items-center justify-center bg-[#5D4E3F]/90 backdrop-blur-sm animate-fade-in p-4">
                     <div className="bg-white dark:bg-[#2E2720] p-6 sm:p-10 rounded-[32px] sm:rounded-[50px] text-center shadow-2xl max-w-sm w-full">
                         <img
-                            src="/images/elementos_dashboard/inscripcion_planes/welcome.gif"
+                            src="/images/elementos_dashboard/inscripcion_planes/welcome.png"
                             className="w-28 h-28 sm:w-40 sm:h-40 mx-auto mb-4"
                             alt="¡Bienvenido!"
                         />
