@@ -5,21 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\Servicio;
 
 class ChatMascotaController extends Controller
 {
     /**
-     * Modelo principal (rápido, el que ya usabas).
+     * Modelo principal.
+     * 🆕 Groq deprecó `llama-3.3-70b-versatile` (apagado definitivo: 16 ago 2026).
+     * Reemplazo oficial recomendado por Groq: openai/gpt-oss-120b.
      */
-    private const MODELO_PRINCIPAL = 'llama-3.3-70b-versatile';
+    private const MODELO_PRINCIPAL = 'openai/gpt-oss-120b';
 
     /**
-     * CAMBIO: modelo de respaldo. Si el principal falla o se cae por rate
-     * limit, reintentamos con este antes de rendirnos. Este es más chico
-     * y normalmente tiene más margen de cupo en Groq. Ajusta el nombre si
-     * usas otro modelo de respaldo.
+     * Modelo de respaldo. Si el principal falla o se cae por rate
+     * limit, reintentamos con este antes de rendirnos.
+     * 🆕 Groq deprecó `llama-3.1-8b-instant` (apagado definitivo: 16 ago 2026).
+     * Reemplazo oficial recomendado por Groq: openai/gpt-oss-20b.
      */
-    private const MODELO_RESPALDO = 'llama-3.1-8b-instant';
+    private const MODELO_RESPALDO = 'openai/gpt-oss-20b';
 
     public function __invoke(Request $request)
     {
@@ -51,21 +54,63 @@ class ChatMascotaController extends Controller
         // está triste, aburrido, o simplemente lo pide. No recibe
         // parámetros porque solo hay un juego disponible; el día que
         // agregues más, le sumas un parámetro "juego" con un enum.
-        $tools = [[
-            'type' => 'function',
-            'function' => [
-                'name' => 'sugerir_juego',
-                'description' => 'Abre el juego "Luciérnagas de la Memoria" para el usuario. '
-                    . 'Úsala cuando el usuario exprese tristeza, aburrimiento, ansiedad leve, '
-                    . 'pida distraerse, o pida explícitamente jugar. No la uses si el usuario '
-                    . 'está en medio de una gestión práctica (pagos, documentos) sin pedir jugar.',
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => new \stdClass(),
-                    'required' => [],
+        $tools = [
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'sugerir_juego',
+                    'description' => 'Abre el juego "Luciérnagas de la Memoria" para el usuario. '
+                        . 'Úsala cuando el usuario exprese tristeza, aburrimiento, ansiedad leve, '
+                        . 'pida distraerse, o pida explícitamente jugar. No la uses si el usuario '
+                        . 'está en medio de una gestión práctica (pagos, documentos) sin pedir jugar.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => new \stdClass(),
+                        'required' => [],
+                    ],
                 ],
             ],
-        ]];
+            // 🆕 Navegación: Mouri puede llevar al usuario directo a otra sección del panel.
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'navegar_a',
+                    'description' => 'Lleva al usuario a otra sección del panel cuando lo pide o cuando '
+                        . 'eso resuelve su duda más rápido que explicarlo (ej: "quiero pagar", "ver mi plan", '
+                        . '"mis datos", "el certificado"). No la uses si el usuario solo pregunta información '
+                        . 'general que puedes responder aquí mismo en el chat.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'destino' => [
+                                'type' => 'string',
+                                'enum' => ['mi_plan', 'detalles_plan', 'pagos', 'tus_datos', 'certificado'],
+                                'description' => 'mi_plan: resumen de su cobertura actual. detalles_plan: '
+                                    . 'personalizar afiliados, servicios extra y recuerdos. pagos: pagar cuotas '
+                                    . 'pendientes. tus_datos: editar su perfil. certificado: descargar el PDF '
+                                    . 'de afiliación.',
+                            ],
+                        ],
+                        'required' => ['destino'],
+                    ],
+                ],
+            ],
+            // 🆕 Tarjeta visual con el resumen del plan (usa el contexto que ya cargamos del usuario).
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'mostrar_resumen_plan',
+                    'description' => 'Muestra una tarjeta visual con el resumen del plan actual del usuario '
+                        . '(nombre del plan y cuota mensual). Úsala cuando pregunte por su plan, su cuota, '
+                        . 'o cuánto está pagando — en vez de solo decírselo en texto plano.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => new \stdClass(),
+                        'required' => [],
+                    ],
+                ],
+            ],
+        ];
 
         // CAMBIO: intenta con el modelo principal, y si falla (rate limit,
         // timeout, error 5xx), reintenta automáticamente con el de respaldo
@@ -94,42 +139,115 @@ class ChatMascotaController extends Controller
             ]);
         }
 
-        // CAMBIO: si Groq decidió llamar a "sugerir_juego", le devolvemos
-        // el resultado de esa "acción" (que aquí es solo confirmar que se
-        // abrió) y le pedimos una segunda respuesta ya en lenguaje natural
-        // que explique lo que hizo, en vez de solo abrir el juego en seco.
+        // CAMBIO: ahora manejamos cualquiera de las 3 herramientas (juego, navegar,
+        // resumen de plan) de forma genérica, en vez de solo revisar "sugerir_juego".
         if (!empty($resultado['toolCalls'])) {
-            $llamoJuego = collect($resultado['toolCalls'])
-                ->contains(fn ($tc) => ($tc['function']['name'] ?? null) === 'sugerir_juego');
+            $accion = null;
+            $mensajesConTool = array_merge($mensajes, [
+                ['role' => 'assistant', 'content' => null, 'tool_calls' => $resultado['toolCalls']],
+            ]);
 
-            if ($llamoJuego) {
-                $mensajesConTool = array_merge($mensajes, [
-                    ['role' => 'assistant', 'content' => null, 'tool_calls' => $resultado['toolCalls']],
-                ]);
-                foreach ($resultado['toolCalls'] as $tc) {
-                    $mensajesConTool[] = [
-                        'role' => 'tool',
-                        'tool_call_id' => $tc['id'],
-                        'content' => json_encode(['ok' => true, 'mensaje' => 'El juego se abrió en pantalla.']),
-                    ];
+            foreach ($resultado['toolCalls'] as $tc) {
+                $nombreFuncion = $tc['function']['name'] ?? null;
+                $argumentos = json_decode($tc['function']['arguments'] ?? '{}', true) ?: [];
+
+                [$resultadoTool, $accionDetectada] = $this->ejecutarTool($nombreFuncion, $argumentos, $contexto);
+
+                // Nos quedamos con la primera acción reconocida del turno
+                // (normalmente el modelo solo pide una a la vez).
+                if ($accion === null && $accionDetectada !== null) {
+                    $accion = $accionDetectada;
                 }
 
-                $segundo = $this->llamarGroq($mensajesConTool, self::MODELO_PRINCIPAL);
-                $textoFinal = $segundo['ok']
-                    ? $segundo['texto']
-                    : '¡Vamos a jugar un rato! Te dejé las Luciérnagas de la Memoria en pantalla ✨';
-
-                return response()->json([
-                    'reply' => $textoFinal,
-                    'accion' => 'abrir_juego',
-                ]);
+                $mensajesConTool[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => $tc['id'],
+                    'content' => json_encode($resultadoTool),
+                ];
             }
+
+            $segundo = $this->llamarGroq($mensajesConTool, self::MODELO_PRINCIPAL);
+            $textoFinal = $segundo['ok']
+                ? $segundo['texto']
+                : '¡Listo! Ya hice lo que me pediste ✨';
+
+            return response()->json([
+                'reply' => $textoFinal,
+                'accion' => $accion,
+            ]);
         }
 
         return response()->json([
             'reply' => $resultado['texto'],
             'accion' => null,
         ]);
+    }
+
+    /**
+     * 🆕 Ejecuta la "acción" detrás de cada herramienta y devuelve dos cosas:
+     * 1) El resultado que le mandamos de vuelta al modelo (para que redacte
+     *    la respuesta final en lenguaje natural).
+     * 2) La "acción" que le mandamos al frontend para que haga algo visual
+     *    (abrir el juego, navegar, mostrar una tarjeta) — o null si no aplica.
+     */
+    private function ejecutarTool(?string $nombre, array $argumentos, array $contexto): array
+    {
+        switch ($nombre) {
+            case 'sugerir_juego':
+                return [
+                    ['ok' => true, 'mensaje' => 'El juego se abrió en pantalla.'],
+                    ['tipo' => 'abrir_juego'],
+                ];
+
+            case 'navegar_a':
+                $mapa = $this->mapaDestinos();
+                $destino = $argumentos['destino'] ?? null;
+
+                if (!$destino || !isset($mapa[$destino])) {
+                    return [
+                        ['ok' => false, 'mensaje' => 'Destino no reconocido.'],
+                        null,
+                    ];
+                }
+
+                return [
+                    ['ok' => true, 'mensaje' => "Se abrió la sección {$mapa[$destino]['etiqueta']}."],
+                    ['tipo' => 'navegar', 'url' => $mapa[$destino]['url'], 'etiqueta' => $mapa[$destino]['etiqueta']],
+                ];
+
+            case 'mostrar_resumen_plan':
+                $datos = [
+                    'plan' => $contexto['plan'],
+                    'cuota' => $contexto['cuota'],
+                ];
+
+                return [
+                    array_merge(['ok' => true], $datos),
+                    ['tipo' => 'mostrar_plan', 'datos' => $datos],
+                ];
+
+            default:
+                return [
+                    ['ok' => false, 'mensaje' => 'Herramienta no reconocida.'],
+                    null,
+                ];
+        }
+    }
+
+    /**
+     * 🆕 Mapa de destinos permitidos para la herramienta navegar_a.
+     * Usa tus rutas con nombre reales — si cambias alguna ruta, solo hay
+     * que actualizarla aquí.
+     */
+    private function mapaDestinos(): array
+    {
+        return [
+            'mi_plan'       => ['url' => route('mi.plan'),               'etiqueta' => 'Mi Plan'],
+            'detalles_plan' => ['url' => route('detalles.plan'),         'etiqueta' => 'Detalles del Plan'],
+            'pagos'         => ['url' => route('cliente.pagos'),         'etiqueta' => 'Pagar mi Cuota'],
+            'tus_datos'     => ['url' => route('datos.edit'),            'etiqueta' => 'Tus Datos'],
+            'certificado'   => ['url' => route('certificado.afiliacion'), 'etiqueta' => 'Certificado de Afiliación'],
+        ];
     }
 
     /**
@@ -230,6 +348,36 @@ class ChatMascotaController extends Controller
     }
 
     /**
+     * 🆕 Arma el listado de servicios extra directo desde la tabla `servicios`,
+     * en vez de escribirlo a mano en el prompt. Así, si agregas/editas un
+     * servicio desde el panel admin, Mouri lo conoce automáticamente sin
+     * tener que tocar este archivo. Si la consulta falla por cualquier
+     * motivo, devuelve string vacío y el prompt simplemente omite esa
+     * sección (no rompe el chat).
+     */
+    private function obtenerListadoServicios(): string
+    {
+        try {
+            $servicios = Servicio::orderBy('nombre')->get(['nombre', 'descripcion', 'precio', 'personalizable']);
+        } catch (\Exception $e) {
+            Log::warning('No se pudo cargar el listado de servicios para el prompt de Mouri', [
+                'error' => $e->getMessage(),
+            ]);
+            return '';
+        }
+
+        if ($servicios->isEmpty()) {
+            return '';
+        }
+
+        return $servicios->map(function ($s) {
+            $precio = '$' . number_format((float) $s->precio, 0, ',', '.');
+            $etiquetaPersonalizable = $s->personalizable ? ' [Personalizable: el cliente puede elegir color, flores y observaciones]' : '';
+            return "  · {$s->nombre} — {$precio}. {$s->descripcion}.{$etiquetaPersonalizable}";
+        })->implode("\n");
+    }
+
+    /**
      * Prompt estándar (el que ya tenías, con el contexto inyectado).
      */
     private function promptEstandar(array $contexto): string
@@ -237,6 +385,12 @@ class ChatMascotaController extends Controller
         $nombre = $contexto['nombre'];
         $planTexto = $contexto['plan'] ? "Su plan actual es: {$contexto['plan']}." : '';
         $cuotaTexto = $contexto['cuota'] ? " Su cuota mensual es de $" . number_format($contexto['cuota'], 0, ',', '.') . "." : '';
+
+        // 🆕 Listado dinámico de servicios extra (viene de la BD, ver obtenerListadoServicios())
+        $listadoServicios = $this->obtenerListadoServicios();
+        $bloqueServicios = $listadoServicios
+            ? "- SERVICIOS EXTRA DISPONIBLES (el cliente puede agregarlos a su plan desde 'Detalles del plan'):\n{$listadoServicios}\n"
+            : '';
 
         return "Eres Mouri, el cuervo mascota y guardián místico de 'Mouren Funeraria'. "
             . "Tu personalidad es empática, cálida, humana y con un toque tecnológico/místico estilo anime. "
@@ -250,12 +404,15 @@ class ChatMascotaController extends Controller
             . "  4. 'Tus datos': Información del perfil, ahí también puedes descargar tu certificado de afiliación.\n"
             . "  Si tiene una duda muy puntual o algún error técnico con la página, dale el número de soporte 3247697845.\n"
             . "- SOBRE LOS PLANES DISPONIBLES: 'Descanso Sereno', 'Tributo a la Vida', 'Legado Eterno' y 'Huella Eterna' (exclusivo mascotas).\n"
+            . "{$bloqueServicios}"
             . "- SOBRE LAS FACTURAS: el sistema automatiza el envío de facturas en PDF por correo periódicamente.\n"
             . "- FUNCIONES FUTURAS: música ('Reproductor Espiritual'), próximamente.\n"
             . "- JUEGO DISPONIBLE: 'Luciérnagas de la Memoria'. Si el usuario parece aburrido, "
             . "  triste, quiere distraerse, o te lo pide, puedes abrirlo usando la herramienta "
             . "  sugerir_juego.\n"
-            . "REGLA DE ORO: Responde siempre en español. Sé reconfortante, amigable y muy servicial.";
+            . "REGLA DE ORO: Responde siempre en español. Sé reconfortante, amigable y muy servicial. "
+            . "Si te preguntan por un servicio extra, usa los precios y descripciones exactos de la lista de arriba, "
+            . "no inventes precios.";
     }
 
     /**

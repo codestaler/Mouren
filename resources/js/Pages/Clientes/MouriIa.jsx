@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, Gem } from 'lucide-react';
 import LuciernagasDeLaMemoria from './Components/LuciernagasDeLaMemoria';
 
 export default function MouriIa() {
@@ -13,6 +13,7 @@ export default function MouriIa() {
         { 
             id: 1, 
             remitente: 'mouri', 
+            tipo: 'texto',
             texto: `Hola, ${usuario.name || 'amigo'}. Estoy aquí para guiarte, acompañarte o simplemente poner la melodía que tu corazón necesite en este momento. ¿De qué te gustaría hablar hoy?` 
         }
     ]);
@@ -23,6 +24,9 @@ export default function MouriIa() {
     // calling (ver el campo "accion" que devuelve /chat/mouri), o el
     // usuario lo abre manualmente con el botón de la tarjeta.
     const [juegoAbierto, setJuegoAbierto] = useState(false);
+
+    // 🆕 Overlay de "portal" mientras Mouri te lleva a otra sección del panel
+    const [navegandoA, setNavegandoA] = useState(null); // string con la etiqueta, o null
 
     // --- NUEVO: Estado y refs de audio ---
     const [sonidoActivo, setSonidoActivo] = useState(true);
@@ -81,6 +85,34 @@ export default function MouriIa() {
         });
     };
 
+    // 🆕 Procesa la "accion" que devuelve el backend (ahora es un objeto, no un string)
+    const procesarAccion = (accion) => {
+        if (!accion) return;
+
+        if (accion.tipo === 'abrir_juego') {
+            setJuegoAbierto(true);
+            return;
+        }
+
+        if (accion.tipo === 'navegar' && accion.url) {
+            // Mostramos el "portal" animado un momento antes de navegar de verdad
+            setNavegandoA(accion.etiqueta || 'tu destino');
+            setTimeout(() => {
+                router.visit(accion.url);
+            }, 1100);
+            return;
+        }
+
+        if (accion.tipo === 'mostrar_plan') {
+            setMensajes(prev => [...prev, {
+                id: Date.now() + 2,
+                remitente: 'mouri',
+                tipo: 'plan',
+                datos: accion.datos,
+            }]);
+        }
+    };
+
     const enviarMensaje = async (e) => {
         if (e) e.preventDefault();
 
@@ -91,7 +123,7 @@ export default function MouriIa() {
         setNuevoMensaje('');
         setCargando(true);
 
-        setMensajes(prev => [...prev, { id: Date.now(), remitente: 'usuario', texto: mensajeParaEnviar }]);
+        setMensajes(prev => [...prev, { id: Date.now(), remitente: 'usuario', tipo: 'texto', texto: mensajeParaEnviar }]);
         
         try {
             const response = await fetch('/chat/mouri', { 
@@ -115,24 +147,17 @@ export default function MouriIa() {
             }
 
             const data = await response.json();
-            setMensajes(prev => [...prev, { id: Date.now() + 1, remitente: 'mouri', texto: data.reply }]);
+            setMensajes(prev => [...prev, { id: Date.now() + 1, remitente: 'mouri', tipo: 'texto', texto: data.reply }]);
 
-            // CAMBIO: si Mouri decidió (vía function calling en el backend)
-            // que este es un buen momento para el juego, lo abrimos solo.
-            if (data.accion === 'abrir_juego') {
-                setJuegoAbierto(true);
-            }
+            // CAMBIO: accion ahora es un objeto ({ tipo, ... }) o null.
+            procesarAccion(data.accion);
 
         } catch (error) {
-            // CAMBIO: antes decía "Error detectado. Revisa la consola (F12)...".
-            // El detalle técnico ya se loguea arriba con console.error para que
-            // tú (developer) lo veas si hace falta, pero el usuario ya no ve
-            // nada técnico — Mouri se mantiene en personaje incluso si la
-            // petición falla del todo (red caída, CORS, etc).
             console.error("Error al hablar con Mouri:", error);
             setMensajes(prev => [...prev, { 
                 id: Date.now() + 1, 
                 remitente: 'mouri', 
+                tipo: 'texto',
                 texto: 'Se me nubló el plano un segundo y no pude escucharte bien. ¿Me lo repites? Si sigue pasando, escríbenos al 3247697845 y con gusto te ayudamos por ahí.' 
             }]);
         } finally {
@@ -141,11 +166,6 @@ export default function MouriIa() {
     };
 
     return (
-        // CAMBIO: se agregaron las variantes dark: en todo el layout, siguiendo
-        // el mismo patrón de colores que ya usas en MiPlan.jsx (dark:bg-[#221D17],
-        // dark:text-[#EDE4D3], etc.) para que este panel respete el modo oscuro
-        // del resto de la app.
-        // 🆕 RESPONSIVO: flex-col en móvil/tablet, flex-row desde lg (el Sidebar es un drawer debajo de ese punto)
         <div className="min-h-screen font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] bg-[#FFFFFF] dark:bg-[#221D17] flex flex-col lg:flex-row overflow-x-hidden relative transition-colors duration-500">
             <Head title="Santuario Mouri - Mouren" />
             
@@ -157,9 +177,6 @@ export default function MouriIa() {
 
             <Sidebar />
 
-            {/* 🆕 RESPONSIVO: en móvil quitamos el h-screen/max-h-screen fijo (se vuelve muy apretado
-                con el GIF + chat + input todo en una sola pantalla) y dejamos que crezca con el contenido;
-                desde lg volvemos al layout de "app" a pantalla completa que ya tenías. */}
             <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out flex flex-col min-h-screen lg:h-screen lg:max-h-screen">
                 
                 <header className="flex flex-wrap justify-between items-center gap-3 mb-4 sm:mb-6 flex-shrink-0">
@@ -171,7 +188,6 @@ export default function MouriIa() {
                     </div>
                     
                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                        {/* --- NUEVO: Botón mute/unmute --- */}
                         <button
                             type="button"
                             onClick={toggleSonido}
@@ -188,8 +204,6 @@ export default function MouriIa() {
                     </div>
                 </header>
 
-                {/* 🆕 RESPONSIVO: en móvil las dos columnas se apilan (Mouri arriba, chat abajo) y
-                    cada una tiene su propia altura natural en vez de forzar min-h-0 de un grid a pantalla completa */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:min-h-0 mb-4">
                     
                     <div className="lg:col-span-5 bg-[#5D4E3F] dark:bg-[#2E2720] text-white p-5 sm:p-6 md:p-8 rounded-[28px] sm:rounded-[36px] md:rounded-[45px] shadow-xl relative overflow-hidden flex flex-col justify-between group border border-white/10 transition-colors duration-500">
@@ -206,11 +220,6 @@ export default function MouriIa() {
                         <div className="relative my-4 sm:my-6 flex justify-center items-center flex-1 min-h-[140px] sm:min-h-[180px] md:min-h-[200px]">
                             <div className={`absolute w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 rounded-full bg-gradient-to-tr from-[#A68966] to-[#FFD97D] blur-xl transition-all duration-1000 ${cargando ? 'opacity-40 scale-125 animate-pulse' : 'opacity-20 scale-100'}`} />
                             
-                            {/* CAMBIO: por ahora se repite la misma imagen en modo oscuro
-                                (mismo src). El día que tengas una variante de Mouri para
-                                modo oscuro, solo agrega algo como:
-                                src={ /* modoOscuro ? '/.../mouri_main_dark.gif' : '/.../mouri_main.gif' * / }
-                                usando el hook de tema que ya manejas en el resto de la app. */}
                             <img 
                                 src="/images/elementos_dashboard/mouri_ia/mouri_main.gif" 
                                 className={`w-[180px] sm:w-[230px] md:w-[300px] object-contain relative z-10 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] dark:drop-shadow-[0_10px_24px_rgba(0,0,0,0.6)] transition-all duration-500 ${cargando ? 'animate-bounce' : 'hover:scale-105'}`} 
@@ -243,11 +252,23 @@ export default function MouriIa() {
                                         Jugar
                                     </button>
                                 </div>
+
+                                {/* 🆕 Acceso rápido: le pide a Mouri que navegue, para que veas la acción en vivo */}
+                                <div className="flex items-center justify-between gap-2 bg-white/5 p-2 rounded-xl border border-white/5">
+                                    <span className="text-[10px] sm:text-[11px] font-sans">🧭 Ir a mi plan</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setNuevoMensaje("Mouri, llévame a ver mi plan")}
+                                        className="bg-[#A68966] hover:bg-[#8e7253] text-white px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition active:scale-95 shrink-0"
+                                    >
+                                        Preguntar
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="mt-3 pt-2 border-t border-white/10 flex justify-between text-[9px] sm:text-[10px] opacity-60 font-mono">
                                 <span>MODO: Acompañamiento</span>
-                                <span>V.1.0-BIO</span>
+                                <span>V.1.1-ACCIONES</span>
                             </div>
                         </div>
                     </div>
@@ -256,23 +277,54 @@ export default function MouriIa() {
                         <img src="/images/login/elementos_dashboard/flores_esquinas_tarjeta.png" className="absolute bottom-4 right-4 w-24 sm:w-40 opacity-10 dark:opacity-5 pointer-events-none" alt="" />
                         
                         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 pb-4">
-                            {mensajes.map((msg) => (
-                                <div 
-                                    key={msg.id} 
-                                    className={`flex ${msg.remitente === 'usuario' ? 'justify-end' : 'justify-start'} animate-message-in`}
-                                >
-                                    <div className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 text-[11px] sm:text-xs font-sans leading-relaxed shadow-sm rounded-[20px] sm:rounded-[25px] ${
-                                        msg.remitente === 'usuario'
-                                            ? 'bg-[#5D4E3F] dark:bg-[#4A3E32] text-white rounded-tr-none font-bold'
-                                            : 'bg-white/75 dark:bg-white/10 text-[#302A1D] dark:text-[#EDE4D3] rounded-tl-none border border-[#5D4E3F]/10 dark:border-white/10 backdrop-blur-sm relative overflow-hidden'
-                                    }`}>
-                                        {msg.remitente === 'mouri' && (
-                                            <span className="absolute top-1 right-2 opacity-20 text-[10px]">🌼</span>
-                                        )}
-                                        <p className="whitespace-pre-line">{msg.texto}</p>
+                            {mensajes.map((msg) => {
+                                // 🆕 Tarjeta animada de resumen de plan
+                                if (msg.tipo === 'plan') {
+                                    const datos = msg.datos || {};
+                                    return (
+                                        <div key={msg.id} className="flex justify-start animate-card-in">
+                                            <div className="max-w-[92%] sm:max-w-[85%] w-full sm:w-auto p-4 rounded-[22px] bg-gradient-to-br from-[#5D4E3F] to-[#3A322A] text-white shadow-lg border border-[#FFD97D]/30 relative overflow-hidden">
+                                                <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#FFD97D]/20 blur-2xl rounded-full" />
+                                                <div className="relative z-10 flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-[#FFD97D]/20 flex items-center justify-center shrink-0">
+                                                        <Gem size={18} className="text-[#FFD97D]" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[9px] uppercase tracking-widest text-[#FFD97D] font-black">Tu Plan Actual</p>
+                                                        <p className="text-sm font-black truncate">{datos.plan || 'Sin plan asignado'}</p>
+                                                    </div>
+                                                </div>
+                                                {datos.cuota && (
+                                                    <div className="relative z-10 mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                                                        <span className="text-[10px] uppercase tracking-wider opacity-70">Cuota mensual</span>
+                                                        <span className="text-base font-black text-[#FFD97D]">
+                                                            ${Number(datos.cuota).toLocaleString('es-CO')}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div 
+                                        key={msg.id} 
+                                        className={`flex ${msg.remitente === 'usuario' ? 'justify-end' : 'justify-start'} animate-message-in`}
+                                    >
+                                        <div className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 text-[11px] sm:text-xs font-sans leading-relaxed shadow-sm rounded-[20px] sm:rounded-[25px] ${
+                                            msg.remitente === 'usuario'
+                                                ? 'bg-[#5D4E3F] dark:bg-[#4A3E32] text-white rounded-tr-none font-bold'
+                                                : 'bg-white/75 dark:bg-white/10 text-[#302A1D] dark:text-[#EDE4D3] rounded-tl-none border border-[#5D4E3F]/10 dark:border-white/10 backdrop-blur-sm relative overflow-hidden'
+                                        }`}>
+                                            {msg.remitente === 'mouri' && (
+                                                <span className="absolute top-1 right-2 opacity-20 text-[10px]">🌼</span>
+                                            )}
+                                            <p className="whitespace-pre-line">{msg.texto}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             
                             {cargando && (
                                 <div className="flex justify-start animate-pulse">
@@ -317,6 +369,22 @@ export default function MouriIa() {
                     from { opacity: 0; transform: translateY(8px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
+
+                .animate-card-in {
+                    animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                @keyframes cardIn {
+                    from { opacity: 0; transform: translateY(10px) scale(0.94); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+
+                .animate-portal-in {
+                    animation: portalIn 0.4s ease-out forwards;
+                }
+                @keyframes portalIn {
+                    from { opacity: 0; transform: scale(0.85); }
+                    to { opacity: 1; transform: scale(1); }
+                }
             `}</style>
 
             {/* CAMBIO: overlay del juego — se abre solo (Mouri vía chat) o
@@ -326,6 +394,19 @@ export default function MouriIa() {
                     <div className="w-full max-w-2xl">
                         <LuciernagasDeLaMemoria onSalir={() => setJuegoAbierto(false)} />
                     </div>
+                </div>
+            )}
+
+            {/* 🆕 Overlay de "portal" mientras Mouri te lleva a otra sección */}
+            {navegandoA && (
+                <div className="fixed inset-0 z-[999] bg-[#221D17]/95 backdrop-blur-md flex flex-col items-center justify-center gap-4 animate-portal-in">
+                    <div className="relative w-24 h-24 flex items-center justify-center">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#A68966] to-[#FFD97D] blur-xl opacity-60 animate-pulse" />
+                        <Sparkles size={40} className="text-[#FFD97D] relative z-10 animate-spin" style={{ animationDuration: '2.5s' }} />
+                    </div>
+                    <p className="text-[#FFD97D] text-xs font-black uppercase tracking-[3px] text-center px-6">
+                        Abriendo {navegandoA}...
+                    </p>
                 </div>
             )}
         </div>
