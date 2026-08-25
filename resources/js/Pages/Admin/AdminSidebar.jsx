@@ -2,9 +2,51 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
 
+// Mismo patrón de diccionario que ya usas en Dashboard.jsx
+const TEXTOS = {
+    es: {
+        panelPrincipal: 'Panel Principal',
+        gestionUsuarios: 'Gestión de Usuarios',
+        serviciosFunerarios: 'Servicios Funerarios',
+        informesVentas: 'Informes de Ventas',
+        ajustes: 'Ajustes',
+        cerrarSesion: 'CERRAR SESIÓN',
+        notificaciones: 'Notificaciones',
+        marcarTodasLeidas: 'Marcar todas como leídas',
+        sinNotificaciones: 'No tienes notificaciones.',
+        ahoraMismo: 'Ahora mismo',
+        hace: 'Hace',
+        min: 'min',
+        h: 'h',
+        d: 'd',
+        menu: 'Menú',
+    },
+    en: {
+        panelPrincipal: 'Main Panel',
+        gestionUsuarios: 'User Management',
+        serviciosFunerarios: 'Funeral Services',
+        informesVentas: 'Sales Reports',
+        ajustes: 'Settings',
+        cerrarSesion: 'LOG OUT',
+        notificaciones: 'Notifications',
+        marcarTodasLeidas: 'Mark all as read',
+        sinNotificaciones: "You don't have any notifications.",
+        ahoraMismo: 'Just now',
+        hace: '',
+        min: 'min ago',
+        h: 'h ago',
+        d: 'd ago',
+        menu: 'Menu',
+    },
+};
+
 export default function AdminSidebar() {
     const { url, props } = usePage();
     const [isOpen, setIsOpen] = useState(true);
+
+    // 🆕 Idioma del usuario logueado — mismo campo que ya usa Dashboard.jsx
+    const idioma = props?.auth?.user?.idioma || 'es';
+    const t = TEXTOS[idioma] || TEXTOS.es;
 
     // 🌗 SINCRONIZACIÓN GLOBAL DE MODO OSCURO
     useEffect(() => {
@@ -68,15 +110,16 @@ export default function AdminSidebar() {
         });
     };
 
+    // 🆕 Traducido: respeta el idioma activo para "Ahora mismo / Just now", "Hace X min / X min ago", etc.
     const tiempoRelativo = (fecha) => {
         const diffMs = Date.now() - new Date(fecha).getTime();
         const mins = Math.floor(diffMs / 60000);
-        if (mins < 1) return 'Ahora mismo';
-        if (mins < 60) return `Hace ${mins} min`;
+        if (mins < 1) return t.ahoraMismo;
+        if (mins < 60) return idioma === 'en' ? `${mins} ${t.min}` : `${t.hace} ${mins} ${t.min}`;
         const horas = Math.floor(mins / 60);
-        if (horas < 24) return `Hace ${horas} h`;
+        if (horas < 24) return idioma === 'en' ? `${horas} ${t.h}` : `${t.hace} ${horas} ${t.h}`;
         const dias = Math.floor(horas / 24);
-        return `Hace ${dias} d`;
+        return idioma === 'en' ? `${dias} ${t.d}` : `${t.hace} ${dias} ${t.d}`;
     };
 
     const active = (path) =>
@@ -103,17 +146,17 @@ export default function AdminSidebar() {
                 {notifAbierta && (
                     <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white dark:bg-[#2E2720] rounded-2xl shadow-2xl border border-[#A68966]/20 dark:border-[#4A4033] overflow-hidden">
                         <div className="flex justify-between items-center px-4 py-3 border-b border-[#E8DFC8] dark:border-[#4A4033]">
-                            <h4 className="text-xs font-black text-[#5D4E3F] dark:text-[#EDE4D3] uppercase tracking-wide">Notificaciones</h4>
+                            <h4 className="text-xs font-black text-[#5D4E3F] dark:text-[#EDE4D3] uppercase tracking-wide">{t.notificaciones}</h4>
                             {noLeidas > 0 && (
                                 <button onClick={marcarTodasLeidas} className="text-[10px] font-bold text-[#4D78A3] dark:text-[#7FAEDD] hover:underline">
-                                    Marcar todas como leídas
+                                    {t.marcarTodasLeidas}
                                 </button>
                             )}
                         </div>
 
                         <div className="max-h-80 overflow-y-auto">
                             {notificaciones.length === 0 ? (
-                                <p className="text-xs text-center text-gray-400 italic py-8">No tienes notificaciones.</p>
+                                <p className="text-xs text-center text-gray-400 italic py-8">{t.sinNotificaciones}</p>
                             ) : (
                                 notificaciones.map((notif) => (
                                     <button
@@ -150,7 +193,7 @@ export default function AdminSidebar() {
                 <img
                     src="/images/esquina-decorativa.png"
                     className="w-[130px]"
-                    alt="Menú"
+                    alt={t.menu}
                 />
             </div>
 
@@ -186,19 +229,19 @@ export default function AdminSidebar() {
                 <nav className="flex-1 px-6 mt-2 min-w-[240px] z-10">
                     <div className="flex flex-col gap-6 font-['Hepta_Slab'] tracking-wide">
                         <Link href="/admin/dashboard" className={`text-sm md:text-sm w-fit flex items-center gap-2 ${active('/admin/dashboard')}`}>
-                            Panel Principal
+                            {t.panelPrincipal}
                         </Link>
                         <Link href="/admin/gestion-usuarios" className={`text-sm md:text-sm w-fit ${active('/admin/gestion-usuarios')}`}>
-                            Gestión de Usuarios
+                            {t.gestionUsuarios}
                         </Link>
                         <Link href="/admin/servicios-funerarios" className={`text-sm md:text-sm w-fit ${active('/admin/servicios-funerarios')}`}>
-                            Servicios Funerarios
+                            {t.serviciosFunerarios}
                         </Link>
                         <Link href="/admin/ventas" className={`text-sm md:text-sm w-fit ${active('/admin/ventas')}`}>
-                            Informes de Ventas
+                            {t.informesVentas}
                         </Link>
                         <Link href="/admin/ajustes" className={`text-sm md:text-sm w-fit ${active('/admin/ajustes')}`}>
-                            Ajustes
+                            {t.ajustes}
                         </Link>
                     </div>
                 </nav>
@@ -208,7 +251,7 @@ export default function AdminSidebar() {
                         href="/force-logout"
                         className="group flex items-center justify-center gap-2 bg-[#A68966] text-[#F4EDE6] py-2.5 rounded-xl font-bold uppercase text-[10px] tracking-[0.15em] transition-all hover:bg-[#FFC600] hover:text-[#5D4E3F] hover:shadow-lg active:scale-95"
                     >
-                        <span>CERRAR SESIÓN</span>
+                        <span>{t.cerrarSesion}</span>
                         <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </Link>
                 </div>

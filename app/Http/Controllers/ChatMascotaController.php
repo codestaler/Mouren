@@ -6,20 +6,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Servicio;
+use App\Models\Pagos\Factura;
 
 class ChatMascotaController extends Controller
 {
     /**
      * Modelo principal.
-     * 🆕 Groq deprecó `llama-3.3-70b-versatile` (apagado definitivo: 16 ago 2026).
+     * Groq deprecó `llama-3.3-70b-versatile` (apagado definitivo: 16 ago 2026).
      * Reemplazo oficial recomendado por Groq: openai/gpt-oss-120b.
      */
     private const MODELO_PRINCIPAL = 'openai/gpt-oss-120b';
 
     /**
-     * Modelo de respaldo. Si el principal falla o se cae por rate
-     * limit, reintentamos con este antes de rendirnos.
-     * 🆕 Groq deprecó `llama-3.1-8b-instant` (apagado definitivo: 16 ago 2026).
+     * Modelo de respaldo.
+     * Groq deprecó `llama-3.1-8b-instant` (apagado definitivo: 16 ago 2026).
      * Reemplazo oficial recomendado por Groq: openai/gpt-oss-20b.
      */
     private const MODELO_RESPALDO = 'openai/gpt-oss-20b';
@@ -31,15 +31,10 @@ class ChatMascotaController extends Controller
         ]);
 
         $mensajeUsuario = $request->input('message');
-        $usuario = $request->user(); // asumiendo que la ruta pasa por auth middleware
+        $usuario = $request->user();
 
-        // CAMBIO: contexto real del usuario (plan, afiliados, si tiene un
-        // fallecido). Todavía con datos de ejemplo hasta que me pases los
-        // modelos de Suscripcion/Afiliado — ver el TODO adentro.
         $contexto = $this->construirContextoUsuario($usuario);
 
-        // CAMBIO: elegimos el prompt de sistema según si detectamos un
-        // afiliado fallecido en la suscripción del usuario.
         $systemPrompt = $contexto['tieneFallecido']
             ? $this->promptAcompanamiento($contexto)
             : $this->promptEstandar($contexto);
@@ -49,72 +44,8 @@ class ChatMascotaController extends Controller
             ['role' => 'user', 'content' => $mensajeUsuario],
         ];
 
-        // CAMBIO: la única herramienta por ahora — Mouri puede "abrir" el
-        // juego Luciérnagas de la Memoria cuando detecta que el usuario
-        // está triste, aburrido, o simplemente lo pide. No recibe
-        // parámetros porque solo hay un juego disponible; el día que
-        // agregues más, le sumas un parámetro "juego" con un enum.
-        $tools = [
-            [
-                'type' => 'function',
-                'function' => [
-                    'name' => 'sugerir_juego',
-                    'description' => 'Abre el juego "Luciérnagas de la Memoria" para el usuario. '
-                        . 'Úsala cuando el usuario exprese tristeza, aburrimiento, ansiedad leve, '
-                        . 'pida distraerse, o pida explícitamente jugar. No la uses si el usuario '
-                        . 'está en medio de una gestión práctica (pagos, documentos) sin pedir jugar.',
-                    'parameters' => [
-                        'type' => 'object',
-                        'properties' => new \stdClass(),
-                        'required' => [],
-                    ],
-                ],
-            ],
-            // 🆕 Navegación: Mouri puede llevar al usuario directo a otra sección del panel.
-            [
-                'type' => 'function',
-                'function' => [
-                    'name' => 'navegar_a',
-                    'description' => 'Lleva al usuario a otra sección del panel cuando lo pide o cuando '
-                        . 'eso resuelve su duda más rápido que explicarlo (ej: "quiero pagar", "ver mi plan", '
-                        . '"mis datos", "el certificado"). No la uses si el usuario solo pregunta información '
-                        . 'general que puedes responder aquí mismo en el chat.',
-                    'parameters' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'destino' => [
-                                'type' => 'string',
-                                'enum' => ['mi_plan', 'detalles_plan', 'pagos', 'tus_datos', 'certificado'],
-                                'description' => 'mi_plan: resumen de su cobertura actual. detalles_plan: '
-                                    . 'personalizar afiliados, servicios extra y recuerdos. pagos: pagar cuotas '
-                                    . 'pendientes. tus_datos: editar su perfil. certificado: descargar el PDF '
-                                    . 'de afiliación.',
-                            ],
-                        ],
-                        'required' => ['destino'],
-                    ],
-                ],
-            ],
-            // 🆕 Tarjeta visual con el resumen del plan (usa el contexto que ya cargamos del usuario).
-            [
-                'type' => 'function',
-                'function' => [
-                    'name' => 'mostrar_resumen_plan',
-                    'description' => 'Muestra una tarjeta visual con el resumen del plan actual del usuario '
-                        . '(nombre del plan y cuota mensual). Úsala cuando pregunte por su plan, su cuota, '
-                        . 'o cuánto está pagando — en vez de solo decírselo en texto plano.',
-                    'parameters' => [
-                        'type' => 'object',
-                        'properties' => new \stdClass(),
-                        'required' => [],
-                    ],
-                ],
-            ],
-        ];
+        $tools = $this->definirTools();
 
-        // CAMBIO: intenta con el modelo principal, y si falla (rate limit,
-        // timeout, error 5xx), reintenta automáticamente con el de respaldo
-        // antes de devolver un error al usuario.
         $resultado = $this->llamarGroq($mensajes, self::MODELO_PRINCIPAL, $tools);
 
         if (!$resultado['ok']) {
@@ -130,8 +61,6 @@ class ChatMascotaController extends Controller
                 'body' => $resultado['body'] ?? null,
             ]);
 
-            // CAMBIO: respuesta de emergencia que mantiene el personaje en
-            // vez de mostrar un error crudo al usuario.
             return response()->json([
                 'reply' => 'Se me nubló el plano un segundo… ¿me lo repites? '
                     . 'Si sigue pasando, escríbenos al 3247697845 y con gusto te ayudamos por ahí.',
@@ -139,8 +68,6 @@ class ChatMascotaController extends Controller
             ]);
         }
 
-        // CAMBIO: ahora manejamos cualquiera de las 3 herramientas (juego, navegar,
-        // resumen de plan) de forma genérica, en vez de solo revisar "sugerir_juego".
         if (!empty($resultado['toolCalls'])) {
             $accion = null;
             $mensajesConTool = array_merge($mensajes, [
@@ -151,10 +78,8 @@ class ChatMascotaController extends Controller
                 $nombreFuncion = $tc['function']['name'] ?? null;
                 $argumentos = json_decode($tc['function']['arguments'] ?? '{}', true) ?: [];
 
-                [$resultadoTool, $accionDetectada] = $this->ejecutarTool($nombreFuncion, $argumentos, $contexto);
+                [$resultadoTool, $accionDetectada] = $this->ejecutarTool($nombreFuncion, $argumentos, $contexto, $usuario);
 
-                // Nos quedamos con la primera acción reconocida del turno
-                // (normalmente el modelo solo pide una a la vez).
                 if ($accion === null && $accionDetectada !== null) {
                     $accion = $accionDetectada;
                 }
@@ -184,78 +109,87 @@ class ChatMascotaController extends Controller
     }
 
     /**
-     * 🆕 Ejecuta la "acción" detrás de cada herramienta y devuelve dos cosas:
-     * 1) El resultado que le mandamos de vuelta al modelo (para que redacte
-     *    la respuesta final en lenguaje natural).
-     * 2) La "acción" que le mandamos al frontend para que haga algo visual
-     *    (abrir el juego, navegar, mostrar una tarjeta) — o null si no aplica.
+     * 🆕 Todas las herramientas disponibles, en un solo lugar.
      */
-    private function ejecutarTool(?string $nombre, array $argumentos, array $contexto): array
-    {
-        switch ($nombre) {
-            case 'sugerir_juego':
-                return [
-                    ['ok' => true, 'mensaje' => 'El juego se abrió en pantalla.'],
-                    ['tipo' => 'abrir_juego'],
-                ];
-
-            case 'navegar_a':
-                $mapa = $this->mapaDestinos();
-                $destino = $argumentos['destino'] ?? null;
-
-                if (!$destino || !isset($mapa[$destino])) {
-                    return [
-                        ['ok' => false, 'mensaje' => 'Destino no reconocido.'],
-                        null,
-                    ];
-                }
-
-                return [
-                    ['ok' => true, 'mensaje' => "Se abrió la sección {$mapa[$destino]['etiqueta']}."],
-                    ['tipo' => 'navegar', 'url' => $mapa[$destino]['url'], 'etiqueta' => $mapa[$destino]['etiqueta']],
-                ];
-
-            case 'mostrar_resumen_plan':
-                $datos = [
-                    'plan' => $contexto['plan'],
-                    'cuota' => $contexto['cuota'],
-                ];
-
-                return [
-                    array_merge(['ok' => true], $datos),
-                    ['tipo' => 'mostrar_plan', 'datos' => $datos],
-                ];
-
-            default:
-                return [
-                    ['ok' => false, 'mensaje' => 'Herramienta no reconocida.'],
-                    null,
-                ];
-        }
-    }
-
-    /**
-     * 🆕 Mapa de destinos permitidos para la herramienta navegar_a.
-     * Usa tus rutas con nombre reales — si cambias alguna ruta, solo hay
-     * que actualizarla aquí.
-     */
-    private function mapaDestinos(): array
+    private function definirTools(): array
     {
         return [
-            'mi_plan'       => ['url' => route('mi.plan'),               'etiqueta' => 'Mi Plan'],
-            'detalles_plan' => ['url' => route('detalles.plan'),         'etiqueta' => 'Detalles del Plan'],
-            'pagos'         => ['url' => route('cliente.pagos'),         'etiqueta' => 'Pagar mi Cuota'],
-            'tus_datos'     => ['url' => route('datos.edit'),            'etiqueta' => 'Tus Datos'],
-            'certificado'   => ['url' => route('certificado.afiliacion'), 'etiqueta' => 'Certificado de Afiliación'],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'sugerir_juego',
+                    'description' => 'Abre el juego "Luciérnagas de la Memoria" para el usuario. '
+                        . 'Úsala cuando el usuario exprese tristeza, aburrimiento, ansiedad leve, '
+                        . 'pida distraerse, o pida explícitamente jugar. No la uses si el usuario '
+                        . 'está en medio de una gestión práctica (pagos, documentos) sin pedir jugar.',
+                    'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'navegar_a',
+                    'description' => 'Lleva al usuario a otra sección del panel cuando lo pide o cuando '
+                        . 'eso resuelve su duda más rápido (ej: "quiero pagar", "ver mi plan", "mis datos", '
+                        . '"el certificado"). No la uses si solo pregunta algo que puedes responder aquí.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'destino' => [
+                                'type' => 'string',
+                                'enum' => ['mi_plan', 'detalles_plan', 'pagos', 'tus_datos', 'certificado'],
+                                'description' => 'mi_plan: resumen de cobertura. detalles_plan: personalizar '
+                                    . 'afiliados/servicios/recuerdos. pagos: pagar cuotas. tus_datos: editar '
+                                    . 'perfil. certificado: descargar PDF de afiliación.',
+                            ],
+                        ],
+                        'required' => ['destino'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'mostrar_resumen_plan',
+                    'description' => 'Muestra una tarjeta visual con TODOS los planes activos del usuario '
+                        . '(puede tener plan humano y plan de mascota a la vez) y su cuota. Úsala cuando '
+                        . 'pregunte por su plan, su cuota, o cuánto está pagando en total.',
+                    'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'mostrar_beneficiarios',
+                    'description' => 'Muestra una tarjeta con la lista de personas protegidas (titular y '
+                        . 'beneficiarios) en el plan humano del usuario. Úsala cuando pregunte "quiénes son '
+                        . 'mis beneficiarios", "quién está afiliado", o similar.',
+                    'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'mostrar_facturas',
+                    'description' => 'Muestra una tarjeta con el estado de cuenta: cuánto debe en total y '
+                        . 'la fecha de vencimiento de su próxima factura pendiente. Úsala cuando pregunte '
+                        . '"cuánto debo pagar", "cuándo vence mi cuota", "tengo facturas pendientes", etc.',
+                    'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'mostrar_catalogo_servicios',
+                    'description' => 'Muestra un carrusel visual con todos los servicios extra disponibles '
+                        . '(nombre, descripción, precio). Úsala cuando pregunte qué servicios extra hay, '
+                        . 'quiera ver el catálogo completo, o pida ejemplos de personalización.',
+                    'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+                ],
+            ],
         ];
     }
 
-    /**
-     * CAMBIO: hace la llamada a Groq con el modelo indicado, con timeout
-     * corto y devolviendo un resultado estructurado (ok/status/texto/
-     * toolCalls) en vez de lanzar excepciones, para poder encadenar el
-     * fallback y el flujo de function calling fácil.
-     */
     private function llamarGroq(array $mensajes, string $modelo, ?array $tools = null): array
     {
         try {
@@ -275,8 +209,8 @@ class ChatMascotaController extends Controller
                 'Authorization' => "Bearer {$groqKey}",
                 'Content-Type' => 'application/json',
             ])
-                ->timeout(12) // CAMBIO: timeout corto, no dejar al usuario esperando eternamente
-                ->retry(1, 300) // CAMBIO: 1 reintento rápido antes de considerarlo fallo
+                ->timeout(12)
+                ->retry(1, 300)
                 ->post('https://api.groq.com/openai/v1/chat/completions', $payload);
 
             if ($response->failed()) {
@@ -292,8 +226,6 @@ class ChatMascotaController extends Controller
             $texto = $mensaje['content'] ?? null;
             $toolCalls = $mensaje['tool_calls'] ?? null;
 
-            // CAMBIO: si el modelo decidió llamar a una tool, es válido que
-            // no venga texto — no lo tratamos como fallo en ese caso.
             if (!$texto && !$toolCalls) {
                 return ['ok' => false, 'status' => 200, 'body' => 'Respuesta vacía de Groq'];
             }
@@ -306,54 +238,101 @@ class ChatMascotaController extends Controller
     }
 
     /**
-     * CAMBIO: arma el contexto real del usuario para pasárselo a Mouri.
-     * Usa: User->suscripciones() -> (plan, afiliados). Toma la suscripción
-     * más reciente; si en tu app un usuario solo tiene una activa a la vez,
-     * esto funciona tal cual. Si puede tener varias activas simultáneas
-     * (ej: plan humano + plan mascota), dime y lo ajustamos para revisar
-     * todas en vez de solo la última.
+     * 🆕 Ejecuta la acción detrás de cada herramienta.
      */
-    private function construirContextoUsuario($usuario): array
+    private function ejecutarTool(?string $nombre, array $argumentos, array $contexto, $usuario): array
     {
-        if (!$usuario) {
-            return [
-                'nombre' => 'amigo',
-                'plan' => null,
-                'cuota' => null,
-                'afiliados' => collect(),
-                'tieneFallecido' => false,
-                'nombreFallecido' => null,
-            ];
+        switch ($nombre) {
+            case 'sugerir_juego':
+                return [
+                    ['ok' => true, 'mensaje' => 'El juego se abrió en pantalla.'],
+                    ['tipo' => 'abrir_juego'],
+                ];
+
+            case 'navegar_a':
+                $mapa = $this->mapaDestinos();
+                $destino = $argumentos['destino'] ?? null;
+
+                if (!$destino || !isset($mapa[$destino])) {
+                    return [['ok' => false, 'mensaje' => 'Destino no reconocido.'], null];
+                }
+
+                return [
+                    ['ok' => true, 'mensaje' => "Se abrió la sección {$mapa[$destino]['etiqueta']}."],
+                    ['tipo' => 'navegar', 'url' => $mapa[$destino]['url'], 'etiqueta' => $mapa[$destino]['etiqueta']],
+                ];
+
+            case 'mostrar_resumen_plan':
+                $datos = ['planes' => $contexto['planes']];
+                return [array_merge(['ok' => true], $datos), ['tipo' => 'mostrar_plan', 'datos' => $datos]];
+
+            case 'mostrar_beneficiarios':
+                $beneficiarios = $contexto['afiliados']->map(fn ($a) => [
+                    'nombre' => $a->nombre,
+                    'parentesco' => $a->parentesco,
+                    'estado' => $a->estado,
+                ])->values()->all();
+
+                return [
+                    ['ok' => true, 'beneficiarios' => $beneficiarios],
+                    ['tipo' => 'mostrar_beneficiarios', 'datos' => $beneficiarios],
+                ];
+
+            case 'mostrar_facturas':
+                if (!$usuario) {
+                    return [['ok' => false, 'mensaje' => 'No hay usuario autenticado.'], null];
+                }
+
+                $facturas = Factura::where(function ($q) use ($usuario) {
+                    $q->whereHas('suscripcion', fn ($qq) => $qq->where('usuario_id', $usuario->id))
+                      ->orWhere('usuario_id', $usuario->id);
+                })
+                ->whereIn('estado_factura_id', [1, 3]) // Pendiente o Abonada parcialmente
+                ->orderBy('fecha_vencimiento', 'asc')
+                ->get();
+
+                $proxima = $facturas->first();
+                $datos = [
+                    'cantidad_pendientes' => $facturas->count(),
+                    'total_pendiente' => (float) $facturas->sum('saldo_pendiente'),
+                    'proxima_fecha_vencimiento' => $proxima?->fecha_vencimiento,
+                    'proxima_monto' => $proxima ? (float) $proxima->saldo_pendiente : null,
+                ];
+
+                return [array_merge(['ok' => true], $datos), ['tipo' => 'mostrar_facturas', 'datos' => $datos]];
+
+            case 'mostrar_catalogo_servicios':
+                $servicios = Servicio::orderBy('nombre')->get(['nombre', 'descripcion', 'precio', 'personalizable']);
+                $datos = $servicios->map(fn ($s) => [
+                    'nombre' => $s->nombre,
+                    'descripcion' => $s->descripcion,
+                    'precio' => (float) $s->precio,
+                    'personalizable' => (bool) $s->personalizable,
+                ])->values()->all();
+
+                return [
+                    ['ok' => true, 'servicios' => $datos],
+                    ['tipo' => 'mostrar_servicios', 'datos' => $datos],
+                ];
+
+            default:
+                return [['ok' => false, 'mensaje' => 'Herramienta no reconocida.'], null];
         }
+    }
 
-        $suscripcion = $usuario->suscripciones()
-            ->with(['plan', 'afiliados'])
-            ->latest()
-            ->first();
-
-        $afiliados = $suscripcion?->afiliados ?? collect();
-
-        $fallecido = $afiliados->first(
-            fn ($a) => strtolower($a->estado ?? '') === 'fallecido'
-        );
-
+    private function mapaDestinos(): array
+    {
         return [
-            'nombre' => $usuario->nombre ?? $usuario->name ?? 'amigo',
-            'plan' => $suscripcion?->plan?->nombre,
-            'cuota' => $suscripcion?->cuota_mensual,
-            'afiliados' => $afiliados,
-            'tieneFallecido' => (bool) $fallecido,
-            'nombreFallecido' => $fallecido?->nombre,
+            'mi_plan'       => ['url' => route('mi.plan'),               'etiqueta' => 'Mi Plan'],
+            'detalles_plan' => ['url' => route('detalles.plan'),         'etiqueta' => 'Detalles del Plan'],
+            'pagos'         => ['url' => route('cliente.pagos'),         'etiqueta' => 'Pagar mi Cuota'],
+            'tus_datos'     => ['url' => route('datos.edit'),            'etiqueta' => 'Tus Datos'],
+            'certificado'   => ['url' => route('certificado.afiliacion'), 'etiqueta' => 'Certificado de Afiliación'],
         ];
     }
 
     /**
-     * 🆕 Arma el listado de servicios extra directo desde la tabla `servicios`,
-     * en vez de escribirlo a mano en el prompt. Así, si agregas/editas un
-     * servicio desde el panel admin, Mouri lo conoce automáticamente sin
-     * tener que tocar este archivo. Si la consulta falla por cualquier
-     * motivo, devuelve string vacío y el prompt simplemente omite esa
-     * sección (no rompe el chat).
+     * 🆕 Arma el listado de servicios extra directo desde la BD (para el prompt de texto).
      */
     private function obtenerListadoServicios(): string
     {
@@ -372,55 +351,104 @@ class ChatMascotaController extends Controller
 
         return $servicios->map(function ($s) {
             $precio = '$' . number_format((float) $s->precio, 0, ',', '.');
-            $etiquetaPersonalizable = $s->personalizable ? ' [Personalizable: el cliente puede elegir color, flores y observaciones]' : '';
-            return "  · {$s->nombre} — {$precio}. {$s->descripcion}.{$etiquetaPersonalizable}";
+            $etiquetaPersonalizable = $s->personalizable ? ' [Personalizable]' : '';
+            return "  - {$s->nombre} — {$precio}. {$s->descripcion}.{$etiquetaPersonalizable}";
         })->implode("\n");
     }
 
     /**
-     * Prompt estándar (el que ya tenías, con el contexto inyectado).
+     * 🆕 Contexto real del usuario. Ahora considera TODAS sus suscripciones
+     * activas (antes solo tomaba la más reciente con ->latest()->first(),
+     * por eso si tenías plan humano + plan mascota, solo veía el último).
+     */
+    private function construirContextoUsuario($usuario): array
+    {
+        if (!$usuario) {
+            return [
+                'nombre' => 'amigo',
+                'planes' => [],
+                'afiliados' => collect(),
+                'tieneFallecido' => false,
+                'nombreFallecido' => null,
+            ];
+        }
+
+        $suscripciones = $usuario->suscripciones()
+            ->with(['plan', 'afiliados'])
+            ->get();
+
+        // La suscripción "humana" es la que usamos para afiliados/fallecido
+        // (plan_id 4 = Huella Eterna, exclusivo mascotas, no tiene afiliados humanos)
+        $suscripcionHumana = $suscripciones->first(fn ($s) => optional($s->plan)->id != 4);
+        $afiliados = $suscripcionHumana?->afiliados ?? collect();
+
+        $fallecido = $afiliados->first(fn ($a) => strtolower($a->estado ?? '') === 'fallecido');
+
+        $planes = $suscripciones->map(fn ($s) => [
+            'nombre' => $s->plan?->nombre,
+            'cuota' => $s->cuota_mensual,
+            'tipo' => optional($s->plan)->id == 4 ? 'mascota' : 'humano',
+        ])->values()->all();
+
+        return [
+            'nombre' => $usuario->nombre ?? $usuario->name ?? 'amigo',
+            'planes' => $planes,
+            'afiliados' => $afiliados,
+            'tieneFallecido' => (bool) $fallecido,
+            'nombreFallecido' => $fallecido?->nombre,
+        ];
+    }
+
+    /**
+     * Prompt estándar (con el contexto multi-plan y las nuevas herramientas).
      */
     private function promptEstandar(array $contexto): string
     {
         $nombre = $contexto['nombre'];
-        $planTexto = $contexto['plan'] ? "Su plan actual es: {$contexto['plan']}." : '';
-        $cuotaTexto = $contexto['cuota'] ? " Su cuota mensual es de $" . number_format($contexto['cuota'], 0, ',', '.') . "." : '';
 
-        // 🆕 Listado dinámico de servicios extra (viene de la BD, ver obtenerListadoServicios())
+        $planesTexto = '';
+        if (!empty($contexto['planes'])) {
+            $lineas = collect($contexto['planes'])->map(function ($p) {
+                $tipoTxt = $p['tipo'] === 'mascota' ? ' (plan de mascota)' : '';
+                $cuotaTxt = $p['cuota'] ? ", cuota mensual \${$this->formatearMonto($p['cuota'])}" : '';
+                return "  - {$p['nombre']}{$tipoTxt}{$cuotaTxt}";
+            })->implode("\n");
+            $planesTexto = "Sus planes activos son:\n{$lineas}\n";
+        }
+
         $listadoServicios = $this->obtenerListadoServicios();
         $bloqueServicios = $listadoServicios
-            ? "- SERVICIOS EXTRA DISPONIBLES (el cliente puede agregarlos a su plan desde 'Detalles del plan'):\n{$listadoServicios}\n"
+            ? "- SERVICIOS EXTRA DISPONIBLES (el cliente puede agregarlos desde 'Detalles del plan'):\n{$listadoServicios}\n"
             : '';
 
         return "Eres Mouri, el cuervo mascota y guardián místico de 'Mouren Funeraria'. "
             . "Tu personalidad es empática, cálida, humana y con un toque tecnológico/místico estilo anime. "
-            . "Estás hablando con {$nombre}. {$planTexto}{$cuotaTexto}\n"
+            . "Estás hablando con {$nombre}. {$planesTexto}\n"
             . "CONOCIMIENTO DE MOUREN FUNERARIA:\n"
             . "- Ayudamos a las familias a gestionar planes de previsión exequial y asistencia funeraria.\n"
-            . "- En el panel o dashboard del cliente, ellos tienen las siguientes secciones:\n"
-            . "  1. 'Mi plan Funerario': Donde ven su cobertura actual.\n"
-            . "  2. 'Detalles del plan': Diseñado de forma hermosa como una galería de arte virtual.\n"
-            . "  3. 'Pagar mi cuota': Para mantenerse al día con sus pagos.\n"
-            . "  4. 'Tus datos': Información del perfil, ahí también puedes descargar tu certificado de afiliación.\n"
+            . "- En el panel del cliente hay: 1. 'Mi plan Funerario' (cobertura actual), 2. 'Detalles del "
+            . "plan' (galería para agregar afiliados, servicios y recuerdos), 3. 'Pagar mi cuota', "
+            . "4. 'Tus datos' (perfil y certificado de afiliación).\n"
             . "  Si tiene una duda muy puntual o algún error técnico con la página, dale el número de soporte 3247697845.\n"
-            . "- SOBRE LOS PLANES DISPONIBLES: 'Descanso Sereno', 'Tributo a la Vida', 'Legado Eterno' y 'Huella Eterna' (exclusivo mascotas).\n"
+            . "- SOBRE LOS PLANES DISPONIBLES: 'Descanso Sereno', 'Tributo a la Vida', 'Legado Eterno' y 'Huella Eterna' (exclusivo mascotas). Un mismo cliente puede tener varios planes activos a la vez.\n"
             . "{$bloqueServicios}"
             . "- SOBRE LAS FACTURAS: el sistema automatiza el envío de facturas en PDF por correo periódicamente.\n"
-            . "- FUNCIONES FUTURAS: música ('Reproductor Espiritual'), próximamente.\n"
-            . "- JUEGO DISPONIBLE: 'Luciérnagas de la Memoria'. Si el usuario parece aburrido, "
-            . "  triste, quiere distraerse, o te lo pide, puedes abrirlo usando la herramienta "
-            . "  sugerir_juego.\n"
-            . "REGLA DE ORO: Responde siempre en español. Sé reconfortante, amigable y muy servicial. "
-            . "Si te preguntan por un servicio extra, usa los precios y descripciones exactos de la lista de arriba, "
-            . "no inventes precios.";
+            . "- JUEGO DISPONIBLE: 'Luciérnagas de la Memoria'. Ábrelo con sugerir_juego si el usuario "
+            . "  parece aburrido, triste, quiere distraerse, o lo pide.\n"
+            . "- HERRAMIENTAS VISUALES: usa mostrar_resumen_plan, mostrar_beneficiarios, mostrar_facturas "
+            . "  o mostrar_catalogo_servicios cuando la pregunta encaje, en vez de solo responder en texto — "
+            . "  son más claras para el usuario que un párrafo largo.\n"
+            . "- Usa navegar_a cuando el usuario quiera IR a hacer algo (pagar, editar sus datos, etc).\n"
+            . "REGLAS DE ESTILO — MUY IMPORTANTE:\n"
+            . "- Responde siempre en español.\n"
+            . "- NUNCA uses formato markdown: nada de asteriscos para negrita, nada de tablas con "
+            . "  barras verticales, nada de encabezados con #. Escribe en texto plano y natural, como "
+            . "  si hablaras. Si necesitas listar algo corto, usa un guion simple por línea, nada más.\n"
+            . "- Sé reconfortante, amigable, servicial y breve. Si vas a mostrar una tarjeta visual con "
+            . "  una herramienta, no repitas en texto todos los datos que ya va a mostrar la tarjeta — "
+            . "  solo acompaña con una frase corta.";
     }
 
-    /**
-     * CAMBIO: prompt de "modo acompañamiento", usado cuando el usuario
-     * tiene un afiliado fallecido en su suscripción. Tono más pausado,
-     * sin ventas ni upsells, prioriza dirigir a soporte humano si hace
-     * falta en vez de intentar consolar por sí mismo.
-     */
     private function promptAcompanamiento(array $contexto): string
     {
         $nombre = $contexto['nombre'];
@@ -438,16 +466,23 @@ class ChatMascotaController extends Controller
             . "- NO ofrezcas servicios adicionales, upsells, ni menciones el minijuego o funciones "
             . "  de entretenimiento a menos que el usuario los pida explícitamente.\n"
             . "- Puedes ayudar con dudas prácticas del servicio: estado del proceso, documentos, "
-            . "  pagos, canción u homenaje elegido.\n"
+            . "  pagos, canción u homenaje elegido. Puedes usar mostrar_facturas o mostrar_beneficiarios "
+            . "  si lo piden, con el mismo tono calmado.\n"
             . "- Si notas angustia, confusión fuerte, o el usuario simplemente lo necesita, ofrece "
             . "  con naturalidad la opción de hablar con una persona real del equipo (soporte "
             . "  3247697845), en vez de intentar consolarlo tú mismo con consejos emocionales.\n"
             . "- Nunca minimices lo que siente el usuario ni uses frases genéricas de duelo. "
             . "  Si no sabes qué decir, es preferible ser breve y honesto que decir algo vacío.\n"
             . "- Existe un juego suave llamado 'Luciérnagas de la Memoria' (sin competencia, sin "
-            . "  presión). Solo ofrécelo con la herramienta sugerir_juego si el usuario lo pide "
-            . "  explícitamente o dice sentirse abrumado y necesitar un respiro — nunca lo ofrezcas "
-            . "  tú primero de forma proactiva en este modo.\n"
-            . "REGLA DE ORO: Responde siempre en español, con calma y sin apuro.";
+            . "  presión). Solo ofrécelo con sugerir_juego si el usuario lo pide explícitamente o "
+            . "  dice sentirse abrumado y necesitar un respiro.\n"
+            . "REGLAS DE ESTILO:\n"
+            . "- Responde siempre en español, con calma y sin apuro.\n"
+            . "- NUNCA uses formato markdown (nada de asteriscos, tablas ni encabezados). Texto plano natural.";
+    }
+
+    private function formatearMonto($monto): string
+    {
+        return number_format((float) $monto, 0, ',', '.');
     }
 }

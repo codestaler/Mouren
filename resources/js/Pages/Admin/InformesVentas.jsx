@@ -275,8 +275,8 @@ export default function InformesVentas() {
                             <tr>
 
                                 <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Factura</th>
-                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Suscripción</th>
                                 <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Titular Suscripción</th>
+                                <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Suscripción</th>
                                 <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Plan Elegido</th>
                                 <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Emisión</th>
                                 <th className="text-left p-4 text-[11px] font-medium uppercase tracking-wider text-[#8C7A67] dark:text-[#C2B49A]">Valor</th>
