@@ -1,27 +1,28 @@
 import React, { useState } from 'react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
-import { Head, useForm } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+
+const testimonios = [
+    {
+        nombre: 'Laura Montaño',
+        mensaje: 'Fue increíble, agradezco todo, pero hay que dejarlo ir :)',
+    },
+    {
+        nombre: 'Yenny Arias',
+        mensaje: 'Nos acompañaron en cada paso con una calidez que no esperábamos. Gracias por hacer más liviano un momento tan difícil.',
+    },
+    {
+        nombre: 'Laura Perez',
+        mensaje: 'El trato humano y la atención a cada detalle hicieron toda la diferencia para nuestra familia. Siempre lo recordaremos.',
+    },
+];
 
 export default function Contactos() {
-    const [enviado, setEnviado] = useState(false);
-    
-    const { data, setData, post, processing, reset } = useForm({
-        nombre: '',
-        email: '',
-        telefono: '',
-        asunto: 'Consulta General', // Nuevo campo
-        comentario: '',
-    });
+    const [indice, setIndice] = useState(0);
 
-    const submit = (e) => {
-        e.preventDefault();
-        // Simulamos el envío
-        console.log("Enviando...", data);
-        setEnviado(true);
-        setTimeout(() => setEnviado(false), 5000); // El mensaje desaparece tras 5 segundos
-        reset();
-    };
+    const siguiente = () => setIndice((prev) => (prev + 1) % testimonios.length);
+    const anterior = () => setIndice((prev) => (prev - 1 + testimonios.length) % testimonios.length);
 
     return (
         <div className="min-h-screen bg-[#F4EDE6] font-['Hepta_Slab'] relative overflow-x-hidden flex flex-col text-[#5D4E3F]">
@@ -68,61 +69,63 @@ export default function Contactos() {
                     </div>
                 </div>
             </section>
-        
-            {/* --- SECCIÓN 3: FORMULARIO MEJORADO --- */}
-            <section className="relative z-20 py-20 md:py-40 px-4 sm:px-6 md:px-10 bg-[#F4EDE6] flex flex-col items-center">
-                <div className="max-w-2xl w-full">
-                    <div className="text-center mb-8 md:mb-10">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold italic mb-2">Déjanos tu mensaje</h2>
-                        <p className="text-sm opacity-70 italic font-bold">Tu tranquilidad es nuestra prioridad.</p>
+
+            {/* --- SECCIÓN 3: TESTIMONIOS (carrusel interactivo) --- */}
+            <section className="relative z-20 py-20 md:py-40 px-4 sm:px-6 md:px-10 bg-[#F4EDE6] flex flex-col items-center overflow-hidden">
+                <div className="text-center mb-10 md:mb-14">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold italic mb-2">Testimonios</h2>
+                    <p className="text-sm opacity-70 italic font-bold">Historias que nos recuerdan por qué hacemos esto.</p>
+                </div>
+
+                <div className="relative max-w-2xl w-full">
+                    {/* Decoración */}
+                    <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#A68966]/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#A68966]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div className="relative bg-white/60 border border-[#A68966]/20 shadow-2xl rounded-[24px] sm:rounded-[32px] md:rounded-[40px] p-8 sm:p-10 md:p-14 min-h-[260px] flex flex-col justify-center items-center text-center">
+                        <span className="text-5xl sm:text-6xl text-[#A68966] leading-none mb-2 font-serif select-none">“</span>
+
+                        <p
+                            key={indice}
+                            className="text-[16px] sm:text-[18px] md:text-[20px] leading-relaxed max-w-[480px] mb-6 animate-fade-in italic"
+                        >
+                            {testimonios[indice].mensaje}
+                        </p>
+
+                        <p key={`nombre-${indice}`} className="font-bold uppercase tracking-widest text-[13px] sm:text-[14px] opacity-70 animate-fade-in">
+                            — {testimonios[indice].nombre}
+                        </p>
+
+                        {/* Flechas */}
+                        <button
+                            onClick={anterior}
+                            aria-label="Testimonio anterior"
+                            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#5D4E3F] text-white flex items-center justify-center hover:bg-[#A68966] transition-colors shadow-md"
+                        >
+                            ‹
+                        </button>
+                        <button
+                            onClick={siguiente}
+                            aria-label="Siguiente testimonio"
+                            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#5D4E3F] text-white flex items-center justify-center hover:bg-[#A68966] transition-colors shadow-md"
+                        >
+                            ›
+                        </button>
                     </div>
 
-                    <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/60 p-6 sm:p-8 md:p-12 rounded-[24px] sm:rounded-[32px] md:rounded-[40px] shadow-2xl border border-[#A68966]/20 relative overflow-hidden">
-                        {/* Decoración sutil de fondo del formulario */}
-                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#A68966]/10 rounded-full blur-3xl"></div>
-                        
-                        <div className="col-span-2 md:col-span-1">
-                            <label className="block text-[13px] font-bold uppercase tracking-widest mb-1 opacity-60">Nombre completo</label>
-                            <input type="text" required className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-2 outline-none focus:border-[#A68966] transition-colors" value={data.nombre} onChange={e => setData('nombre', e.target.value)} />
-                        </div>
-
-                        <div className="col-span-2 md:col-span-1">
-                            <label className="block text-[13px] font-bold uppercase tracking-widest mb-1 opacity-60">Correo Electrónico</label>
-                            <input type="email" required className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-2 outline-none focus:border-[#A68966] transition-colors" value={data.email} onChange={e => setData('email', e.target.value)} />
-                        </div>
-
-                        <div className="col-span-2 md:col-span-1">
-                            <label className="block text-[13px] font-bold uppercase tracking-widest mb-1 opacity-60">Teléfono / Celular</label>
-                            <input type="text" className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-2 outline-none focus:border-[#A68966] transition-colors" value={data.telefono} onChange={e => setData('telefono', e.target.value)} />
-                        </div>
-
-                        <div className="col-span-2 md:col-span-1">
-                            <label className="block text-[13px] font-bold uppercase tracking-widest mb-1 opacity-60">Asunto</label>
-                            <select className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-2 outline-none focus:border-[#A68966] transition-colors cursor-pointer" value={data.asunto} onChange={e => setData('asunto', e.target.value)}>
-                                <option value="Consulta General">Consulta General</option>
-                                <option value="Planes Funerarios">Planes Funerarios</option>
-                                <option value="Servicio Inmediato">Servicio Inmediato</option>
-                                <option value="Sugerencia">Sugerencia</option>
-                            </select>
-                        </div>
-
-                        <div className="col-span-2">
-                            <label className="block text-[13px] font-bold uppercase tracking-widest mb-1 opacity-60">¿En qué podemos ayudarte?</label>
-                            <textarea required className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-2 outline-none focus:border-[#A68966] transition-colors min-h-[100px] resize-none" value={data.comentario} onChange={e => setData('comentario', e.target.value)}></textarea>
-                        </div>
-
-                        <div className="col-span-2 flex flex-col items-center mt-4">
-                            <button type="submit" disabled={processing} className="w-full sm:w-auto bg-[#5D4E3F] text-white px-8 sm:px-12 md:px-16 py-3 rounded-full hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-all font-bold shadow-lg transform hover:scale-105 active:scale-95">
-                                {processing ? 'Enviando...' : 'Enviar mensaje'}
-                            </button>
-                            
-                            {enviado && (
-                                <p className="mt-4 text-sm font-bold text-green-700 animate-fade-in text-center">
-                                    ✨ ¡Gracias! Hemos recibido tu mensaje. <br /> Nos comunicaremos contigo en la mayor brevedad posible.
-                                </p>
-                            )}
-                        </div>
-                    </form>
+                    {/* Puntos de navegación */}
+                    <div className="flex justify-center gap-2 mt-6">
+                        {testimonios.map((t, i) => (
+                            <button
+                                key={t.nombre}
+                                onClick={() => setIndice(i)}
+                                aria-label={`Ver testimonio de ${t.nombre}`}
+                                className={`h-2.5 rounded-full transition-all duration-300 ${
+                                    i === indice ? 'w-8 bg-[#5D4E3F]' : 'w-2.5 bg-[#5D4E3F]/30 hover:bg-[#5D4E3F]/60'
+                                }`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </section>
 
@@ -132,7 +135,7 @@ export default function Contactos() {
 
             <style jsx>{`
                 @keyframes fade-in {
-                    from { opacity: 0; transform: translateY(-10px); }
+                    from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
                 .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
