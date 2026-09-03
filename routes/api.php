@@ -59,5 +59,5 @@ Route::apiResource('estados-factura', EstadoFacturaController::class);
 Route::apiResource('metodos-pago', MetodoPagoController::class);
 Route::apiResource('etapas-servicio', EtapaServicioController::class);
 Route::apiResource('trazabilidad', TrazabilidadServicioController::class);
-Route::apiResource('notificaciones', NotificacionController::class);
+Route::apiResource('notificaciones', NotificacionController::class)->names('api.notificaciones');
 Route::post('/chat/mouri', ChatMascotaController::class);
