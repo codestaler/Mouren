@@ -3,8 +3,135 @@ import { Head, useForm, usePage, router } from '@inertiajs/react';
 import Sidebar from '@/Pages/Clientes/Sidebar';
 import { BotonTutorial } from './TutorialAnimacionModal';
 import {
-    Trash2, Plus, Play, Pause, Sparkles, ShieldCheck, Gem, Search
+    Trash2, Plus, Play, Pause, Sparkles, ShieldCheck, Gem, Search, X, Music
 } from 'lucide-react';
+
+// --- Hook: anima un número hacia su nuevo valor (efecto "conteo") ---
+function useCountUp(target, duration = 600) {
+    const [display, setDisplay] = useState(target);
+    const prevRef = useRef(target);
+
+    useEffect(() => {
+        const start = prevRef.current;
+        const diff = target - start;
+        if (diff === 0) {
+            setDisplay(target);
+            return;
+        }
+        let startTime = null;
+        let raf;
+        const step = (ts) => {
+            if (!startTime) startTime = ts;
+            const progress = Math.min((ts - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setDisplay(Math.round(start + diff * eased));
+            if (progress < 1) {
+                raf = requestAnimationFrame(step);
+            } else {
+                prevRef.current = target;
+            }
+        };
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [target, duration]);
+
+    return display;
+}
+
+// --- Mouri: un cuervo que acompaña, con una pose distinta por cada paso, mismo estilo/colores ---
+// Vive flotando (no ocupa espacio del layout). "active" hace que baile/bata alas
+// más rápido y le salgan notas musicales (cuando hay música sonando).
+// "variant" (1-4) decide qué personaje se dibuja para ese paso del formulario.
+function PajaroMouri({ active, size = 'normal', variant = 1 }) {
+    const dims = size === 'small' ? 'w-11 h-11' : 'w-16 h-16 sm:w-20 sm:h-20';
+
+    return (
+        <div className={`relative ${dims} select-none shrink-0`}>
+            <div className={`mouri-conductor w-full h-full ${active ? 'active' : ''}`}>
+                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
+
+                    {/* ===== PASO 1: cuervo con su polluelo — "tus protegidos" ===== */}
+                    {variant === 1 && (
+                        <>
+                            <path d="M28 70 Q10 66 8 52 Q22 56 30 66 Z" fill="#1A1A1D" />
+                            <ellipse cx="50" cy="62" rx="26" ry="24" fill="#2B2B2E" />
+                            <ellipse cx="50" cy="68" rx="15" ry="14" fill="#4A4A4F" />
+                            <path className="mouri-wing" d="M44 58 Q28 54 24 70 Q38 72 48 64 Z" fill="#1A1A1D" />
+                            <circle cx="58" cy="36" r="18" fill="#2B2B2E" />
+                            <path d="M54 20 Q58 8 64 19 Q60 16 56 22 Z" fill="#1A1A1D" />
+                            <circle cx="63" cy="34" r="2.6" fill="#0D0D0F" />
+                            <path d="M74 36 L86 32 L74 42 Z" fill="#5D4E3F" />
+                            {/* polluelo pequeño, apoyado en el ala */}
+                            <circle cx="26" cy="76" r="9" fill="#6B6B70" />
+                            <circle cx="23" cy="74" r="1.6" fill="#0D0D0F" />
+                            <path d="M31 76 L37 74 L31 79 Z" fill="#5D4E3F" />
+                        </>
+                    )}
+
+                    {/* ===== PASO 2: cuervo director de orquesta — "música" ===== */}
+                    {variant === 2 && (
+                        <>
+                            <path d="M28 66 Q10 62 8 48 Q22 52 30 62 Z" fill="#1A1A1D" />
+                            <ellipse cx="52" cy="60" rx="26" ry="24" fill="#2B2B2E" />
+                            <ellipse cx="52" cy="66" rx="15" ry="14" fill="#4A4A4F" />
+                            <path className="mouri-wing" d="M46 56 Q30 52 26 68 Q40 70 50 62 Z" fill="#1A1A1D" />
+                            <circle cx="60" cy="34" r="18" fill="#2B2B2E" />
+                            <path d="M56 18 Q60 6 66 17 Q62 14 58 20 Z" fill="#1A1A1D" />
+                            <circle cx="65" cy="32" r="2.6" fill="#0D0D0F" />
+                            <path d="M76 34 L88 30 L76 40 Z" fill="#5D4E3F" />
+                            <g className="mouri-baton">
+                                <line x1="58" y1="80" x2="78" y2="60" stroke="#5D4E3F" strokeWidth="3" strokeLinecap="round" />
+                                <circle cx="79" cy="58" r="2.5" fill="#5D4E3F" />
+                            </g>
+                        </>
+                    )}
+
+                    {/* ===== PASO 3: cuervo con un recuerdo — "objetos de memoria" ===== */}
+                    {variant === 3 && (
+                        <>
+                            <path d="M28 68 Q10 64 8 50 Q22 54 30 64 Z" fill="#1A1A1D" />
+                            <ellipse cx="50" cy="60" rx="27" ry="25" fill="#2B2B2E" />
+                            <ellipse cx="50" cy="66" rx="16" ry="14" fill="#4A4A4F" />
+                            <path className="mouri-wing" d="M44 56 Q28 52 24 68 Q38 70 48 62 Z" fill="#1A1A1D" />
+                            <circle cx="58" cy="34" r="18" fill="#2B2B2E" />
+                            {/* penachito de plumas en la cabeza, típico del cuervo */}
+                            <path d="M52 18 Q56 10 60 18 Z" fill="#1A1A1D" />
+                            <circle cx="63" cy="32" r="2.6" fill="#0D0D0F" />
+                            <path d="M74 34 L88 30 L74 40 Z" fill="#5D4E3F" />
+                            {/* sostiene con el pico un pequeño corazón-recuerdo */}
+                            <path d="M84 33 Q80 28 76 32 Q78 30 78 30 Q78 30 80 30 Q84 28 84 33 Z" fill="#E3A857" />
+                        </>
+                    )}
+
+                    {/* ===== PASO 4: cuervo protector con escarapela — "confirmar" ===== */}
+                    {variant === 4 && (
+                        <>
+                            <path d="M28 70 Q10 66 8 52 Q22 56 30 66 Z" fill="#1A1A1D" />
+                            <ellipse cx="50" cy="62" rx="26" ry="24" fill="#2B2B2E" />
+                            <ellipse cx="50" cy="68" rx="15" ry="14" fill="#4A4A4F" />
+                            <path className="mouri-wing" d="M44 58 Q28 54 24 70 Q38 72 48 64 Z" fill="#1A1A1D" />
+                            <circle cx="58" cy="36" r="18" fill="#2B2B2E" />
+                            <path d="M54 20 Q58 8 64 19 Q60 16 56 22 Z" fill="#1A1A1D" />
+                            <circle cx="63" cy="34" r="2.6" fill="#0D0D0F" />
+                            <path d="M74 36 L86 32 L74 42 Z" fill="#5D4E3F" />
+                            {/* escarapela / escudito de protección en el pecho */}
+                            <circle cx="50" cy="68" r="7" fill="#2B2B2E" />
+                            <path d="M46 66 L49 70 L55 63" stroke="#4A4A4F" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        </>
+                    )}
+                </svg>
+            </div>
+
+            {active && (
+                <>
+                    <span className="mouri-note" style={{ left: '-2px', top: '8px', animationDelay: '0s' }}>♪</span>
+                    <span className="mouri-note" style={{ left: '48px', top: '-4px', animationDelay: '0.5s' }}>♫</span>
+                    <span className="mouri-note" style={{ left: '20px', top: '-10px', animationDelay: '1s' }}>♪</span>
+                </>
+            )}
+        </div>
+    );
+}
 
 export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], canciones = [], generos = [], tiposDocumento = [] }) {
     const { auth } = usePage().props;
@@ -16,6 +143,24 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
     const [erroresAfiliados, setErroresAfiliados] = useState({}); // { indice: { campo: 'mensaje' } }
     const [playingId, setPlayingId] = useState(null);
     const audioRef = useRef(null);
+
+    // --- Ventana emergente del pájaro Mouri (reemplaza la burbuja fija que ocupaba espacio) ---
+    const [showTipModal, setShowTipModal] = useState(false);
+    const [hayTipNuevo, setHayTipNuevo] = useState(true); // punto pulsante para avisar que hay un consejo nuevo
+
+    const pasos = ['Protegidos', 'Música', 'Recuerdos', 'Confirmar'];
+
+    const tipsPorPaso = {
+        1: 'Argg, estás incluido automáticamente como titular de la protección. Agrega a tus seres queridos.',
+        2: 'Oh, you can\u2019t read my poker face! La música y los servicios extra hacen que el homenaje sea único.',
+        3: 'Cada protegido elige su propio objeto de memoria, Argg.',
+        4: 'Lee con atención el compromiso. Estamos aquí para cuidarte, Argg.',
+    };
+
+    // Cada vez que cambia el paso, avisamos con el puntito (sin abrir la ventana sola, para no ser invasivos)
+    useEffect(() => {
+        setHayTipNuevo(true);
+    }, [paso]);
 
     // --- DETERMINAR EL NOMBRE REAL DEL TITULAR ---
     // Respaldo dinámico por si cambias el nombre en la base de datos (name, nombre o nombre1)
@@ -101,10 +246,13 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         plan?.id // <- Dependencia del ID del plan
     ]);
 
+    const totalAnimado = useCountUp(totalCalculado);
+
     // 🆕 Servicios disponibles para agregar en el paso 2: excluye los que ya vienen
     // incluidos en el plan base, filtra por tipo de plan (humano/mascota/ambos) y
     // por el texto de búsqueda que escriba el usuario.
     const [busquedaServicio, setBusquedaServicio] = useState('');
+    const [servicioInfo, setServicioInfo] = useState(null); // servicio seleccionado para ver su ficha en ventana emergente
 
     const serviciosDisponiblesPaso2 = useMemo(() => {
         let lista = servicios || [];
@@ -132,8 +280,6 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         }
         return edad;
     };
-
-    console.log(JSON.stringify(servicios, null, 2));
 
     // --- VALIDACIONES ---
     const validarPaso = () => {
@@ -248,12 +394,6 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
         message: ''
     });
 
-    console.log("Datos exactos enviados:", {
-        plan_id: data.plan_id,
-        afiliados: data.afiliados,
-        cuota: totalCalculado
-    });
-
     useEffect(() => {
         setData('cuota_mensual', totalCalculado);
     }, [totalCalculado]);
@@ -276,8 +416,6 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
             onError: (errors) => {
 
-                console.log(errors);
-
                 setErrorModal({
                     show: true,
                     message: JSON.stringify(errors)
@@ -289,19 +427,73 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
     };
 
-    console.log("DEBUG PLAN:", plan);
-    console.log("DEBUG TOTAL:", totalCalculado);
+    const cancionElegida = canciones.find(c => c.id === data.cancion_id);
+
     return (
         <div className="flex min-h-screen bg-[#FDFBF9] font-['Hepta_Slab'] text-[#5D4E3F]">
             <Head title={`Inscribir ${plan.nombre}`} />
             <Sidebar onToggle={setIsSidebarOpen} />
             <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
 
+            {/* Animaciones: mascota Mouri, notas musicales y transición de pasos */}
+            <style>{`
+                @keyframes mouriBob {
+                    0%, 100% { transform: translateY(0) rotate(-2deg); }
+                    50% { transform: translateY(-6px) rotate(2deg); }
+                }
+                @keyframes batonWave {
+                    0%, 100% { transform: rotate(-16deg); }
+                    50% { transform: rotate(16deg); }
+                }
+                @keyframes wingFlap {
+                    0%, 100% { transform: rotate(0deg); }
+                    50% { transform: rotate(-18deg); }
+                }
+                @keyframes noteFloat {
+                    0% { transform: translateY(0) scale(0.8); opacity: 0; }
+                    15% { opacity: 1; }
+                    100% { transform: translateY(-42px) scale(1.15); opacity: 0; }
+                }
+                @keyframes stepFadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes popIn {
+                    from { opacity: 0; transform: scale(0.9) translateY(8px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                @keyframes pulseDot {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.3); opacity: 0.6; }
+                }
+                .mouri-conductor { animation: mouriBob 3.2s ease-in-out infinite; transform-origin: center bottom; }
+                .mouri-conductor.active { animation: mouriBob 1.1s ease-in-out infinite; }
+                .mouri-baton { transform-origin: 58% 80%; animation: batonWave 2.4s ease-in-out infinite; }
+                .mouri-conductor.active .mouri-baton { animation: batonWave 0.5s ease-in-out infinite; }
+                .mouri-wing { transform-origin: 46% 58%; animation: wingFlap 2.6s ease-in-out infinite; }
+                .mouri-conductor.active .mouri-wing { animation: wingFlap 0.35s ease-in-out infinite; }
+                .mouri-note {
+                    position: absolute;
+                    font-size: 15px;
+                    font-weight: 900;
+                    color: #A68966;
+                    animation: noteFloat 1.8s ease-out infinite;
+                    pointer-events: none;
+                }
+                .step-fade { animation: stepFadeIn 0.4s ease both; }
+                .pop-in { animation: popIn 0.25s ease both; }
+                .pulse-dot { animation: pulseDot 1.4s ease-in-out infinite; }
+                @media (prefers-reduced-motion: reduce) {
+                    .mouri-conductor, .mouri-baton, .mouri-wing, .mouri-note, .step-fade, .pop-in, .pulse-dot { animation: none !important; }
+                }
+            `}</style>
+
             <main className={`flex-1 w-full min-w-0 transition-all p-4 sm:p-6 ${isSidebarOpen ? 'md:ml-72' : 'md:ml-20'}`}>
                 <div className="max-w-6xl mx-auto">
                     <br />
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 sm:mb-10 gap-4">
+                    {/* CABECERA: título a la izquierda, fases (stepper) a la derecha en el lugar donde antes iba la burbuja de comentarios */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 sm:mb-10 gap-5">
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tighter ">
                                 inscribir <span className="text-[#A68966]">plan {plan.nombre}</span>
@@ -309,14 +501,41 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                             <p className="text-[10px] uppercase font-bold tracking-[0.4em] opacity-30 mt-2">Paso {paso} de 4</p>
                         </div>
 
-                        <div className="bg-[#5D4E3F] text-white p-4 rounded-2xl flex items-center gap-4 max-w-md shadow-xl border-l-4 border-[#A68966]">
-                            <Sparkles className="text-[#A68966] shrink-0" size={30} />
-                            <p className="text-[10px] font-bold italic leading-tight">
-                                {paso === 1 && " Argg Estás incluido automáticamente como titular de la protección. Agrega a tus seres queridos."}
-                                {paso === 2 && " Oh you can´t read my poker face!! argg verdad que aun sigues hay, la música y los servicios extra hacen que el homenaje sea único."}
-                                {paso === 3 && " Cada protegido elige su propio objeto de memoria Argg."}
-                                {paso === 4 && " Lee con atención el compromiso. Estamos aquí para cuidarte Argg."}
-                            </p>
+                        {/* STEPPER: ahora vive en la esquina superior derecha */}
+                        <div className="flex items-center max-w-xl w-full md:w-auto">
+                            {pasos.map((label, idx) => {
+                                const numero = idx + 1;
+                                const completado = numero < paso;
+                                const actual = numero === paso;
+                                return (
+                                    <React.Fragment key={label}>
+                                        <div className="flex flex-col items-center gap-1.5">
+                                            <div
+                                                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-300 ${
+                                                    completado
+                                                        ? 'bg-[#A68966] text-white'
+                                                        : actual
+                                                            ? 'bg-[#5D4E3F] text-white scale-110 shadow-lg'
+                                                            : 'bg-[#F4F1ED] text-[#5D4E3F]/40'
+                                                }`}
+                                            >
+                                                {completado ? '✓' : numero}
+                                            </div>
+                                            <span className={`text-[8px] font-bold uppercase tracking-wider hidden sm:block ${actual ? 'text-[#5D4E3F]' : 'text-[#5D4E3F]/30'}`}>
+                                                {label}
+                                            </span>
+                                        </div>
+                                        {numero < pasos.length && (
+                                            <div className="flex-1 h-[2px] mx-1.5 sm:mx-2 bg-[#5D4E3F]/10 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-[#A68966] rounded-full transition-all duration-500 ease-out"
+                                                    style={{ width: numero < paso ? '100%' : '0%' }}
+                                                />
+                                            </div>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -324,7 +543,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                         <div className="lg:col-span-7 bg-white p-5 sm:p-6 md:p-10 rounded-[28px] sm:rounded-[36px] md:rounded-[50px] shadow-sm border border-[#5D4E3F]/5 min-h-0 sm:min-h-[550px] flex flex-col">
 
                             {paso === 1 && (
-                                <div className="flex-1">
+                                <div className="flex-1 step-fade">
                                     <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
                                         <h2 className="text-xl sm:text-2xl font-black lowercase italic">tus protegidos</h2>
                                         <BotonTutorial
@@ -506,7 +725,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                             )}
 
                             {paso === 2 && (
-                                <div className="flex-1">
+                                <div className="flex-1 step-fade">
                                     <h2 className="text-xl sm:text-2xl font-black lowercase italic mb-6 sm:mb-8">complementos y música</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                         {/* Servicios Extra */}
@@ -561,6 +780,14 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                                 </span>
                                                             )}
 
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.stopPropagation(); setServicioInfo(s); }}
+                                                                className={`absolute bottom-2 right-2 text-[8px] font-black underline underline-offset-2 ${seleccionado ? 'text-white/80' : 'text-[#A68966]/70'}`}
+                                                            >
+                                                                ver detalle
+                                                            </button>
+
                                                             <p className="text-[11px] font-bold pr-16">
                                                                 {s.nombre}
                                                             </p>
@@ -606,13 +833,22 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                     </div>
                                                 ))}
                                             </div>
+                                            {data.cancion_id && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowTipModal(true)}
+                                                    className="w-full flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#A68966] border border-dashed border-[#A68966]/40 rounded-xl py-2.5 hover:bg-[#A68966]/5 transition-all"
+                                                >
+                                                    <Music size={12} /> pedirle a mouri que la presente
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             {paso === 3 && (
-                                <div className="flex-1">
+                                <div className="flex-1 step-fade">
                                     <div className="mb-6 sm:mb-8">
                                         <h2 className="text-xl sm:text-2xl font-black lowercase italic">objetos de memoria</h2>
                                         <p className="text-[10px] text-[#A68966] font-bold uppercase mt-1">Cada protegido elige el suyo</p>
@@ -648,7 +884,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                             )}
 
                             {paso === 4 && (
-                                <div className="flex-1 flex flex-col justify-center">
+                                <div className="flex-1 flex flex-col justify-center step-fade">
                                     <div className="bg-[#FDFBF9] p-5 sm:p-6 md:p-10 rounded-[32px] sm:rounded-[45px] md:rounded-[60px] border border-[#A68966]/10 shadow-inner overflow-hidden">
                                         <ShieldCheck className="mx-auto text-[#A68966] mb-6" size={40} />
                                         <h2 className="text-xl sm:text-2xl font-black lowercase italic mb-6 text-center">compromiso de protección mouren</h2>
@@ -674,7 +910,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                 <button
                                     onClick={() => paso === 4 ? enviarInscripcion() : validarPaso()}
                                     disabled={processing}
-                                    className="bg-[#5D4E3F] text-white px-6 sm:px-12 py-3.5 sm:py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] ml-auto shadow-lg hover:bg-[#4A3E32] transition-colors whitespace-nowrap"
+                                    className="bg-[#5D4E3F] text-white px-6 sm:px-12 py-3.5 sm:py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] ml-auto shadow-lg hover:bg-[#4A3E32] hover:scale-[1.03] active:scale-[0.98] transition-all whitespace-nowrap"
                                 >
                                     {paso === 4 ? (processing ? 'procesando...' : 'activar protección') : 'siguiente'}
                                 </button>
@@ -760,7 +996,7 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                                     </span>
 
                                                     <span className="text-4xl sm:text-5xl font-black text-[#5D4E3F] tracking-tighter transition-all duration-300 group-hover:scale-105">
-                                                        {totalCalculado.toLocaleString()}
+                                                        {totalAnimado.toLocaleString()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -772,6 +1008,108 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                     </div>
                 </div>
             </main>
+
+            {/* PÁJARO FLOTANTE: no ocupa espacio del layout, vive fijo en la esquina */}
+            <button
+                onClick={() => { setShowTipModal(true); setHayTipNuevo(false); }}
+                className="fixed bottom-5 right-5 sm:bottom-8 sm:right-8 z-40 group"
+                aria-label="Abrir mensaje de Mouri"
+            >
+                <div className="absolute inset-0 bg-[#A68966]/30 rounded-full blur-xl scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-white rounded-full p-2 shadow-2xl border-2 border-[#A68966]/20 hover:scale-105 active:scale-95 transition-all">
+                    <PajaroMouri active={playingId !== null} variant={paso} />
+                </div>
+                {hayTipNuevo && (
+                    <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-[#A68966] rounded-full border-2 border-white pulse-dot"></span>
+                )}
+            </button>
+
+            {/* VENTANA EMERGENTE DEL PÁJARO: reemplaza la burbuja fija de comentarios */}
+            {showTipModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end bg-[#5D4E3F]/30 backdrop-blur-[2px] p-4 sm:p-8"
+                    onClick={() => setShowTipModal(false)}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        className="pop-in bg-white rounded-[28px] sm:rounded-[32px] p-5 sm:p-6 max-w-sm w-full shadow-2xl border-2 border-[#A68966]/15 relative sm:mb-24"
+                    >
+                        <button onClick={() => setShowTipModal(false)} className="absolute top-4 right-4 text-[#5D4E3F]/30 hover:text-[#5D4E3F]">
+                            <X size={16} />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-4 pr-6">
+                            <div className="bg-[#F4F1ED] rounded-full p-1">
+                                <PajaroMouri active={playingId !== null} size="small" variant={paso} />
+                            </div>
+                            <div>
+                                <p className="text-[8px] uppercase tracking-widest text-[#A68966] font-black">Mouri te cuenta</p>
+                                <p className="text-xs font-black text-[#5D4E3F]">Paso {paso} · {pasos[paso - 1]}</p>
+                            </div>
+                        </div>
+
+                        <p className="text-xs italic text-[#5D4E3F]/80 leading-relaxed">
+                            {tipsPorPaso[paso]}
+                        </p>
+
+                        {paso === 2 && cancionElegida && (
+                            <div className="mt-4 bg-[#FDFBF9] border border-dashed border-[#A68966]/30 rounded-2xl p-3.5">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-[#A68966]/70 mb-1">Presentación de orquesta</p>
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] font-bold truncate">{cancionElegida.titulo}</p>
+                                    <button
+                                        onClick={() => toggleMúsica(cancionElegida)}
+                                        className="flex items-center gap-1.5 bg-[#5D4E3F] text-white text-[9px] font-black uppercase px-3 py-2 rounded-xl shrink-0"
+                                    >
+                                        {playingId === cancionElegida.id ? <><Pause size={11} /> pausar</> : <><Play size={11} /> presentar</>}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => setShowTipModal(false)}
+                            className="mt-5 w-full bg-[#A68966] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-[#8f7452] transition-all"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* FICHA DE SERVICIO: ventana que explica un servicio adicional al hacer click en "ver detalle" */}
+            {servicioInfo && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#5D4E3F]/40 backdrop-blur-sm p-4"
+                    onClick={() => setServicioInfo(null)}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        className="pop-in bg-white rounded-[28px] sm:rounded-[32px] p-6 max-w-sm w-full shadow-2xl border-2 border-[#A68966]/15 relative"
+                    >
+                        <button onClick={() => setServicioInfo(null)} className="absolute top-4 right-4 text-[#5D4E3F]/30 hover:text-[#5D4E3F]">
+                            <X size={16} />
+                        </button>
+                        {Boolean(Number(servicioInfo.personalizable)) && (
+                            <span className="inline-block mb-3 text-[8px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-white">✨ Personalizable</span>
+                        )}
+                        <h3 className="text-lg font-black lowercase italic text-[#5D4E3F] pr-6">{servicioInfo.nombre}</h3>
+                        {servicioInfo.descripcion && (
+                            <p className="text-xs text-[#5D4E3F]/70 leading-relaxed mt-3">{servicioInfo.descripcion}</p>
+                        )}
+                        <p className="text-sm font-black text-[#A68966] mt-4">+${Number(servicioInfo.precio).toLocaleString('es-CO')}</p>
+                        <button
+                            onClick={() => {
+                                toggleSeleccionMultiple(servicioInfo.id, 'servicios_adicionales');
+                                setServicioInfo(null);
+                            }}
+                            className="mt-5 w-full bg-[#5D4E3F] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-[#4A3E32] transition-all"
+                        >
+                            {data.servicios_adicionales.includes(servicioInfo.id) ? 'quitar de mi plan' : 'agregar a mi plan'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {showSuccessModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#5D4E3F]/90 backdrop-blur-sm p-4">

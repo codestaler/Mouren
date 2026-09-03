@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, Head, Link, usePage } from '@inertiajs/react';
 // Importamos iconos sencillos (si no tienes Lucide, puedes usar texto o emojis como hice abajo)
 import { Eye, EyeOff, Flower } from 'lucide-react';
 
 export default function Register({ tiposDocumento, generos }) {
     const [showPassword, setShowPassword] = useState(false);
+    const [tamperDetected, setTamperDetected] = useState(false);
     const { flash } = usePage().props;
+
+    // 🛡️ Refs de los campos sensibles que vigilamos contra cambios de "type"
+    const emailRef = useRef(null);
+    const cedulaRef = useRef(null);
+    const telefonoRef = useRef(null);
+    const fechaRef = useRef(null);
+    const passwordRef = useRef(null);
+    const confirmRef = useRef(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         tipo_documento_id: '',
@@ -23,6 +32,36 @@ export default function Register({ tiposDocumento, generos }) {
     });
 
     const today = new Date().toISOString().split('T')[0];
+
+    // 🛡️ Vigilamos que nadie cambie el "type" de los campos sensibles desde DevTools
+    useEffect(() => {
+        const expectedTypes = new Map([
+            [emailRef.current, 'email'],
+            [cedulaRef.current, 'text'],
+            [telefonoRef.current, 'text'],
+            [fechaRef.current, 'date'],
+            [passwordRef.current, showPassword ? 'text' : 'password'],
+            [confirmRef.current, showPassword ? 'text' : 'password'],
+        ]);
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'type') {
+                    const el = mutation.target;
+                    const esperado = expectedTypes.get(el);
+                    if (esperado && el.getAttribute('type') !== esperado) {
+                        setTamperDetected(true);
+                    }
+                }
+            });
+        });
+
+        expectedTypes.forEach((_, el) => {
+            if (el) observer.observe(el, { attributes: true, attributeFilter: ['type'] });
+        });
+
+        return () => observer.disconnect();
+    }, [showPassword]);
 
     const handleInput = (e, field, type) => {
         let value = e.target.value;
@@ -114,6 +153,27 @@ export default function Register({ tiposDocumento, generos }) {
         <div className="relative min-h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-x-hidden">
             <Head title="Registro - Mouren" />
 
+            {/* --- PANTALLA DE BLOQUEO POR MANIPULACIÓN DEL FORMULARIO --- */}
+            {tamperDetected && (
+                <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#F4EDE6]/95 backdrop-blur-sm px-6 text-center">
+                    <img
+                        src="/images/login/mouri_error.png"
+                        className="w-40 sm:w-56 mb-6 animate-bounce"
+                        alt="Mouri regañando"
+                    />
+                    <h2 className="text-2xl font-bold text-[#5D4E3F] mb-2">¡Ey, ey, ey! 🙅‍♂️</h2>
+                    <p className="text-[#5D4E3F]/80 max-w-sm">
+                        Detectamos que se modificó el formulario de registro. Por favor no toques la estructura del formulario, causa errores raros. Recarga la página para continuar.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-6 bg-[#5D4E3F] text-white px-6 py-2 rounded-full hover:bg-[#A68966] transition-all"
+                    >
+                        Recargar
+                    </button>
+                </div>
+            )}
+
             {/* --- MODAL DE ÉXITO --- */}
             {isSuccess && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in px-4">
@@ -186,7 +246,7 @@ export default function Register({ tiposDocumento, generos }) {
 
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">número de documento</label>
-                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966] "
+                                <input ref={cedulaRef} type="text" required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966] "
                                     value={data.cedula} onChange={e => handleInput(e, 'cedula', 'numbers')} />
                                 <span className="block text-[10px] text-[#A68966] mt-1 lowercase">debe tener entre 6 y 12 números</span>
                             </div>
@@ -217,7 +277,7 @@ export default function Register({ tiposDocumento, generos }) {
 
                             <div className="col-span-1 sm:col-span-2">
                                 <label className="block font-bold mb-1 text-xs lowercase">fecha de nacimiento</label>
-                                <input type="date" max={today} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                <input ref={fechaRef} type="date" max={today} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.fecha_nacimiento} onChange={e => setData('fecha_nacimiento', e.target.value)} />
                             </div>
 
@@ -232,14 +292,14 @@ export default function Register({ tiposDocumento, generos }) {
 
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">teléfono</label>
-                                <input required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                <input ref={telefonoRef} type="text" required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.telefono} onChange={e => handleInput(e, 'telefono', 'numbers')} />
                                 <span className="block text-[10px] text-[#A68966] mt-1 lowercase">10 dígitos, debe iniciar con el número 3</span>
                             </div>
 
                             <div className="col-span-1 sm:col-span-2">
                                 <label className="block font-bold mb-1 text-xs lowercase">correo electrónico</label>
-                                <input type="email" required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                <input ref={emailRef} type="email" required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.email} onChange={e => handleInput(e, 'email', 'no-spaces')} />
                             </div>
 
@@ -247,7 +307,7 @@ export default function Register({ tiposDocumento, generos }) {
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">contraseña</label>
                                 <div className="relative flex items-center">
-                                    <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none pr-8 focus:border-[#A68966]"
+                                    <input ref={passwordRef} type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none pr-8 focus:border-[#A68966]"
                                         value={data.password} onChange={e => setData('password', e.target.value.replace(/\s/g, ''))} />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 text-[#A68966] hover:scale-110 transition-transform text-lg">
                                         {showPassword ? '🌸' : '👁️'}
@@ -258,7 +318,7 @@ export default function Register({ tiposDocumento, generos }) {
 
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">confirmar contraseña</label>
-                                <input type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
+                                <input ref={confirmRef} type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value.replace(/\s/g, ''))} />
                                 <span className="block text-[10px] text-[#A68966] mt-1 lowercase">las contraseñas deben ser idénticas</span>
                             </div>

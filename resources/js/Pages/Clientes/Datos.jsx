@@ -272,8 +272,8 @@ export default function Datos() {
 
             <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out">
 
-                <header className="flex flex-wrap justify-between items-start gap-4 mb-6 sm:mb-10 animate-fade-in">
-                    <div className="min-w-0">
+                <header className="flex flex-wrap items-center gap-4 mb-6 sm:mb-10 animate-fade-in">
+                    <div className="min-w-0 flex-1">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter leading-tight break-words">
                             Mantén tu info al día,
                             <span className="text-[#A68966]"> {nombreParaMostrar}</span>
@@ -281,7 +281,8 @@ export default function Datos() {
                         <p className="text-[10px] sm:text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    {/* Aquí ya puedes usar ml-[Xpx] o quitar el margen por completo con total libertad */}
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap ml-8">
                         {/* 🌗 toggle de Modo Claro / Oscuro */}
                         <div className="flex items-center gap-1.5 bg-white/30 dark:bg-black/20 p-1.5 px-3 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm text-[9px] sm:text-[10px] font-bold">
                             <button
@@ -297,13 +298,6 @@ export default function Datos() {
                             >
                                 🌙 Oscuro
                             </button>
-                        </div>
-
-                        <div className="flex items-center gap-2 sm:gap-3 bg-white/30 dark:bg-black/20 p-2 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm">
-                            <button className="w-8 h-8 sm:w-9 sm:h-9 bg-white dark:bg-[#2E2720] rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm text-sm text-[#5D4E3F] dark:text-[#EDE4D3]">🔔</button>
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md bg-[#5D4E3F] text-white">
-                                {nombreParaMostrar[0]}
-                            </div>
                         </div>
                     </div>
                 </header>

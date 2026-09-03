@@ -10,6 +10,7 @@ const TEXTOS = {
         serviciosFunerarios: 'Servicios Funerarios',
         informesVentas: 'Informes de Ventas',
         ajustes: 'Ajustes',
+        anuncios: '📢 Anuncios',
         cerrarSesion: 'CERRAR SESIÓN',
         notificaciones: 'Notificaciones',
         marcarTodasLeidas: 'Marcar todas como leídas',
@@ -20,6 +21,17 @@ const TEXTOS = {
         h: 'h',
         d: 'd',
         menu: 'Menú',
+        enviarATodos: '📢 Enviar a todos',
+        nuevaNotificacionTitulo: 'Enviar notificación a todos los usuarios',
+        tituloCampo: 'Título',
+        mensajeCampo: 'Mensaje',
+        imagenCampo: 'Imagen (opcional)',
+        enlaceCampo: 'Enlace al hacer clic (opcional)',
+        enviar: 'Enviar a todos',
+        enviando: 'Enviando...',
+        cancelar: 'Cancelar',
+        placeholderTitulo: 'Ej: ¡Feliz Navidad! 🎄',
+        placeholderMensaje: 'Escribe aquí el mensaje para todos los usuarios...',
     },
     en: {
         panelPrincipal: 'Main Panel',
@@ -27,6 +39,7 @@ const TEXTOS = {
         serviciosFunerarios: 'Funeral Services',
         informesVentas: 'Sales Reports',
         ajustes: 'Settings',
+        anuncios: '📢 Announcements',
         cerrarSesion: 'LOG OUT',
         notificaciones: 'Notifications',
         marcarTodasLeidas: 'Mark all as read',
@@ -37,6 +50,17 @@ const TEXTOS = {
         h: 'h ago',
         d: 'd ago',
         menu: 'Menu',
+        enviarATodos: '📢 Send to everyone',
+        nuevaNotificacionTitulo: 'Send notification to all users',
+        tituloCampo: 'Title',
+        mensajeCampo: 'Message',
+        imagenCampo: 'Image (optional)',
+        enlaceCampo: 'Link on click (optional)',
+        enviar: 'Send to everyone',
+        enviando: 'Sending...',
+        cancelar: 'Cancel',
+        placeholderTitulo: 'E.g: Merry Christmas! 🎄',
+        placeholderMensaje: 'Write the message for all users here...',
     },
 };
 
@@ -63,6 +87,15 @@ export default function AdminSidebar() {
     const [notificaciones, setNotificaciones] = useState([]);
     const [noLeidas, setNoLeidas] = useState(0);
     const notifRef = useRef(null);
+
+    // 🆕 MODAL: Enviar notificación a todos los usuarios
+    const [mostrarModalBroadcast, setMostrarModalBroadcast] = useState(false);
+    const [tituloBroadcast, setTituloBroadcast] = useState('');
+    const [mensajeBroadcast, setMensajeBroadcast] = useState('');
+    const [enlaceBroadcast, setEnlaceBroadcast] = useState('');
+    const [imagenBroadcast, setImagenBroadcast] = useState(null);
+    const [previewImagenBroadcast, setPreviewImagenBroadcast] = useState(null);
+    const [enviandoBroadcast, setEnviandoBroadcast] = useState(false);
 
     const cargarNotificaciones = () => {
         axios.get('/admin/notificaciones')
@@ -110,6 +143,46 @@ export default function AdminSidebar() {
         });
     };
 
+    // 🆕 Al elegir una imagen, generamos una vista previa local (no sube nada todavía)
+    const manejarSeleccionImagen = (e) => {
+        const archivo = e.target.files?.[0] || null;
+        setImagenBroadcast(archivo);
+        setPreviewImagenBroadcast(archivo ? URL.createObjectURL(archivo) : null);
+    };
+
+    const resetearFormularioBroadcast = () => {
+        setTituloBroadcast('');
+        setMensajeBroadcast('');
+        setEnlaceBroadcast('');
+        setImagenBroadcast(null);
+        setPreviewImagenBroadcast(null);
+    };
+
+    // 🆕 Envía la notificación a TODOS los usuarios. Usa FormData porque puede llevar imagen.
+    const enviarNotificacionMasiva = (e) => {
+        e.preventDefault();
+        if (!tituloBroadcast.trim() || !mensajeBroadcast.trim()) return;
+
+        const formData = new FormData();
+        formData.append('titulo', tituloBroadcast);
+        formData.append('mensaje', mensajeBroadcast);
+        if (enlaceBroadcast.trim()) formData.append('enlace', enlaceBroadcast.trim());
+        if (imagenBroadcast) formData.append('imagen', imagenBroadcast);
+
+        setEnviandoBroadcast(true);
+
+        router.post('/admin/notificaciones/enviar-masiva', formData, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setEnviandoBroadcast(false);
+                setMostrarModalBroadcast(false);
+                resetearFormularioBroadcast();
+            },
+            onError: () => setEnviandoBroadcast(false),
+        });
+    };
+
     // 🆕 Traducido: respeta el idioma activo para "Ahora mismo / Just now", "Hace X min / X min ago", etc.
     const tiempoRelativo = (fecha) => {
         const diffMs = Date.now() - new Date(fecha).getTime();
@@ -154,6 +227,14 @@ export default function AdminSidebar() {
                             )}
                         </div>
 
+                        {/* 🆕 Botón para abrir el modal de envío masivo */}
+                        <button
+                            onClick={() => { setNotifAbierta(false); setMostrarModalBroadcast(true); }}
+                            className="w-full text-left px-4 py-2.5 text-[11px] font-black text-[#8B5E3C] dark:text-[#D9B44A] hover:bg-[#F4EDE6] dark:hover:bg-[#221D17] transition border-b border-[#E8DFC8] dark:border-[#4A4033]"
+                        >
+                            {t.enviarATodos}
+                        </button>
+
                         <div className="max-h-80 overflow-y-auto">
                             {notificaciones.length === 0 ? (
                                 <p className="text-xs text-center text-gray-400 italic py-8">{t.sinNotificaciones}</p>
@@ -168,6 +249,9 @@ export default function AdminSidebar() {
                                     >
                                         <div className="flex items-start gap-2">
                                             {!notif.leido && <span className="w-2 h-2 rounded-full bg-[#D9B44A] mt-1 shrink-0" />}
+                                            {notif.imagen && (
+                                                <img src={notif.imagen} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                                            )}
                                             <div className="min-w-0">
                                                 {notif.titulo && (
                                                     <p className="text-[11px] font-black text-[#5D4E3F] dark:text-[#EDE4D3] truncate">{notif.titulo}</p>
@@ -240,6 +324,9 @@ export default function AdminSidebar() {
                         <Link href="/admin/ventas" className={`text-sm md:text-sm w-fit ${active('/admin/ventas')}`}>
                             {t.informesVentas}
                         </Link>
+                        <Link href="/admin/notificaciones/enviar" className={`text-sm md:text-sm w-fit ${active('/admin/notificaciones/enviar')}`}>
+                            {t.anuncios}
+                        </Link>
                         <Link href="/admin/ajustes" className={`text-sm md:text-sm w-fit ${active('/admin/ajustes')}`}>
                             {t.ajustes}
                         </Link>
@@ -256,6 +343,95 @@ export default function AdminSidebar() {
                     </Link>
                 </div>
             </aside>
+
+            {/* 🆕 MODAL: Enviar notificación a todos los usuarios */}
+            {mostrarModalBroadcast && (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+                    <form
+                        onSubmit={enviarNotificacionMasiva}
+                        className="bg-[#FDFBF7] dark:bg-[#2E2720] p-6 rounded-[28px] max-w-md w-full border-2 border-[#60533E] dark:border-[#4A4033] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+                    >
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-black text-sm uppercase text-[#60533E] dark:text-[#D9B44A]">
+                                {t.nuevaNotificacionTitulo}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => { setMostrarModalBroadcast(false); resetearFormularioBroadcast(); }}
+                                className="text-xl text-[#60533E] dark:text-[#D9B44A] hover:text-red-500 transition"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-[#A68966]">{t.tituloCampo}</label>
+                            <input
+                                type="text"
+                                value={tituloBroadcast}
+                                onChange={(e) => setTituloBroadcast(e.target.value)}
+                                placeholder={t.placeholderTitulo}
+                                maxLength={150}
+                                required
+                                className="w-full mt-1 p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-[#A68966]">{t.mensajeCampo}</label>
+                            <textarea
+                                value={mensajeBroadcast}
+                                onChange={(e) => setMensajeBroadcast(e.target.value)}
+                                placeholder={t.placeholderMensaje}
+                                maxLength={1000}
+                                required
+                                className="w-full mt-1 p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs h-24 resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-[#A68966]">{t.imagenCampo}</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={manejarSeleccionImagen}
+                                className="w-full mt-1 text-[11px] font-bold text-[#60533E] dark:text-[#EDE4D3]"
+                            />
+                            {previewImagenBroadcast && (
+                                <img src={previewImagenBroadcast} alt="Vista previa" className="mt-2 w-full max-h-40 object-cover rounded-xl border border-[#D9CEB6] dark:border-[#4A4033]" />
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-[#A68966]">{t.enlaceCampo}</label>
+                            <input
+                                type="text"
+                                value={enlaceBroadcast}
+                                onChange={(e) => setEnlaceBroadcast(e.target.value)}
+                                placeholder="/mi-plan"
+                                className="w-full mt-1 p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 text-[10px] font-black uppercase pt-2">
+                            <button
+                                type="submit"
+                                disabled={enviandoBroadcast}
+                                className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50"
+                            >
+                                {enviandoBroadcast ? t.enviando : t.enviar}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setMostrarModalBroadcast(false); resetearFormularioBroadcast(); }}
+                                className="flex-1 py-2.5 bg-gray-200 dark:bg-[#4A4033] text-gray-700 dark:text-[#EDE4D3] rounded-xl"
+                            >
+                                {t.cancelar}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             <style>{`
                 .content-shift { 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pagos\Pago;
 use App\Models\Pagos\Factura;
 use App\Models\User;
+use App\Services\NotificacionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -204,6 +205,23 @@ class PagoController extends Controller
 
                         if (!empty($pagosCreados)) {
                             $this->enviarComprobantePorCorreo($pagosCreados, $payment);
+
+                            // 🆕 Notificamos a los administradores — UN solo resumen,
+                            // aunque el pago haya cubierto varias facturas de un lote.
+                            $primeraFactura = $pagosCreados[0]['factura'];
+                            $suscripcion = $primeraFactura->suscripcion ?? null;
+                            $usuarioPagador = $suscripcion ? User::find($suscripcion->usuario_id) : null;
+                            $nombreCliente = $usuarioPagador->nombre ?? 'Un cliente';
+
+                            $totalPagadoWebhook = collect($pagosCreados)->sum(fn($item) => $item['pago']->monto);
+                            $idsFacturas = collect($pagosCreados)->pluck('factura.id')->unique()->implode(', #');
+
+                            NotificacionService::avisarAdmins(
+                                'Pago recibido',
+                                "{$nombreCliente} pagó $" . number_format($totalPagadoWebhook, 0, ',', '.') . " (factura(s) #{$idsFacturas}) vía Mercado Pago.",
+                                'pago',
+                                '/admin/ventas'
+                            );
                         }
                     }
                 }
@@ -348,6 +366,18 @@ class PagoController extends Controller
         } else {
             $factura->update(['estado_factura_id' => 3]);
         }
+
+        // 🆕 Notificamos a los administradores de este pago registrado manualmente
+        $suscripcion = $factura->suscripcion ?? null;
+        $usuarioPagador = $suscripcion ? User::find($suscripcion->usuario_id) : null;
+        $nombreCliente = $usuarioPagador->nombre ?? 'Un cliente';
+
+        NotificacionService::avisarAdmins(
+            'Pago registrado manualmente',
+            "Se registró un pago de $" . number_format($request->monto, 0, ',', '.') . " para {$nombreCliente} (factura #{$factura->id}).",
+            'pago',
+            '/admin/ventas'
+        );
 
         return back()->with('success','Pago registrado correctamente.');
     }

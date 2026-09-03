@@ -66,6 +66,24 @@ const TEXTOS = {
         editarCeremoniaTitulo: 'Editar Ceremonia',
         observaciones: 'Observaciones',
         verificando: 'Verificando...',
+        // 🆕 Faltaban estas — el modal de "Cambio de Titular" completo
+        cambioTitularTitulo: '🔄 Cambio de Titular',
+        avisoCambioFallecimiento: 'El titular actual será marcado como fallecido. Elige quién asumirá el rol de titular.',
+        avisoCambioAcuerdo: 'Elige quién asumirá el rol de titular de este plan.',
+        sinBeneficiariosDisponibles: 'No hay beneficiarios disponibles para asumir el rol de titular.',
+        correoNuevoTitular: 'Correo del nuevo titular (solo si no tiene cuenta propia)',
+        correoEjemploPlaceholder: 'correo@ejemplo.com',
+        notaCorreoNuevoTitular: 'Si el beneficiario ya tiene una cuenta registrada con su cédula, se usará esa cuenta automáticamente y este campo se ignora.',
+        telefonoNuevoTitular: 'Teléfono del nuevo titular',
+        telefonoEjemploPlaceholder: '3001234567',
+        confirmarCambioTitular: 'Confirmar Cambio de Titular',
+        cambiarTitularAcuerdo: '🔄 Cambiar Titular (por acuerdo)',
+        debeMonto: 'Debe',
+        alDia: 'Al día ✓',
+        yaFallecidoAlerta: (nombre) => `${nombre} ya está marcado como fallecido. No es posible volver a registrarlo.`,
+        estadoDisponible: 'Disponible',
+        estadoOcupada: 'Ocupada',
+        estadoMantenimiento: 'Mantenimiento',
     },
     en: {
         titulo: 'Funeral Services,',
@@ -126,6 +144,24 @@ const TEXTOS = {
         editarCeremoniaTitulo: 'Edit Ceremony',
         observaciones: 'Notes',
         verificando: 'Verifying...',
+        // 🆕 Faltaban estas — el modal de "Cambio de Titular" completo
+        cambioTitularTitulo: '🔄 Change Policyholder',
+        avisoCambioFallecimiento: 'The current policyholder will be marked as deceased. Choose who will take over as policyholder.',
+        avisoCambioAcuerdo: 'Choose who will take over as policyholder of this plan.',
+        sinBeneficiariosDisponibles: 'There are no available beneficiaries to take over as policyholder.',
+        correoNuevoTitular: "New policyholder's email (only if they don't have their own account)",
+        correoEjemploPlaceholder: 'email@example.com',
+        notaCorreoNuevoTitular: "If the beneficiary already has an account registered with their ID, that account will be used automatically and this field will be ignored.",
+        telefonoNuevoTitular: 'New policyholder\'s phone number',
+        telefonoEjemploPlaceholder: '3001234567',
+        confirmarCambioTitular: 'Confirm Policyholder Change',
+        cambiarTitularAcuerdo: '🔄 Change Policyholder (by agreement)',
+        debeMonto: 'Owes',
+        alDia: 'Up to date ✓',
+        yaFallecidoAlerta: (nombre) => `${nombre} is already marked as deceased. It cannot be registered again.`,
+        estadoDisponible: 'Available',
+        estadoOcupada: 'Occupied',
+        estadoMantenimiento: 'Maintenance',
     },
 };
 
@@ -159,6 +195,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
     const [modalCambioTitular, setModalCambioTitular] = useState(null); // { suscripcion, motivo }
     const [afiliadoSucesorId, setAfiliadoSucesorId] = useState('');
     const [emailNuevoTitular, setEmailNuevoTitular] = useState('');
+    const [telefonoNuevoTitular, setTelefonoNuevoTitular] = useState(''); // 🆕
     const [fechaFallecimientoTitular, setFechaFallecimientoTitular] = useState('');
 
     const [modalEditarCeremonia, setModalEditarCeremonia] = useState(null);
@@ -372,6 +409,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
             nuevo_titular_afiliado_id: afiliadoSucesorId,
             motivo: modalCambioTitular.motivo,
             email_nuevo_titular: emailNuevoTitular || null,
+            telefono_nuevo_titular: telefonoNuevoTitular || null, // 🆕
             fecha_fallecimiento: modalCambioTitular.motivo === 'fallecimiento' ? fechaFallecimientoTitular : null,
         }, {
             preserveScroll: true,
@@ -380,6 +418,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                 setModalCambioTitular(null);
                 setAfiliadoSucesorId('');
                 setEmailNuevoTitular('');
+                setTelefonoNuevoTitular(''); // 🆕
                 setFechaFallecimientoTitular('');
                 setTitularSeleccionado(null);
                 setAfiliadoAMarcar(null);
@@ -713,11 +752,11 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                                 <p className="text-xs font-black text-[#60533E] dark:text-[#D9B44A] uppercase tracking-wide">💎 {s.plan}</p>
                                                 {s.total_deuda > 0 ? (
                                                     <span className="text-[10px] font-black text-white bg-red-500 px-2 py-1 rounded-full">
-                                                        Debe ${Number(s.total_deuda).toLocaleString()}
+                                                        {t.debeMonto} ${Number(s.total_deuda).toLocaleString()}
                                                     </span>
                                                 ) : (
                                                     <span className="text-[10px] font-black text-green-700 bg-green-100 px-2 py-1 rounded-full">
-                                                        Al día ✓
+                                                        {t.alDia}
                                                     </span>
                                                 )}
                                             </div>
@@ -726,7 +765,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                                 onClick={() => setModalCambioTitular({ suscripcion: s, motivo: 'acuerdo' })}
                                                 className="mb-3 text-[10px] font-black text-[#4D78A3] dark:text-[#7FAEDD] hover:underline"
                                             >
-                                                🔄 Cambiar Titular (por acuerdo)
+                                                {t.cambiarTitularAcuerdo}
                                             </button>
 
                                             {s.facturas && s.facturas.length > 0 && (
@@ -764,7 +803,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                                             type="button"
                                                             onClick={() => {
                                                                 if (yaFallecido) {
-                                                                    alert(`${a.nombre} ya está marcado como fallecido. No es posible volver a registrarlo.`);
+                                                                    alert(t.yaFallecidoAlerta(a.nombre));
                                                                     return;
                                                                 }
                                                                 esTitular
@@ -787,7 +826,7 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                                         type="button"
                                                         onClick={() => {
                                                             if (m.estado === 'Fallecido') {
-                                                                alert(`${m.nombre} ya está marcado como fallecido. No es posible volver a registrarlo.`);
+                                                                alert(t.yaFallecidoAlerta(m.nombre));
                                                                 return;
                                                             }
                                                             setAfiliadoAMarcar({ id: m.id, tipo: 'mascota', nombre: m.nombre });
@@ -926,9 +965,11 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                 onChange={(e) => setEstadoSalaForm(e.target.value)}
                                 className="w-full p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
                             >
-                                <option value="Disponible">Disponible</option>
-                                <option value="Ocupada">Ocupada</option>
-                                <option value="Mantenimiento">Mantenimiento</option>
+                                {/* 🆕 El value se queda en español (coincide con lo que espera tu backend),
+                                    solo el texto visible se traduce */}
+                                <option value="Disponible">{t.estadoDisponible}</option>
+                                <option value="Ocupada">{t.estadoOcupada}</option>
+                                <option value="Mantenimiento">{t.estadoMantenimiento}</option>
                             </select>
                         )}
                         <div className="flex gap-2 text-[10px] font-black uppercase">
@@ -986,12 +1027,12 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                     <form onSubmit={enviarCambioTitular} className="bg-[#FDFBF7] dark:bg-[#2E2720] p-6 rounded-[28px] max-w-md w-full border-2 border-[#60533E] dark:border-[#4A4033] shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
                         <h3 className="font-black text-sm uppercase text-[#60533E] dark:text-[#D9B44A]">
-                            🔄 Cambio de Titular
+                            {t.cambioTitularTitulo}
                         </h3>
                         <p className="text-[10px] text-[#A68966]">
                             {modalCambioTitular.motivo === 'fallecimiento'
-                                ? 'El titular actual será marcado como fallecido. Elige quién asumirá el rol de titular.'
-                                : 'Elige quién asumirá el rol de titular de este plan.'}
+                                ? t.avisoCambioFallecimiento
+                                : t.avisoCambioAcuerdo}
                         </p>
 
                         <div className="space-y-1.5">
@@ -1010,13 +1051,13 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
                                     </label>
                                 ))}
                             {modalCambioTitular.suscripcion.afiliados.filter(a => a.parentesco?.toLowerCase().trim() !== 'titular' && a.estado !== 'Fallecido').length === 0 && (
-                                <p className="text-[11px] text-red-500 font-bold italic">No hay beneficiarios disponibles para asumir el rol de titular.</p>
+                                <p className="text-[11px] text-red-500 font-bold italic">{t.sinBeneficiariosDisponibles}</p>
                             )}
                         </div>
 
                         {modalCambioTitular.motivo === 'fallecimiento' && (
                             <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-black uppercase text-[#A68966]">Fecha de fallecimiento *</label>
+                                <label className="text-[10px] font-black uppercase text-[#A68966]">{t.fechaFallecimientoLabel}</label>
                                 <input
                                     type="date"
                                     required
@@ -1030,23 +1071,37 @@ export default function ServiciosFunerarios({ serviciosEnProceso = [], servicios
 
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-black uppercase text-[#A68966]">
-                                Correo del nuevo titular (solo si no tiene cuenta propia)
+                                {t.correoNuevoTitular}
                             </label>
                             <input
                                 type="email"
                                 value={emailNuevoTitular}
                                 onChange={(e) => setEmailNuevoTitular(e.target.value)}
-                                placeholder="correo@ejemplo.com"
+                                placeholder={t.correoEjemploPlaceholder}
                                 className="p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
                             />
-                            <p className="text-[9px] opacity-60">Si el beneficiario ya tiene una cuenta registrada con su cédula, se usará esa cuenta automáticamente y este campo se ignora.</p>
+                            <p className="text-[9px] opacity-60">{t.notaCorreoNuevoTitular}</p>
+                        </div>
+
+                        {/* 🆕 Teléfono del nuevo titular (mismo criterio que el correo: solo aplica si se está creando cuenta nueva) */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-black uppercase text-[#A68966]">
+                                {t.telefonoNuevoTitular}
+                            </label>
+                            <input
+                                type="tel"
+                                value={telefonoNuevoTitular}
+                                onChange={(e) => setTelefonoNuevoTitular(e.target.value)}
+                                placeholder={t.telefonoEjemploPlaceholder}
+                                className="p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-[#60533E]"
+                            />
                         </div>
 
                         <div className="flex gap-2 text-[10px] font-black uppercase">
                             <button type="submit" disabled={procesando || !afiliadoSucesorId} className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50">
-                                {procesando ? t.procesando : 'Confirmar Cambio de Titular'}
+                                {procesando ? t.procesando : t.confirmarCambioTitular}
                             </button>
-                            <button type="button" onClick={() => { setModalCambioTitular(null); setAfiliadoSucesorId(''); setEmailNuevoTitular(''); setFechaFallecimientoTitular(''); }} className="flex-1 py-2.5 bg-gray-200 dark:bg-[#4A4033] text-gray-700 dark:text-[#EDE4D3] rounded-xl">
+                            <button type="button" onClick={() => { setModalCambioTitular(null); setAfiliadoSucesorId(''); setEmailNuevoTitular(''); setTelefonoNuevoTitular(''); setFechaFallecimientoTitular(''); }} className="flex-1 py-2.5 bg-gray-200 dark:bg-[#4A4033] text-gray-700 dark:text-[#EDE4D3] rounded-xl">
                                 {t.cancelar}
                             </button>
                         </div>

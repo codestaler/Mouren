@@ -12,6 +12,7 @@ use App\Exports\FacturasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Pagos\MetodoPago;
+use App\Services\NotificacionService;
 
 class VentasController extends Controller
 {
@@ -147,6 +148,18 @@ $metodosPago = MetodoPago::all();
         ]);
 
         $correoDestino = $request->cliente_email;
+    }
+
+    // 🆕 Notificamos al cliente dueño de esta factura (solo si tiene cuenta registrada
+    // en el sistema — el Modo 3 es un cliente externo sin cuenta, así que no aplica)
+    if ($factura->usuario_id) {
+        NotificacionService::avisarUsuario(
+            $factura->usuario_id,
+            'Nueva factura generada',
+            "Se generó tu factura #{$factura->id} por $" . number_format($factura->total, 0, ',', '.') . ".",
+            'factura',
+            '/pagos'
+        );
     }
 
     // 🆕 Enviamos el correo con la factura adjunta, reutilizando el mismo Mailable

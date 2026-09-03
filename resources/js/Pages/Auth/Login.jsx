@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, Head, Link } from '@inertiajs/react';
 
 export default function Login() {
     const [showErrorToast, setShowErrorToast] = useState(false);
-    
+    const [tamperDetected, setTamperDetected] = useState(false);
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
+
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -20,6 +23,32 @@ export default function Login() {
         }
     }, [errors]);
 
+    // 🛡️ Vigilamos que nadie cambie el "type" de los inputs desde DevTools
+    useEffect(() => {
+        const expectedTypes = {
+            email: 'email',
+            password: 'password',
+        };
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'type') {
+                    const el = mutation.target;
+                    const expected = el === emailRef.current ? expectedTypes.email : expectedTypes.password;
+                    if (el.getAttribute('type') !== expected) {
+                        setTamperDetected(true);
+                    }
+                }
+            });
+        });
+
+        [emailRef.current, passwordRef.current].forEach((el) => {
+            if (el) observer.observe(el, { attributes: true, attributeFilter: ['type'] });
+        });
+
+        return () => observer.disconnect();
+    }, []);
+
     const submit = (e) => {
         e.preventDefault();
         post(route('login'), {
@@ -30,6 +59,27 @@ export default function Login() {
     return (
         <div className="relative min-h-screen w-full flex items-center bg-[#F4EDE6] font-['Hepta_Slab'] overflow-x-hidden">
             <Head title="Inicia Sesión - Mouren" />
+
+            {/* --- PANTALLA DE BLOQUEO POR MANIPULACIÓN DEL FORMULARIO --- */}
+            {tamperDetected && (
+                <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#F4EDE6]/95 backdrop-blur-sm px-6 text-center">
+                    <img
+                        src="/images/login/mouri_error.png"
+                        className="w-40 sm:w-56 mb-6 animate-bounce"
+                        alt="Mouri regañando"
+                    />
+                    <h2 className="text-2xl font-bold text-[#5D4E3F] mb-2">¡Ey, ey, ey! 🙅‍♂️</h2>
+                    <p className="text-[#5D4E3F]/80 max-w-sm">
+                        Detectamos que se modificó el formulario. Por favor no toques la estructura del login, causa errores raros. Recarga la página para continuar.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-6 bg-[#5D4E3F] text-white px-6 py-2 rounded-full hover:bg-[#A68966] transition-all"
+                    >
+                        Recargar
+                    </button>
+                </div>
+            )}
 
             {/* --- ALERTA FLOTANTE DE ERROR (ESTILO MOUREN) --- */}
             {showErrorToast && (
@@ -93,6 +143,7 @@ export default function Login() {
                             <div className="group">
                                 <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors">Correo electrónico</label>
                                 <input 
+                                    ref={emailRef}
                                     type="email"
                                     className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-1 focus:border-[#A68966] outline-none text-lg transition-all duration-300"
                                     value={data.email}
@@ -104,6 +155,7 @@ export default function Login() {
                             <div className="group">
                                 <label className="block text-sm font-bold mb-1 group-focus-within:text-[#A68966] transition-colors ">Contraseña</label>
                                 <input 
+                                    ref={passwordRef}
                                     type="password"
                                     className="w-full bg-transparent border-b-2 border-[#5D4E3F]/30 py-1 focus:border-[#A68966] outline-none text-lg transition-all duration-300"
                                     value={data.password}

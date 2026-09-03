@@ -156,8 +156,9 @@ Route::prefix('admin/notificaciones')->name('admin.notificaciones.')->group(func
     Route::get('/', [NotificacionController::class, 'index'])->name('index');
     Route::post('/{id}/marcar-leida', [NotificacionController::class, 'marcarLeida'])->name('marcar-leida');
     Route::post('/marcar-todas-leidas', [NotificacionController::class, 'marcarTodasLeidas'])->name('marcar-todas-leidas');
+    Route::get('/enviar', [NotificacionController::class, 'panelMasivo'])->name('panel');
+    Route::post('/enviar', [NotificacionController::class, 'enviarMasiva'])->name('enviar');
 });
-
 Route::prefix('admin/ajustes')->name('admin.ajustes.')->group(function () {
     Route::get('/', [App\Http\Controllers\AjustesController::class, 'index'])->name('index');
     Route::put('/datos', [App\Http\Controllers\AjustesController::class, 'actualizarDatos'])->name('datos');
@@ -190,6 +191,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::get('/mouriia', function () {
     return Inertia::render('Clientes/MouriIa');
 })->middleware(['auth']); 
+
+// 🆕 Notificaciones para CUALQUIER usuario logueado (cliente o admin)
+Route::prefix('notificaciones')->name('notificaciones.')->group(function () {
+    Route::get('/', [NotificacionController::class, 'index'])->name('index');
+    Route::post('/{id}/marcar-leida', [NotificacionController::class, 'marcarLeida'])->name('marcar-leida');
+    Route::post('/marcar-todas-leidas', [NotificacionController::class, 'marcarTodasLeidas'])->name('marcar-todas-leidas');
+});
 
 // CORREGIDO: Quitamos el método 'store' y dejamos que use el __invoke original del controlador
 Route::post('/chat/mouri', ChatMascotaController::class)->middleware(['auth'])->name('mouri.chat');

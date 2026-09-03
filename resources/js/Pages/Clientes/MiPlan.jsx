@@ -133,15 +133,6 @@ export default function MiPlan({
                         </h1>
                         <p className="text-[10px] sm:text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
                     </div>
-
-                    <div className="relative flex items-center gap-2 sm:gap-3 bg-white/30 dark:bg-black/20 p-2 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm shrink-0">
-                        <button className="relative z-10 w-8 h-8 sm:w-9 sm:h-9 bg-white dark:bg-transparent rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm text-sm text-[#5D4E3F] dark:text-[#EDE4D3]">
-                            🔔
-                        </button>
-                        <div className={`relative z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md ${reproduciendo ? 'bg-[#FFD97D] text-[#4A3B2C]' : 'bg-[#5D4E3F] text-white'}`}>
-                            {nombreParaMostrar[0]}
-                        </div>
-                    </div>
                 </header>
 
                 <div className="max-w-7xl mx-auto">

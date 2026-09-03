@@ -61,20 +61,10 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
         'telefono' => 'required|string',
         'nombre1' => 'required|string|max:50',
         'apellido1' => 'required|string|max:50',
-    ], [
-        'cedula.unique' => 'Este número de documento ya se encuentra registrado.',
-        'email.unique' => 'Este correo electrónico ya está en uso.',
-        'password.confirmed' => 'Las contraseñas no coinciden.',
-        'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
-    ]);
+    ], $this->mensajesValidacionUsuario());
 
         try {
-            $nombreCompleto = collect([
-                $request->nombre1,
-                $request->nombre2,
-                $request->apellido1,
-                $request->apellido2
-            ])->filter()->implode(' ');
+            $nombreCompleto = $this->construirNombreCompleto($request);
 
             $user = User::create([
                 'nombre' => $nombreCompleto,
@@ -151,19 +141,10 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
             'apellido1' => 'required|string|max:50',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|confirmed|min:6',
-        ], [
-            'email.unique' => 'Este correo electrónico ya está en uso.',
-            'password.confirmed' => 'Las contraseñas no coinciden.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
-        ]);
+        ], $this->mensajesValidacionUsuario());
 
         try {
-            $nombreCompleto = collect([
-                $request->nombre1,
-                $request->nombre2,
-                $request->apellido1,
-                $request->apellido2
-            ])->filter()->implode(' ');
+            $nombreCompleto = $this->construirNombreCompleto($request);
 
             User::create([
                 'nombre' => $nombreCompleto,
@@ -316,12 +297,7 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
             'cedula.unique' => 'Esta cédula ya está registrada para otro usuario.',
         ]);
 
-        $nombreCompleto = collect([
-            $request->nombre1,
-            $request->nombre2,
-            $request->apellido1,
-            $request->apellido2,
-        ])->filter()->implode(' ');
+        $nombreCompleto = $this->construirNombreCompleto($request);
 
         $user->update([
             'nombre'            => $nombreCompleto,
@@ -370,14 +346,9 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
             'fecha_nacimiento'  => 'required|date',
             'tipo_usuario_id'   => 'required|in:1,2',
             'password'          => 'nullable|string|min:6',
-        ], [
-            'cedula.unique' => 'Este número de documento ya se encuentra registrado.',
-            'email.unique'  => 'Este correo electrónico ya está en uso.',
-        ]);
+        ], $this->mensajesValidacionUsuario());
 
-        $nombreCompleto = collect([
-            $request->nombre1, $request->nombre2, $request->apellido1, $request->apellido2
-        ])->filter()->implode(' ');
+        $nombreCompleto = $this->construirNombreCompleto($request);
 
         // 🔒 Por seguridad: solo los Administradores (tipo_usuario_id = 1) pueden recibir
         // una contraseña definida manualmente por otro admin. A los Clientes SIEMPRE
@@ -441,5 +412,38 @@ $fail("Este número de documento ya está registrado como beneficiario en el pla
 
         $tipo->delete();
         return back()->with('message', 'Tipo de documento eliminado correctamente.');
+    }
+
+    /**
+     * 🧩 Une nombre1 + nombre2 + apellido1 + apellido2 ignorando los campos vacíos.
+     * Antes esta misma lógica estaba copiada en store(), storeAdmin(),
+     * actualizarDesdeAdmin() y crearUsuarioDesdeAdmin(). Ahora vive en un
+     * solo lugar: si un día cambia la forma de armar el nombre, se cambia aquí
+     * y se actualiza en los 4 métodos a la vez, sin riesgo de que alguno quede desactualizado.
+     */
+    private function construirNombreCompleto(Request $request): string
+    {
+        return collect([
+            $request->nombre1,
+            $request->nombre2,
+            $request->apellido1,
+            $request->apellido2,
+        ])->filter()->implode(' ');
+    }
+
+    /**
+     * 🧩 Mensajes de validación reutilizados por los métodos que CREAN usuarios
+     * (store, storeAdmin, crearUsuarioDesdeAdmin). No pasa nada si un método no
+     * tiene la regla correspondiente (por ejemplo storeAdmin no valida "cedula"):
+     * Laravel simplemente ignora los mensajes que no aplican a ninguna regla activa.
+     */
+    private function mensajesValidacionUsuario(): array
+    {
+        return [
+            'cedula.unique' => 'Este número de documento ya se encuentra registrado.',
+            'email.unique' => 'Este correo electrónico ya está en uso.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+        ];
     }
 }

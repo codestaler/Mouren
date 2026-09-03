@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 const recuerdos = [
     { id: 1, nombre: 'Separador de libro', plan: 'Plan Descanso Sereno', imagen: '/images/planes/recuerdos/separador.png', desc: 'Conserva su esencia en un detalle de cristal fino.' },
@@ -13,6 +13,7 @@ const recuerdos = [
 
 export default function RecuerdosCarousel() {
     const scrollRef = useRef(null);
+    const [recuerdoActivo, setRecuerdoActivo] = useState(null);
 
     const scroll = (direction) => {
         const { current } = scrollRef;
@@ -83,7 +84,10 @@ export default function RecuerdosCarousel() {
                                     <p className="text-white/70 text-[9px] leading-tight mb-4 italic">
                                         "{item.desc}"
                                     </p>
-                                    <button className="bg-[#FFC600] text-[#5D4E3F] w-full py-2 rounded-full font-black uppercase text-[9px] tracking-widest hover:bg-white transition-colors">
+                                    <button
+                                        onClick={() => setRecuerdoActivo(item)}
+                                        className="bg-[#FFC600] text-[#5D4E3F] w-full py-2 rounded-full font-black uppercase text-[9px] tracking-widest hover:bg-white transition-colors"
+                                    >
                                         Detalles
                                     </button>
                                 </div>
@@ -93,9 +97,90 @@ export default function RecuerdosCarousel() {
                 </div>
             </div>
 
+            {/* --- PANEL DE DETALLES DEL RECUERDO --- */}
+            {recuerdoActivo && (
+                <div
+                    className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#3f342a]/70 backdrop-blur-md animate-fade-in"
+                    onClick={() => setRecuerdoActivo(null)}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="relative w-full max-w-3xl bg-[#FDFBF9] rounded-[32px] sm:rounded-[40px] shadow-2xl border-4 border-[#5D4E3F] overflow-hidden flex flex-col md:flex-row animate-scale-up max-h-[90vh]"
+                    >
+                        <button
+                            onClick={() => setRecuerdoActivo(null)}
+                            className="absolute top-3 right-4 sm:top-5 sm:right-6 text-3xl sm:text-4xl font-light text-white/90 hover:text-[#FFC600] z-20 transition-transform hover:rotate-90"
+                        >
+                            &times;
+                        </button>
+
+                        {/* Lado izquierdo: la misma imagen del recuerdo, en grande, sobre un fondo cálido */}
+                        <div className="md:w-2/5 shrink-0 relative bg-gradient-to-b from-[#5D4E3F] to-[#3f342a] p-8 sm:p-10 flex items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(#FDFBF9 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
+                            <div className="absolute w-40 h-40 sm:w-52 sm:h-52 bg-[#FFC600]/10 rounded-full blur-2xl" />
+                            <img
+                                src={recuerdoActivo.imagen}
+                                alt={recuerdoActivo.nombre}
+                                className="relative z-10 w-40 h-52 sm:w-52 sm:h-64 object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.45)] animate-float-suave"
+                            />
+                        </div>
+
+                        {/* Lado derecho: nombre, plan y descripción */}
+                        <div className="md:w-3/5 p-7 sm:p-10 flex flex-col justify-center overflow-y-auto">
+                            <span className="bg-[#A68966]/10 text-[#A68966] text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest w-fit mb-4">
+                                {recuerdoActivo.plan}
+                            </span>
+
+                            <h3 className="text-2xl sm:text-3xl font-black text-[#5D4E3F] italic tracking-tighter mb-4">
+                                {recuerdoActivo.nombre}
+                            </h3>
+
+                            <span className="block w-14 h-[3px] bg-[#FFC600] rounded-full mb-5" />
+
+                            <p className="text-[#5D4E3F]/70 text-sm leading-relaxed italic">
+                                "{recuerdoActivo.desc}"
+                            </p>
+
+                            <p className="text-[#5D4E3F]/50 text-[10px] leading-relaxed mt-6">
+                                Este recuerdo forma parte de las opciones disponibles dentro de tu proceso de afiliación. Puedes elegirlo para cada uno de tus protegidos al momento de inscribir tu plan.
+                            </p>
+
+                            <button
+                                onClick={() => setRecuerdoActivo(null)}
+                                className="mt-8 bg-[#5D4E3F] text-white w-fit px-8 py-3 rounded-full font-black uppercase text-[10px] tracking-widest hover:bg-[#FFC600] hover:text-[#5D4E3F] transition-colors self-start"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style dangerouslySetInnerHTML={{ __html: `
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+
+                @keyframes scaleUp {
+                    from { transform: scale(0.92); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                .animate-scale-up { animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+
+                @keyframes floatSuave {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-10px); }
+                }
+                .animate-float-suave { animation: floatSuave 3.5s ease-in-out infinite; }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .animate-fade-in, .animate-scale-up, .animate-float-suave { animation: none !important; }
+                }
             `}} />
         </section>
     );

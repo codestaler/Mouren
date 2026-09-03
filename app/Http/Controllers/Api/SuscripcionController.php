@@ -342,6 +342,7 @@ return redirect()->route('mi.plan')->with('activado', true);
         'nuevo_titular_afiliado_id' => 'required|exists:afiliados,id',
         'motivo' => 'required|in:fallecimiento,acuerdo',
         'email_nuevo_titular' => 'nullable|email',
+        'telefono_nuevo_titular' => 'nullable|string|max:20', // 🆕
         'fecha_fallecimiento' => 'required_if:motivo,fallecimiento|nullable|date',
     ]);
 
@@ -381,17 +382,23 @@ return redirect()->route('mi.plan')->with('activado', true);
                 return back()->with('error', 'Este beneficiario no tiene una cuenta propia todavía. Debes indicar un correo electrónico para crearle una.');
             }
 
+            // 🆕 Contraseña temporal LEGIBLE, para poder mostrarla en el correo de bienvenida.
+            // Se guarda hasheada en la BD como siempre; el usuario debería cambiarla luego.
+            $passwordTemporal = Str::random(8);
+
             $nuevoUsuario = \App\Models\User::create([
                 'nombre'            => $afiliadoSucesor->nombre,
                 'cedula'            => $afiliadoSucesor->cedula ?? ('PENDIENTE-' . $afiliadoSucesor->id),
                 'email'             => $request->email_nuevo_titular,
-                'password'          => Hash::make(Str::random(16)),
+                'password'          => Hash::make($passwordTemporal),
                 'tipo_documento_id' => $afiliadoSucesor->tipo_documento_id ?? 1,
                 'genero_id'         => $afiliadoSucesor->genero_id ?? 1,
                 'estado_id'         => 1,
                 'tipo_usuario_id'   => 2,
                 'fecha_nacimiento'  => $afiliadoSucesor->fecha_nacimiento ?? now()->subYears(18),
-                'telefono'          => '0000000000',
+                // 🆕 Usa el teléfono que se ingresó en el modal; si no vino ninguno,
+                // cae al placeholder de siempre para no romper el NOT NULL de la tabla.
+                'telefono'          => $request->telefono_nuevo_titular ?: '0000000000',
             ]);
             $cuentaNueva = true;
         }
@@ -439,25 +446,57 @@ foreach ($otrasSuscripciones as $otra) {
         }
 
         if ($cuentaNueva) {
-    // 🆕 Generamos un token de recuperación REAL de Laravel, para que el botón funcione de verdad
+    // 🆕 Seguimos generando el link de recuperación real de Laravel como alternativa segura,
+    // PERO ahora el correo también muestra el usuario, la cédula y la contraseña temporal
+    // para que la persona pueda ingresar de inmediato si lo prefiere.
     $token = Password::createToken($nuevoUsuario);
     $urlRecuperacion = route('password.reset', ['token' => $token]) . '?email=' . urlencode($nuevoUsuario->email);
+    $urlLogin = route('login');
+    $logoUrl = asset('images/logo.png');
 
-    Mail::html(
-        "<div style='font-family:sans-serif;color:#5D4E3F;max-width:480px;margin:0 auto;'>
-            <p>Hola {$nuevoUsuario->nombre},</p>
-            <p>A partir de ahora eres el <strong>titular</strong> del plan de previsión exequial familiar en Mouren. Hemos creado tu cuenta.</p>
-            <p>Para ingresar por primera vez, crea tu contraseña haciendo clic en el siguiente botón:</p>
-            <p style='text-align:center;margin:30px 0;'>
-                <a href='{$urlRecuperacion}' style='background:#5D4E3F;color:#ffffff;padding:12px 28px;border-radius:24px;text-decoration:none;font-weight:bold;display:inline-block;'>Crear mi contraseña</a>
-            </p>
-            <p style='font-size:12px;opacity:0.7;'>Si el botón no funciona, copia y pega este enlace en tu navegador:<br>{$urlRecuperacion}</p>
-            <p>— El equipo de Mouren</p>
-        </div>",
-        function ($message) use ($nuevoUsuario) {
-            $message->to($nuevoUsuario->email)->subject('Ahora eres el titular de tu plan Mouren');
-        }
-    );
+    $cuerpoCorreoTitular = "
+    <div style='font-family: Georgia, \"Times New Roman\", serif; background:#F4EDE6; padding:32px 16px; margin:0;'>
+      <div style='max-width:520px;margin:0 auto;background:#FFFFFF;border-radius:24px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.08);'>
+        <div style='background:#5D4E3F;padding:28px 24px;text-align:center;'>
+          <img src='{$logoUrl}' alt='Mouren' style='height:48px;margin-bottom:12px;filter:brightness(0) invert(1);' />
+          <p style='color:#F4EDE6;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:0;opacity:0.8;'>Cambio de titular</p>
+        </div>
+        <div style='padding:32px 28px;color:#5D4E3F;'>
+          <h1 style='font-size:20px;margin:0 0 8px;'>Hola {$nuevoUsuario->nombre},</h1>
+          <p style='font-size:14px;line-height:1.6;color:#6A5A48;margin:0 0 20px;'>
+            A partir de ahora eres el <strong>titular</strong> del plan de previsión exequial familiar en Mouren. Hemos creado tu cuenta para que puedas gestionarlo.
+          </p>
+          <div style='background:#F4EDE6;border-left:4px solid #A68966;border-radius:12px;padding:18px 20px;margin-bottom:20px;'>
+            <p style='margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#A68966;font-weight:bold;'>Tus datos de acceso</p>
+            <p style='margin:0 0 4px;font-size:13px;'><strong>Usuario (correo):</strong> {$nuevoUsuario->email}</p>
+            <p style='margin:0 0 4px;font-size:13px;'><strong>Cédula:</strong> {$nuevoUsuario->cedula}</p>
+            <p style='margin:0;font-size:13px;'><strong>Contraseña temporal:</strong> {$passwordTemporal}</p>
+          </div>
+          <p style='font-size:13px;line-height:1.6;color:#6A5A48;margin:0 0 20px;'>
+            Por seguridad, te recomendamos cambiar esta contraseña apenas ingreses, desde Ajustes → Cambiar contraseña. Si prefieres, también puedes definir tu propia clave desde ya:
+          </p>
+          <div style='text-align:center;margin-bottom:12px;'>
+            <a href='{$urlLogin}' style='background:#5D4E3F;color:#F4EDE6;text-decoration:none;padding:12px 22px;border-radius:24px;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;display:inline-block;margin:4px;'>Iniciar sesión</a>
+            <a href='{$urlRecuperacion}' style='background:#A68966;color:#F4EDE6;text-decoration:none;padding:12px 22px;border-radius:24px;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;display:inline-block;margin:4px;'>Crear mi propia clave</a>
+          </div>
+        </div>
+        <div style='background:#F4EDE6;padding:24px 28px;border-top:1px solid #E3D9BC;'>
+          <p style='margin:0 0 4px;font-size:13px;font-weight:bold;color:#5D4E3F;'>Equipo Mouren</p>
+          <p style='margin:0 0 2px;font-size:11px;color:#8A7A65;'>Cl. 63 #58B-03, Terranova, Itagüí</p>
+          <p style='margin:0 0 10px;font-size:11px;color:#8A7A65;'>314-6517-554 · mouren.funeraria@gmail.com</p>
+          <p style='margin:0;font-size:10px;color:#A68966;'>
+            <a href='https://www.instagram.com/funeraria_mouren/' style='color:#A68966;text-decoration:none;'>Instagram</a> ·
+            <a href='https://www.facebook.com/profile.php?id=61577696892769' style='color:#A68966;text-decoration:none;'>Facebook</a> ·
+            <a href='https://m.youtube.com/@Mouri-k8t2m' style='color:#A68966;text-decoration:none;'>Youtube</a>
+          </p>
+        </div>
+      </div>
+    </div>
+    ";
+
+    Mail::html($cuerpoCorreoTitular, function ($message) use ($nuevoUsuario) {
+        $message->to($nuevoUsuario->email)->subject('Ahora eres el titular de tu plan Mouren');
+    });
 } else {
     Mail::raw(
         "Hola {$nuevoUsuario->nombre},\n\nTu cuenta existente en Mouren ha sido vinculada como titular del plan de previsión exequial familiar.\n\n— El equipo de Mouren",

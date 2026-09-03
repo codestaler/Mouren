@@ -226,7 +226,7 @@ export default function Cartera({ facturas = [] }) {
                                 </p>
                             </div>
 
-                            <div className="flex flex-col xs:flex-row sm:flex-row justify-between items-start sm:items-end gap-3 mt-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 mt-4">
                                 <div>
                                     <p className="text-[9px] uppercase opacity-60 font-bold">Total Saldo Pendiente</p>
                                     <p className="text-lg sm:text-xl font-bold opacity-90">${Number(totalDeudaPendiente).toLocaleString()}</p>
@@ -358,17 +358,17 @@ export default function Cartera({ facturas = [] }) {
                                                 </div>
                                             )}
 
-                                            <div className="flex items-center gap-2 pt-2 border-t border-[#5D4E3F]/10 dark:border-white/10">
+                                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#5D4E3F]/10 dark:border-white/10">
                                                 <button
                                                     onClick={() => descargarPDF(factura.id)}
-                                                    className="flex-1 py-2 bg-white dark:bg-white/10 rounded-xl shadow-sm hover:scale-[1.02] transition border border-[#5D4E3F]/10 dark:border-white/10 text-[11px] font-bold flex items-center justify-center gap-1.5"
+                                                    className="flex-1 min-w-[88px] py-2 bg-white dark:bg-white/10 rounded-xl shadow-sm hover:scale-[1.02] transition border border-[#5D4E3F]/10 dark:border-white/10 text-[11px] font-bold flex items-center justify-center gap-1.5"
                                                 >
                                                     📄 PDF
                                                 </button>
                                                 {factura.ultimo_pago_id && (
                                                     <a
                                                         href={`/cliente/pagos/${factura.ultimo_pago_id}/comprobante`}
-                                                        className="flex-1 py-2 bg-white dark:bg-white/10 rounded-xl shadow-sm hover:scale-[1.02] transition border border-[#5D4E3F]/10 dark:border-white/10 text-[11px] font-bold flex items-center justify-center gap-1.5"
+                                                        className="flex-1 min-w-[88px] py-2 bg-white dark:bg-white/10 rounded-xl shadow-sm hover:scale-[1.02] transition border border-[#5D4E3F]/10 dark:border-white/10 text-[11px] font-bold flex items-center justify-center gap-1.5"
                                                     >
                                                         🧾 Comprobante
                                                     </a>
@@ -377,7 +377,7 @@ export default function Cartera({ facturas = [] }) {
                                                     <button
                                                         onClick={() => abrirModalConfirmacion(false, factura.id)}
                                                         disabled={procesando || (valoresAbono[factura.id] || 0) <= 0}
-                                                        className="flex-1 py-2 bg-[#302A1D] text-white rounded-xl text-[11px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition disabled:opacity-50"
+                                                        className="flex-1 min-w-[88px] py-2 bg-[#302A1D] text-white rounded-xl text-[11px] tracking-wider uppercase font-black hover:bg-[#4A3E32] transition disabled:opacity-50"
                                                     >
                                                         Pagar
                                                     </button>

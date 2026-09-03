@@ -15,6 +15,7 @@ class Notificacion extends Model
         'mensaje',
         'tipo',
         'enlace',
+        'imagen', // 🆕
         'fecha',
         'leido',
     ];
