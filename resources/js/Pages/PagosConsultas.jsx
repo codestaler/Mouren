@@ -4,38 +4,18 @@ import Footer from '@/Components/Footer';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
 
-/**
- * PÁGINA PÚBLICA: Pagos y Consultas
- * No requiere inicio de sesión.
- *
- * Dos flujos, presentados como "tiquetes" perforados (borde punteado + sello circular),
- * porque ambos documentos —certificado y comprobante— son piezas oficiales que la
- * persona se lleva consigo.
- *
- * 🔌 ENDPOINTS QUE ESTE COMPONENTE ESPERA (se conectarán en el siguiente paso):
- *   POST /consultas/afiliacion            { cedula }              -> { encontrado, tipo, nombre, plan, estado, afiliado_id }
- *   POST /consultas/afiliacion/certificado/{afiliado_id}          -> descarga PDF
- *   POST /consultas/pagos/enviar-codigo   { cedula }              -> { enviado, canal }
- *   POST /consultas/pagos/verificar       { cedula, codigo }      -> { valido, token }
- *   POST /consultas/pagos/facturas        { cedula, token }       -> { facturas: [...] }
- *   POST /consultas/pagos/procesar-lote   { cedula, token, ids, montos_personalizados } -> redirect a Mercado Pago
- */
-
 const ESTILO = {
     marron: '#5D4E3F',
     crema: '#F4EDE6',
     acento: '#A68966',
 };
 
-// --- Componente reutilizable: "tiquete" perforado con sello ---
 function TiqueteCard({ icono, titulo, subtitulo, rotacion = '-rotate-1', children }) {
     return (
         <div className={`relative bg-white/80 backdrop-blur-sm border-2 border-dashed border-[#5D4E3F]/25 rounded-[28px] p-6 sm:p-8 shadow-xl ${rotacion} transition-transform hover:rotate-0 duration-500`}>
-            {/* Sello circular, como un timbre oficial */}
             <div className="absolute -top-5 -right-5 w-16 h-16 rounded-full bg-[#5D4E3F] text-white flex items-center justify-center text-2xl shadow-lg border-4 border-[#F4EDE6] rotate-12">
                 {icono}
             </div>
-            {/* Muescas laterales tipo tiquete */}
             <div className="absolute top-1/2 -left-3 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F4EDE6]" />
             <div className="absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F4EDE6]" />
 
@@ -57,7 +37,8 @@ export default function PagosConsultas() {
     // ============ FLUJO A: CONSULTA DE AFILIACIÓN ============
     const [cedulaAfiliacion, setCedulaAfiliacion] = useState('');
     const [buscandoAfiliacion, setBuscandoAfiliacion] = useState(false);
-    const [resultadoAfiliacion, setResultadoAfiliacion] = useState(null); // { encontrado, nombre, tipo, plan, estado, afiliado_id }
+    // 🆕 ahora es un arreglo: puede traer una o varias afiliaciones (personas y/o mascotas)
+    const [resultadosAfiliacion, setResultadosAfiliacion] = useState([]);
     const [errorAfiliacion, setErrorAfiliacion] = useState('');
 
     const consultarAfiliacion = async (e) => {
@@ -66,12 +47,13 @@ export default function PagosConsultas() {
 
         setBuscandoAfiliacion(true);
         setErrorAfiliacion('');
-        setResultadoAfiliacion(null);
+        setResultadosAfiliacion([]);
 
         try {
             const { data } = await axios.post('/consultas/afiliacion', { cedula: cedulaAfiliacion.trim() });
-            setResultadoAfiliacion(data);
-            if (!data.encontrado) {
+            if (data.encontrado && data.afiliaciones?.length) {
+                setResultadosAfiliacion(data.afiliaciones);
+            } else {
                 setErrorAfiliacion('No encontramos ninguna afiliación activa con ese número de documento.');
             }
         } catch (err) {
@@ -81,22 +63,24 @@ export default function PagosConsultas() {
         }
     };
 
-    const descargarCertificado = async () => {
-        if (!resultadoAfiliacion?.id) return;
+    // 🆕 recibe la afiliación específica (persona o mascota) que se quiere descargar
+    const descargarCertificado = async (afiliacion) => {
+        if (!afiliacion?.id || !afiliacion?.suscripcion_id) return;
         try {
             const response = await axios.post(
                 `/consultas/afiliacion/certificado`,
                 {
                     cedula: cedulaAfiliacion.trim(),
-                    tipo: resultadoAfiliacion.tipo,
-                    id: resultadoAfiliacion.id,
+                    tipo: afiliacion.tipo,
+                    id: afiliacion.id,
+                    suscripcion_id: afiliacion.suscripcion_id,
                 },
                 { responseType: 'blob' }
             );
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `certificado-afiliacion-${cedulaAfiliacion.trim()}.pdf`);
+            link.setAttribute('download', `certificado-${afiliacion.plan}-${cedulaAfiliacion.trim()}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);
@@ -106,7 +90,7 @@ export default function PagosConsultas() {
     };
 
     // ============ FLUJO B: PAGOS Y FACTURAS ============
-    const [pasoPago, setPasoPago] = useState('cedula'); // 'cedula' | 'codigo' | 'facturas'
+    const [pasoPago, setPasoPago] = useState('cedula');
     const [cedulaPago, setCedulaPago] = useState('');
     const [codigo, setCodigo] = useState('');
     const [tokenSesion, setTokenSesion] = useState(null);
@@ -121,7 +105,6 @@ export default function PagosConsultas() {
     const [procesandoPago, setProcesandoPago] = useState(false);
     const [expandidas, setExpandidas] = useState([]);
 
-    // Misma lógica de alertas de vencimiento que usas en la Cartera del cliente logueado
     const obtenerAlertaVencimiento = (fechaVencimiento) => {
         if (!fechaVencimiento) return null;
         const hoy = new Date();
@@ -254,9 +237,7 @@ export default function PagosConsultas() {
             <Head title="Pagos y Consultas - Mouren" />
             <Navbar />
 
-            {/* --- HERO --- */}
             <section className="relative pt-32 pb-16 sm:pt-40 sm:pb-24 px-4 sm:px-8 md:px-16 flex flex-col items-center text-center overflow-hidden">
-                {/* Textura de fondo sutil, papel */}
                 <div
                     className="absolute inset-0 opacity-[0.04] pointer-events-none"
                     style={{
@@ -275,11 +256,9 @@ export default function PagosConsultas() {
                 </p>
             </section>
 
-            {/* --- LAS DOS TARJETAS PRINCIPALES --- */}
             <section className="relative z-10 px-4 sm:px-8 md:px-16 pb-24 -mt-6">
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 items-start">
 
-                    {/* ===== TARJETA 1: AFILIACIÓN / CERTIFICADO ===== */}
                     <TiqueteCard icono="🎓" titulo="Consultar Afiliación" subtitulo="Verifica tu estado y descarga tu certificado" rotacion="-rotate-1">
                         <form onSubmit={consultarAfiliacion} className="space-y-4">
                             <div>
@@ -312,34 +291,39 @@ export default function PagosConsultas() {
                             </p>
                         )}
 
-                        {resultadoAfiliacion?.encontrado && (
-                            <div className="mt-5 pt-5 border-t border-dashed border-[#5D4E3F]/20 space-y-2 animate-fade-in">
-                                <p className="text-[13px]"><span className="opacity-60 font-bold">Nombre:</span> <span className="font-black">{resultadoAfiliacion.nombre}</span></p>
-                                <p className="text-[13px]"><span className="opacity-60 font-bold">Tipo:</span> <span className="font-black">{resultadoAfiliacion.tipo}</span></p>
-                                <p className="text-[13px]"><span className="opacity-60 font-bold">Plan:</span> <span className="font-black">{resultadoAfiliacion.plan}</span></p>
-                                <p className="text-[13px] flex items-center gap-2">
-                                    <span className="opacity-60 font-bold">Estado:</span>
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black ${
-                                        resultadoAfiliacion.estado === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                    }`}>
-                                        {resultadoAfiliacion.estado}
-                                    </span>
-                                </p>
+                        {/* 🆕 recorre TODAS las afiliaciones encontradas (personas y/o mascotas) */}
+                        {resultadosAfiliacion.length > 0 && (
+                            <div className="mt-5 pt-5 border-t border-dashed border-[#5D4E3F]/20 space-y-4 animate-fade-in">
+                                {resultadosAfiliacion.map((afiliacion) => (
+                                    <div
+                                        key={`${afiliacion.tipo}-${afiliacion.suscripcion_id}`}
+                                        className="space-y-2 pb-4 border-b border-dashed border-[#5D4E3F]/10 last:border-none last:pb-0"
+                                    >
+                                        <p className="text-[13px]"><span className="opacity-60 font-bold">Nombre:</span> <span className="font-black">{afiliacion.nombre}</span></p>
+                                        <p className="text-[13px]"><span className="opacity-60 font-bold">Plan:</span> <span className="font-black">{afiliacion.plan}</span> {afiliacion.es_mascota ? '🐾' : ''}</p>
+                                        <p className="text-[13px] flex items-center gap-2">
+                                            <span className="opacity-60 font-bold">Estado:</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black ${
+                                                afiliacion.estado === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                            }`}>
+                                                {afiliacion.estado}
+                                            </span>
+                                        </p>
 
-                                <button
-                                    onClick={descargarCertificado}
-                                    className="w-full mt-3 flex items-center justify-center gap-2 bg-[#A68966] text-white py-2.5 rounded-full font-black text-[12px] uppercase tracking-wider hover:bg-[#8f7455] transition"
-                                >
-                                    📜 Descargar Certificado
-                                </button>
+                                        <button
+                                            onClick={() => descargarCertificado(afiliacion)}
+                                            className="w-full mt-2 flex items-center justify-center gap-2 bg-[#A68966] text-white py-2.5 rounded-full font-black text-[12px] uppercase tracking-wider hover:bg-[#8f7455] transition"
+                                        >
+                                            📜 Descargar Certificado ({afiliacion.plan})
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </TiqueteCard>
 
-                    {/* ===== TARJETA 2: PAGOS Y FACTURAS ===== */}
                     <TiqueteCard icono="🧾" titulo="Pagar Facturas" subtitulo="Consulta tu saldo y paga en línea" rotacion="rotate-1">
 
-                        {/* PASO 1: Pedir cédula */}
                         {pasoPago === 'cedula' && (
                             <form onSubmit={enviarCodigo} className="space-y-4">
                                 <div>
@@ -369,7 +353,6 @@ export default function PagosConsultas() {
                             </form>
                         )}
 
-                        {/* PASO 2: Verificar código */}
                         {pasoPago === 'codigo' && (
                             <form onSubmit={verificarCodigo} className="space-y-4">
                                 <p className="text-[12px] font-bold bg-[#F4EDE6] rounded-xl px-3 py-2">
@@ -407,7 +390,6 @@ export default function PagosConsultas() {
                             </form>
                         )}
 
-                        {/* PASO 3: Ver facturas y pagar */}
                         {pasoPago === 'facturas' && (
                             <div className="space-y-4">
                                 {facturasCobrables.length === 0 ? (
@@ -424,7 +406,6 @@ export default function PagosConsultas() {
 
                                             return (
                                                 <div key={factura.id} className={`rounded-2xl border overflow-hidden transition ${marcada ? 'border-[#A68966] bg-[#A68966]/5' : 'border-[#5D4E3F]/10 bg-white/50'}`}>
-                                                    {/* CABECERA: siempre visible */}
                                                     <div className="flex items-center justify-between gap-2 p-3">
                                                         <label className="flex items-center gap-2 font-black text-[13px] cursor-pointer min-w-0">
                                                             <input
@@ -451,7 +432,6 @@ export default function PagosConsultas() {
                                                         </div>
                                                     </div>
 
-                                                    {/* DETALLE EXPANDIDO */}
                                                     {abierta && (
                                                         <div className="px-3 pb-3 pt-1 border-t border-dashed border-[#5D4E3F]/15 space-y-3 animate-fade-in">
                                                             <div className="flex justify-between text-[11px] opacity-70 font-bold">
@@ -479,7 +459,6 @@ export default function PagosConsultas() {
                                                         </div>
                                                     )}
 
-                                                    {/* INPUT DE ABONO: solo si está seleccionada */}
                                                     {marcada && (
                                                         <div className="px-3 pb-3">
                                                             {permiteParcial ? (

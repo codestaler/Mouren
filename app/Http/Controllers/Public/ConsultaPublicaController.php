@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Afiliado;
+use App\Models\Mascota;
 use App\Models\Pagos\Factura;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +18,9 @@ class ConsultaPublicaController extends Controller
 {
     /**
      * CONSULTA DE AFILIACIÓN
-     * Busca primero como Titular (User), luego como Beneficiario (Afiliado).
+     * 🆕 Ahora devuelve TODAS las suscripciones del titular (antes solo traía
+     * la más reciente con ->latest('id')->first(), por eso si tenías plan de
+     * personas Y de mascotas, solo veías una de las dos).
      */
     public function consultarAfiliacion(Request $request)
     {
@@ -28,20 +31,30 @@ class ConsultaPublicaController extends Controller
         $usuario = User::where('cedula', $cedula)->first();
 
         if ($usuario) {
-            $suscripcion = \App\Models\Suscripcion::where('usuario_id', $usuario->id)->latest('id')->first();
+            $suscripciones = \App\Models\Suscripcion::where('usuario_id', $usuario->id)
+                ->with('plan')
+                ->orderBy('id')
+                ->get();
 
-            if (!$suscripcion) {
+            if ($suscripciones->isEmpty()) {
                 return response()->json(['encontrado' => false]);
             }
 
-            return response()->json([
-                'encontrado' => true,
-                'tipo'       => 'Titular',
-                'id'         => $usuario->id,
-                'nombre'     => $usuario->nombre ?? $usuario->name,
-                'plan'       => optional($suscripcion->plan)->nombre ?? 'Sin plan asignado',
-                'estado'     => $this->formatearEstado($suscripcion->estado),
-            ]);
+            $afiliaciones = $suscripciones->map(function ($suscripcion) use ($usuario) {
+                $esMascota = Mascota::where('suscripcion_id', $suscripcion->id)->exists();
+
+                return [
+                    'tipo'           => 'Titular',
+                    'id'             => $usuario->id,
+                    'suscripcion_id' => $suscripcion->id,
+                    'nombre'         => $usuario->nombre ?? $usuario->name,
+                    'plan'           => optional($suscripcion->plan)->nombre ?? 'Sin plan asignado',
+                    'estado'         => $this->formatearEstado($suscripcion->estado),
+                    'es_mascota'     => $esMascota,
+                ];
+            });
+
+            return response()->json(['encontrado' => true, 'afiliaciones' => $afiliaciones]);
         }
 
         // 2. ¿Es un Beneficiario/Afiliado?
@@ -49,14 +62,19 @@ class ConsultaPublicaController extends Controller
 
         if ($afiliado) {
             $suscripcion = $afiliado->suscripcion;
+            $esMascota = $suscripcion ? Mascota::where('suscripcion_id', $suscripcion->id)->exists() : false;
 
             return response()->json([
                 'encontrado' => true,
-                'tipo'       => 'Beneficiario',
-                'id'         => $afiliado->id,
-                'nombre'     => $afiliado->nombre,
-                'plan'       => optional($suscripcion?->plan)->nombre ?? 'Sin plan asignado',
-                'estado'     => $this->formatearEstado($suscripcion?->estado ?? $afiliado->estado),
+                'afiliaciones' => [[
+                    'tipo'           => 'Beneficiario',
+                    'id'             => $afiliado->id,
+                    'suscripcion_id' => $suscripcion?->id,
+                    'nombre'         => $afiliado->nombre,
+                    'plan'           => optional($suscripcion?->plan)->nombre ?? 'Sin plan asignado',
+                    'estado'         => $this->formatearEstado($suscripcion?->estado ?? $afiliado->estado),
+                    'es_mascota'     => $esMascota,
+                ]],
             ]);
         }
 
@@ -72,17 +90,18 @@ class ConsultaPublicaController extends Controller
     }
 
     /**
-     * DESCARGA DE CERTIFICADO — valida que la cédula coincida con el registro antes de generar el PDF
-     * 🆕 Reutiliza tu vista existente `reportes.certificado-afiliacion`, la misma que usa
-     * la ruta autenticada /mi-plan/certificado, para que titular y beneficiario vean
-     * el mismo certificado familiar completo (con la tabla de todos los beneficiarios).
+     * DESCARGA DE CERTIFICADO
+     * 🆕 Ahora exige suscripcion_id explícito (ya no busca "la última" suscripción
+     * del usuario, que era la causa de que se mezclaran los planes). Además decide
+     * sola qué plantilla usar: certificado-afiliacion (personas) o certificado-mascota.
      */
     public function descargarCertificado(Request $request)
     {
         $request->validate([
-            'cedula' => 'required|string',
-            'tipo'   => 'required|in:Titular,Beneficiario',
-            'id'     => 'required|integer',
+            'cedula'         => 'required|string',
+            'tipo'           => 'required|in:Titular,Beneficiario',
+            'id'             => 'required|integer',
+            'suscripcion_id' => 'required|integer',
         ]);
 
         $cedula = trim($request->cedula);
@@ -91,12 +110,14 @@ class ConsultaPublicaController extends Controller
             $usuario = User::where('id', $request->id)->where('cedula', $cedula)->first();
             if (!$usuario) abort(404);
 
-            $suscripcion = \App\Models\Suscripcion::where('usuario_id', $usuario->id)->latest('id')->first();
+            $suscripcion = \App\Models\Suscripcion::where('id', $request->suscripcion_id)
+                ->where('usuario_id', $usuario->id) // seguridad: que sea de ese titular
+                ->first();
         } else {
             $afiliado = Afiliado::where('id', $request->id)->where('cedula', $cedula)->first();
             if (!$afiliado) abort(404);
 
-            $suscripcion = $afiliado->suscripcion;
+            $suscripcion = \App\Models\Suscripcion::where('id', $request->suscripcion_id)->first();
             $usuario = $suscripcion?->usuario;
         }
 
@@ -105,6 +126,22 @@ class ConsultaPublicaController extends Controller
         }
 
         $plan = $suscripcion->plan;
+        $mascotas = Mascota::where('suscripcion_id', $suscripcion->id)->with(['especie', 'raza'])->get();
+
+        if ($mascotas->isNotEmpty()) {
+            // 🐾 Plan de mascotas (Huella Eterna)
+            $pdf = Pdf::loadView('reportes.certificado-mascota', [
+                'usuario'     => $usuario,
+                'plan'        => $plan,
+                'suscripcion' => $suscripcion,
+                'mascotas'    => $mascotas,
+                'fecha'       => now()->format('d/m/Y'),
+            ]);
+
+            return $pdf->download("certificado-mascotas-{$cedula}.pdf");
+        }
+
+        // 👤 Plan de personas (igual que antes)
         $afiliados = $suscripcion->afiliados()->with(['genero', 'tipoDocumento'])->get();
 
         $pdf = Pdf::loadView('reportes.certificado-afiliacion', [
@@ -134,7 +171,6 @@ class ConsultaPublicaController extends Controller
 
         $codigo = rand(100000, 999999);
 
-        // Guardamos el código 10 minutos, ligado a la cédula
         Cache::put("otp_pago_{$cedula}", $codigo, now()->addMinutes(10));
 
         Mail::raw(
@@ -146,7 +182,6 @@ class ConsultaPublicaController extends Controller
             }
         );
 
-        // Enmascaramos el correo para mostrarlo en pantalla sin revelarlo completo
         return response()->json(['enviado' => true, 'canal' => 'correo']);
     }
 
@@ -167,19 +202,14 @@ class ConsultaPublicaController extends Controller
             return response()->json(['error' => 'El código ingresado no es válido o expiró.'], 422);
         }
 
-        // Código correcto: lo invalidamos para que no se reutilice
         Cache::forget("otp_pago_{$cedula}");
 
-        // Generamos un token temporal (30 min) que autoriza consultar/pagar facturas de esta cédula
         $token = bin2hex(random_bytes(24));
         Cache::put("token_pago_{$token}", $cedula, now()->addMinutes(30));
 
         return response()->json(['valido' => true, 'token' => $token]);
     }
 
-    /**
-     * Valida el token contra la cédula. Devuelve el usuario si es válido, o null.
-     */
     private function validarToken(string $cedula, ?string $token)
     {
         if (!$token) return null;
@@ -210,19 +240,19 @@ class ConsultaPublicaController extends Controller
         }
 
         $facturas = Factura::where(function ($query) use ($usuario) {
-    $query->whereHas('suscripcion', function ($q) use ($usuario) {
-        $q->where('usuario_id', $usuario->id);
-    })->orWhere('usuario_id', $usuario->id);
-})
-->where('estado_factura_id', '!=', 4) // 🆕 nunca mostramos facturas anuladas al público
-->orderBy('fecha_emision', 'desc')
-->get();
+            $query->whereHas('suscripcion', function ($q) use ($usuario) {
+                $q->where('usuario_id', $usuario->id);
+            })->orWhere('usuario_id', $usuario->id);
+        })
+        ->where('estado_factura_id', '!=', 4)
+        ->orderBy('fecha_emision', 'desc')
+        ->get();
 
         return response()->json(['facturas' => $facturas]);
     }
 
     /**
-     * PROCESA EL PAGO (misma lógica de abonos validados en servidor que ya usas en PagoController)
+     * PROCESA EL PAGO
      */
     public function procesarLote(Request $request)
     {
@@ -244,16 +274,15 @@ class ConsultaPublicaController extends Controller
 
         $facturaIds = $request->ids;
 
-        // Seguridad extra: solo facturas que pertenezcan a ESTE usuario
         $facturas = Factura::whereIn('id', $facturaIds)
-    ->whereIn('estado_factura_id', [1, 3])
-    ->where(function ($query) use ($usuario) {
-        $query->whereHas('suscripcion', function ($q) use ($usuario) {
-            $q->where('usuario_id', $usuario->id);
-        })->orWhere('usuario_id', $usuario->id); // 🆕
-    })
-    ->get()
-    ->keyBy('id');
+            ->whereIn('estado_factura_id', [1, 3])
+            ->where(function ($query) use ($usuario) {
+                $query->whereHas('suscripcion', function ($q) use ($usuario) {
+                    $q->where('usuario_id', $usuario->id);
+                })->orWhere('usuario_id', $usuario->id);
+            })
+            ->get()
+            ->keyBy('id');
 
         if ($facturas->isEmpty()) {
             return response()->json(['error' => 'No se encontraron facturas con saldos pendientes válidos para pagar.'], 422);
