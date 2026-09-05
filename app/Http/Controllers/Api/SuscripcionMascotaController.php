@@ -363,4 +363,34 @@ class SuscripcionMascotaController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+ * 🆕 Descarga el certificado de afiliación del plan Huella Eterna (mascotas).
+ * Reutiliza la misma vista 'reportes.certificado-mascota' que ya creamos
+ * para el flujo público de /pagos-consultas.
+ */
+public function certificadoMascota()
+{
+    $suscripcion = Suscripcion::with(['plan', 'mascotas.especie', 'mascotas.raza'])
+        ->where('usuario_id', auth()->id())
+        ->where('estado', 'activo')
+        ->where('plan_id', 4)
+        ->first();
+
+    if (!$suscripcion) {
+        return back()->with('error', 'No tienes una suscripción activa del plan Huella Eterna para generar un certificado.');
+    }
+
+    $usuario = auth()->user();
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reportes.certificado-mascota', [
+        'usuario'     => $usuario,
+        'suscripcion' => $suscripcion,
+        'plan'        => $suscripcion->plan,
+        'mascotas'    => $suscripcion->mascotas,
+        'fecha'       => \Carbon\Carbon::now()->format('d/m/Y'),
+    ]);
+
+    return $pdf->download('certificado-huella-eterna-mouren-' . $usuario->cedula . '.pdf');
+}
 }

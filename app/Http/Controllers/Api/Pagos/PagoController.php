@@ -237,18 +237,29 @@ class PagoController extends Controller
      * 🆕 NUEVO: envía el comprobante en PDF al correo del usuario tras un pago exitoso
      */
     private function enviarComprobantePorCorreo(array $pagosCreados, $payment)
-    {
-        $primeraFactura = $pagosCreados[0]['factura'];
-        $suscripcion = $primeraFactura->suscripcion;
+{
+    $primeraFactura = $pagosCreados[0]['factura'];
+    $suscripcion = $primeraFactura->suscripcion ?? null;
+
+    // 🆕 Protección: si no hay suscripción, intentamos ubicar al usuario
+    // por otras relaciones antes de rendirnos
+    $usuario = null;
+
+    if ($suscripcion && $suscripcion->usuario_id) {
         $usuario = User::find($suscripcion->usuario_id);
+    } elseif (isset($primeraFactura->usuario_id)) {
+        // Por si la factura tiene el usuario_id directo como respaldo
+        $usuario = User::find($primeraFactura->usuario_id);
+    }
 
-        if (!$usuario || !$usuario->email) {
-            \Log::warning("No se pudo enviar el comprobante: usuario no encontrado para la factura {$primeraFactura->id}");
-            return;
-        }
+    if (!$usuario || !$usuario->email) {
+        \Log::warning("⚠️ No se pudo enviar el comprobante: usuario no encontrado o sin email para la factura #{$primeraFactura->id} (suscripción: " . ($suscripcion->id ?? 'NINGUNA') . ")");
+        return;
+    }
 
-        $totalPagado = collect($pagosCreados)->sum(fn($item) => $item['pago']->monto);
+    $totalPagado = collect($pagosCreados)->sum(fn($item) => $item['pago']->monto);
 
+    try {
         $pdf = Pdf::loadView('pdf.comprobante_pago', [
             'usuario'      => $usuario,
             'pagosCreados' => $pagosCreados,
@@ -257,22 +268,24 @@ class PagoController extends Controller
             'fecha'        => now()->format('d/m/Y h:i A'),
         ]);
 
-        try {
-            Mail::send('emails.pago_confirmado', [
-                'usuario'     => $usuario,
-                'totalPagado' => $totalPagado,
-                'paymentId'   => $payment->id,
-            ], function ($message) use ($usuario, $pdf, $payment) {
-                $message->to($usuario->email)
-                    ->subject('¡Tu pago fue exitoso! - Mouren')
-                    ->attachData($pdf->output(), "comprobante-pago-{$payment->id}.pdf", [
-                        'mime' => 'application/pdf',
-                    ]);
-            });
-        } catch (\Exception $e) {
-            \Log::error("No se pudo enviar el correo de comprobante: " . $e->getMessage());
-        }
+        Mail::send('emails.pago_confirmado', [
+            'usuario'     => $usuario,
+            'totalPagado' => $totalPagado,
+            'paymentId'   => $payment->id,
+        ], function ($message) use ($usuario, $pdf, $payment) {
+            $message->to($usuario->email)
+                ->subject('¡Tu pago fue exitoso! - Mouren')
+                ->attachData($pdf->output(), "comprobante-pago-{$payment->id}.pdf", [
+                    'mime' => 'application/pdf',
+                ]);
+        });
+
+        \Log::info("✅ Comprobante enviado correctamente a {$usuario->email} (pago #{$payment->id})");
+
+    } catch (\Exception $e) {
+        \Log::error("❌ No se pudo enviar el correo de comprobante para el pago #{$payment->id}: " . $e->getMessage());
     }
+}
 
     /**
      * 🆕 NUEVO: permite al usuario descargar el comprobante de un pago en cualquier momento

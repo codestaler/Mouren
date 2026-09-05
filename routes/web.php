@@ -207,9 +207,15 @@ Route::post('/chat/mouri', ChatMascotaController::class)->middleware(['auth'])->
     });
 
     Route::get('/datos', function () {
+    $suscripciones = \App\Models\Suscripcion::where('usuario_id', auth()->id())
+        ->where('estado', 'activo')
+        ->get();
+
     return Inertia::render('Clientes/Datos', [
         'auth_user' => auth()->user(),
         'generos' => \App\Models\Genero::all(),
+        'tiene_plan_basico' => $suscripciones->contains(fn($s) => $s->plan_id != 4),
+        'tiene_plan_mascota' => $suscripciones->contains(fn($s) => $s->plan_id == 4),
     ]);
 })->name('datos.edit');
 
@@ -274,6 +280,8 @@ Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
     Route::post('/suscripciones-mascota', [SuscripcionMascotaController::class, 'store'])->name('suscripciones_mascota.store');
     Route::get('/detalles-mascota', [SuscripcionMascotaController::class, 'detalles'])
     ->name('detalles.mascota');
+    Route::get('/mi-plan-mascota/certificado', [SuscripcionMascotaController::class, 'certificadoMascota'])
+    ->name('certificado.mascota');
 
 Route::post('/api/personalizacion/gabinete-mascota', [SuscripcionMascotaController::class, 'actualizar'])
     ->name('personalizacion.mascota.actualizar');

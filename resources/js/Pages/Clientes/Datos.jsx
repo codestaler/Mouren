@@ -5,7 +5,7 @@ import MiniJuegoMouri from '@/Components/MouriGame/MiniJuegoMouri';
 import axios from 'axios';
 
 export default function Datos() {
-    const { auth, flash, generos } = usePage().props;
+    const { auth, flash, generos, tiene_plan_basico, tiene_plan_mascota } = usePage().props;
     const usuario = auth?.user || {};
 
     const [mostrarModal, setMostrarModal] = useState(false);
@@ -16,8 +16,6 @@ export default function Datos() {
     const [validandoToken, setValidandoToken] = useState(false);
     const [digitosCasino, setDigitosCasino] = useState(['0', '0', '0', '0', '0', '0']);
 
-    // 🆕 Referencias a cada casilla del código, para poder controlar el foco
-    // con precisión (avanzar, retroceder con Backspace, flechas, pegar el código completo).
     const inputsCodigoRef = useRef([]);
 
     const { data, setData, put, processing, errors } = useForm({
@@ -73,7 +71,6 @@ export default function Datos() {
 
     const nombreParaMostrar = usuario.nombre ? usuario.nombre.split(' ')[0] : (usuario.name || "Usuario");
 
-    // 🌗 cambia el tema del usuario (mismo patrón que Ajustes.jsx admin)
     const cambiarTema = (tema) => {
         router.put('/cliente/ajustes/tema', { tema }, { preserveScroll: true });
     };
@@ -91,7 +88,6 @@ export default function Datos() {
         }
     };
 
-    // 🆕 La cédula ahora se puede editar: solo números, hasta 15 dígitos (holgado a propósito).
     const handleCedulaChange = (e) => {
         const value = e.target.value.replace(/\D/g, '');
         if (value.length <= 15) {
@@ -198,14 +194,6 @@ export default function Datos() {
         });
     };
 
-    // 🆕 REESCRITO: manejo del código de 6 dígitos, más "trabajable".
-    // - Al escribir, avanza a la siguiente casilla (igual que antes).
-    // - Al enfocar una casilla (clic o Tab), selecciona su contenido, así con solo
-    //   escribir un número nuevo lo reemplazas directo sin tener que borrar primero.
-    // - Backspace: si la casilla actual tiene valor, lo borra; si ya está vacía,
-    //   retrocede a la anterior y la borra también (como en apps de verificación reales).
-    // - Flechas ← → para moverte manualmente entre casillas.
-    // - Pegar (Ctrl+V) un código completo de 6 dígitos lo reparte automáticamente en todas las casillas.
     const handleCodigoChange = (e, index) => {
         const soloDigitos = e.target.value.replace(/\D/g, '');
 
@@ -216,7 +204,6 @@ export default function Datos() {
             return;
         }
 
-        // Si el usuario tenía el texto seleccionado y escribió, nos quedamos con el último dígito tecleado
         const digito = soloDigitos.slice(-1);
         const nuevoCodigo = [...codigoVerificacion];
         nuevoCodigo[index] = digito;
@@ -233,11 +220,9 @@ export default function Datos() {
             const nuevoCodigo = [...codigoVerificacion];
 
             if (nuevoCodigo[index]) {
-                // Hay algo en esta casilla: la borramos y nos quedamos aquí
                 nuevoCodigo[index] = '';
                 setCodigoVerificacion(nuevoCodigo);
             } else if (index > 0) {
-                // Ya estaba vacía: retrocedemos y borramos la anterior
                 nuevoCodigo[index - 1] = '';
                 setCodigoVerificacion(nuevoCodigo);
                 inputsCodigoRef.current[index - 1]?.focus();
@@ -272,7 +257,7 @@ export default function Datos() {
 
             <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out">
 
-                <header className="flex flex-wrap items-center gap-4 mb-6 sm:mb-10 animate-fade-in">
+                <header className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-10 animate-fade-in">
                     <div className="min-w-0 flex-1">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter leading-tight break-words">
                             Mantén tu info al día,
@@ -281,9 +266,24 @@ export default function Datos() {
                         <p className="text-[10px] sm:text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
                     </div>
 
-                    {/* Aquí ya puedes usar ml-[Xpx] o quitar el margen por completo con total libertad */}
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap ml-8">
-                        {/* 🌗 toggle de Modo Claro / Oscuro */}
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {tiene_plan_basico && (
+                            <a
+                                href="/mi-plan/certificado"
+                                className="flex items-center gap-2 bg-[#A68966] hover:bg-[#8f7455] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md transition-all"
+                            >
+                                📄 Certificado Básico
+                            </a>
+                        )}
+                        {tiene_plan_mascota && (
+                            <a
+                                href="/mi-plan-mascota/certificado"
+                                className="flex items-center gap-2 bg-[#5D4E3F] hover:bg-[#4A3E32] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md transition-all"
+                            >
+                                🐾 Huella Eterna
+                            </a>
+                        )}
+
                         <div className="flex items-center gap-1.5 bg-white/30 dark:bg-black/20 p-1.5 px-3 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm text-[9px] sm:text-[10px] font-bold">
                             <button
                                 onClick={() => cambiarTema('claro')}
@@ -403,14 +403,7 @@ export default function Datos() {
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 relative z-10">
-                                        <a
-                                            href="/mi-plan/certificado"
-                                            className="w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl font-bold text-xs bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border-2 border-[#A68966] text-[#5D4E3F] hover:bg-[#A68966] hover:text-white transition-all duration-300 shadow-sm uppercase tracking-widest text-center"
-                                        >
-                                            📄 Descargar Certificado
-                                        </a>
-
+                                    <div className="pt-4 flex justify-end items-center gap-3 relative z-10">
                                         <button
                                             type="submit"
                                             disabled={enviandoEmail || processing || data.telefono.length !== 10}

@@ -313,28 +313,37 @@ return redirect()->route('mi.plan')->with('activado', true);
     }
 
     public function certificadoAfiliacion()
-    {
-        $suscripcion = Suscripcion::with(['plan', 'afiliados.genero', 'afiliados.tipoDocumento'])
-            ->where('usuario_id', auth()->id())
-            ->where('estado', 'activo')
-            ->first();
+{
+    // 🆕 Se agrega el filtro por plan_id != 4 para traer SOLO el plan de personas.
+    // (plan_id == 4 es "Huella Eterna" / mascotas, que ahora tiene su propio método)
+    $suscripcion = Suscripcion::with(['plan', 'afiliados.genero', 'afiliados.tipoDocumento'])
+        ->where('usuario_id', auth()->id())
+        ->where('estado', 'activo')
+        ->where('plan_id', '!=', 4)
+        ->first();
 
-        if (!$suscripcion) {
-            return back()->with('error', 'No tienes una suscripción activa para generar un certificado.');
-        }
-
-        $usuario = auth()->user();
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reportes.certificado-afiliacion', [
-            'usuario'     => $usuario,
-            'suscripcion' => $suscripcion,
-            'plan'        => $suscripcion->plan,
-            'afiliados'   => $suscripcion->afiliados,
-            'fecha'       => \Carbon\Carbon::now()->format('d/m/Y'),
-        ]);
-
-        return $pdf->download('certificado-afiliacion-mouren-' . $usuario->cedula . '.pdf');
+    if (!$suscripcion) {
+        return back()->with('error', 'No tienes una suscripción activa de plan básico para generar un certificado.');
     }
+
+    $usuario = auth()->user();
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reportes.certificado-afiliacion', [
+        'usuario'     => $usuario,
+        'suscripcion' => $suscripcion,
+        'plan'        => $suscripcion->plan,
+        'afiliados'   => $suscripcion->afiliados,
+        'fecha'       => \Carbon\Carbon::now()->format('d/m/Y'),
+    ]);
+
+    return $pdf->download('certificado-afiliacion-mouren-' . $usuario->cedula . '.pdf');
+}
+/**
+ * 🆕 Descarga el certificado de afiliación del plan Huella Eterna (mascotas).
+ * Reutiliza la misma vista 'reportes.certificado-mascota' que ya creamos
+ * para el flujo público de /pagos-consultas.
+ */
+
     public function cambiarTitular(Request $request)
 {
     $request->validate([
