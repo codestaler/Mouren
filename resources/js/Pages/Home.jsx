@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import BordePapel from '@/Components/BordePapel';
-import { Link, Head } from '@inertiajs/react';
+
 
 export default function Home() {
     const planesData = [
