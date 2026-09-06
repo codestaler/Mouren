@@ -5,6 +5,7 @@
  * propia escena completa (ver bosses-ira.js / bosses-orgullo.js y
  * MiniJuegoMouri.jsx).                                                  */
 import { MINI_JEFES, T, DIALOGOS } from "./config";
+import { vibrar } from "./helpers";
 import * as Gula from "./bosses-gula";
 import * as Lujuria from "./bosses-lujuria";
 import * as Pereza from "./bosses-pereza";
@@ -59,6 +60,7 @@ export function runMiniBoss(w, dt, A, startDialog, rerender, dayCfg) {
   if (mb.hp <= 0) {
     w.mini = null; w.miniDone = true; w.darkness = 0; w.score += 120; w.flash = .5; w.shake = .4;
     w.orbs = [];
+    vibrar([40, 40, 90]);
     A.playMusica(dayCfg(w.day).night ? "noche" : "dia");
     startDialog(DIALOGOS.miniJefeVencido, () => {});
     rerender();

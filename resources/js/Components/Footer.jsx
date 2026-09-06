@@ -66,7 +66,7 @@ const Footer = () => {
                         <ul className="space-y-2 opacity-90 text-sm sm:text-base">
                             <li><a href="https://www.instagram.com/funeraria_mouren/⁠�" className="hover:text-[#FFC600] transition">Instagram</a></li>
                             <li><a href="https://www.facebook.com/profile.php?id=61577696892769⁠�" className="hover:text-[#FFC600] transition">Facebook</a></li>
-                            <li><a href="mouren.funeraria@gmail.com" className="hover:text-[#FFC600] transition">Gmail</a></li>
+                            <li><a href="mailto:mouren.funeraria@gmail.com" className="hover:text-[#FFC600] transition">Gmail</a></li>
                             <li><a href="https://m.youtube.com/@Mouri-k8t2m⁠�" className="hover:text-[#FFC600] transition">Youtube</a></li>
                         </ul>
                     </div>

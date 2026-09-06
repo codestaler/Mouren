@@ -63,8 +63,10 @@ export const MUSICA = {
   envidia: "/images/mouri-game/audios/envidia.mp3",
   avaricia: "/images/mouri-game/audios/avaricia.mp3",
   ira: "/images/mouri-game/audios/ira.mp3",
+  iraFase2: null,
   orgullo: "/images/mouri-game/audios/orgullo.mp3",
   orgulloFase2: null,
+  orgulloFase3: null,
 };
 export const VOLUMEN_MUSICA = 0.45;
 
@@ -105,6 +107,15 @@ export const PERSONAJES = {
   olvido: { nombre: "El Orgullo", retrato: "👁️", color: "#EDE6FF", fondo: "#2a2140" },
   jardin: { nombre: "El Jardín", retrato: "🌱", color: "#2f4a24", fondo: "#e6f3d8" },
   narrador: { nombre: "", retrato: "", color: "#f3ecd8", fondo: "#1c1a2b" },
+  // 🆕 "Ecos" de los seis pecados ya vencidos. Solo hablan una vez, en la
+  // intro del Orgullo (como si él los canalizara para intimidar a Mouri
+  // antes de la pelea final). No son jefes jugables, solo voces de diálogo.
+  ecoGula: { nombre: "Eco de la Gula", retrato: "🐷", color: "#FFE9C7", fondo: "#3a2a12" },
+  ecoLujuria: { nombre: "Eco de la Lujuria", retrato: "💋", color: "#FFD9E6", fondo: "#3a1626" },
+  ecoPereza: { nombre: "Eco de la Pereza", retrato: "🌫️", color: "#E4ECF4", fondo: "#232b34" },
+  ecoEnvidia: { nombre: "Eco de la Envidia", retrato: "🐍", color: "#D3F3EC", fondo: "#0f2e28" },
+  ecoAvaricia: { nombre: "Eco de la Avaricia", retrato: "🕳️", color: "#FCEFC7", fondo: "#332a10" },
+  ecoIra: { nombre: "Eco de la Ira", retrato: "🔥", color: "#FFD8CC", fondo: "#3a1a10" },
 };
 
 export const DIALOGOS = {
@@ -114,9 +125,9 @@ export const DIALOGOS = {
     { quien: "mouri", texto: "Cada día llega un pecado distinto a apagar una flor. Hoy empezamos por la Gula." },
   ],
   dia: {
-    1: [{ quien: "mouri", texto: "Algo devora las sobras del jardín al fondo... ¡es la Gula! Cuídate de sus mordiscos." }],
+    1: [{ quien: "mouri", texto: "Algo devora las sobras del jardín al fondo... ¡es la Gula! Cuídate de sus mordiscos y de las sombras. Ya puedes SALTAR (↑) y disparar (ESPACIO) para defenderte." }],
     2: [{ quien: "mouri", texto: "La Lujuria vuela sobre nosotros. Si su hechizo te toca, tus controles se invierten." }],
-    3: [{ quien: "mouri", texto: "La Pereza casi no se mueve... pero barre el suelo con sus golpes. ¡Ya puedes SALTAR (↑) para esquivarlos!" }],
+    3: [{ quien: "mouri", texto: "La Pereza casi no se mueve... pero barre el suelo con sus golpes. ¡Salta (↑) justo a tiempo para esquivarlos!" }],
     4: [{ quien: "mouri", texto: "El agua se agita: la Envidia llega desde el mar, imitando cada paso que doy." }],
     5: [{ quien: "mouri", texto: "La Avaricia se planta del lado derecho. No se moverá, pero no dejará de atacar. esta plata no deja ver nadaa" }],
     6: [{ quien: "mouri", texto: "¡La Ira nos persigue en la carretera! Toma el coche funebre y conduceeeee" }],
@@ -138,11 +149,31 @@ export const DIALOGOS = {
   iraVictoria: [{ quien: "mouri", texto: "¡Lo logramos! Dejamos a la Ira atrás, por ahora." }],
   iraDerrota: [{ quien: "mouri", texto: "Nos alcanzó... respira, podemos intentarlo de nuevo." }],
   orgulloIntro: [
+    { quien: "narrador", texto: "El salón del Orgullo. Las voces de los seis pecados vencidos resuenan en las paredes." },
+    { quien: "ecoGula", texto: "Me venciste con hambre... pero aquí no hay nada que morder." },
+    { quien: "ecoLujuria", texto: "Ni mis encantos te detuvieron. Veamos si tu mente aguanta esto." },
+    { quien: "ecoPereza", texto: "Yo apenas me moví, y aun así dudaste. Aquí, dudar te va a costar todo." },
+    { quien: "ecoEnvidia", texto: "Yo copiaba cada paso tuyo... él no necesita copiarte: él ES tú, reflejado." },
+    { quien: "ecoAvaricia", texto: "Yo quería tus monedas. Él quiere algo que no se gasta: tu certeza." },
+    { quien: "ecoIra", texto: "Corriste de mí toda la carretera. Aquí ya no hay a dónde correr." },
     { quien: "olvido", texto: "Ríndete. Ni con toda tu fuerza podrás tocarme." },
     { quien: "mouri", texto: "No necesito fuerza. Solo necesito prestar atención." },
+    { quien: "olvido", texto: "...y cuando la atención no baste, tendrás que enfrentarme de verdad." },
   ],
+  // 🆕 Se muestran justo al vencer una fase, antes de que empiece la siguiente
+  orgulloFase: {
+    1: [
+      { quien: "olvido", texto: "¿Eso es todo? Aún no has visto nada de mí..." },
+      { quien: "mouri", texto: "Entonces déjame ver el resto." },
+    ],
+    2: [
+      { quien: "olvido", texto: "¡Basta de juegos! Ahora sentirás el peso real de cada pecado que enfrentaste." },
+      { quien: "mouri", texto: "Ya los enfrenté una vez. Puedo hacerlo de nuevo." },
+    ],
+  },
   orgulloVictoria: [
     { quien: "olvido", texto: "Imposible... alguien vio a través de mí..." },
+    { quien: "narrador", texto: "Los ecos de los seis pecados se apagan, uno a uno, hasta el silencio." },
     { quien: "mouri", texto: "El orgullo se cae solo, cuando alguien deja de creerle." },
   ],
   victoria: [
@@ -157,7 +188,7 @@ export const DIALOGOS = {
 
 export const TUTORIAL_PASOS = [
   { icono: "🕹️", titulo: "Moverte y cuidar", texto: "Usa ← → para caminar. Acércate a una flor y presiona X para cuidarla." },
-  { icono: "✨", titulo: "Disparo de luz", texto: "Desde el día 2 puedes disparar con ESPACIO (disparo recto) o con Z (disparo ondulante, más lento pero cubre más altura)." },
+  { icono: "✨", titulo: "Disparo de luz", texto: "Desde el día 1 puedes disparar con ESPACIO (disparo recto) o con Z (disparo ondulante, más lento pero cubre más altura)." },
   { icono: "⤴", titulo: "Salto y Especial", texto: "↑ para saltar. C lanza el Rayo del Recuerdo cuando la barra esté llena." },
   { icono: "😈", titulo: "Los 7 pecados", texto: "Cada día enfrentas un pecado distinto, cada uno con su propia forma de jugar: Gula, Lujuria, Pereza, Envidia, Avaricia, Ira y Orgullo." },
   { icono: "🚗", titulo: "Día de la Ira", texto: "Ese día el juego cambia por completo: manejas un auto y esquivas obstáculos mientras la Ira te persigue." },
@@ -191,6 +222,24 @@ export const T = {
   orgulloTiempoPorSimbolo: 0.62,
 };
 
+/* 🆕 Las 3 fases del Orgullo (jefe final):
+ *  - Fase 1 "El Reflejo" (tipo "memoria"): EXACTAMENTE igual que antes,
+ *    mismos números, mismo ritmo. Nada de lo que ya funcionaba cambia.
+ *  - Fase 2 "La Máscara" (tipo "combate"): disparo NORMAL. El Orgullo
+ *    tiene HP de verdad, se desliza de lado a lado y dispara un orbe
+ *    derecho cada tanto. Mouri puede moverse, saltar y disparar con sus
+ *    controles normales para bajarle la vida.
+ *  - Fase 3 "El Espejo Roto" (tipo "combate", increíble/final): más HP,
+ *    se mueve más rápido y dispara en abanico + un tiro directo apuntado
+ *    a Mouri — hay que esquivar de verdad, no solo memorizar.
+ * Las vidas del jugador (w.mouri.hp) NO se reinician entre fases: es una
+ * sola pelea continua, cada fase simplemente sube la exigencia. */
+export const ORGULLO_FASES = [
+  { id: 1, tipo: "memoria", nombre: "El Reflejo", rondas: T.orgulloRondas, tiempoPorSimbolo: T.orgulloTiempoPorSimbolo, color: "#7fd6ff" },
+  { id: 2, tipo: "combate", nombre: "La Máscara", color: "#c98bff", hp: 42, velMovimiento: 78, cadenciaAtaque: 1.25 },
+  { id: 3, tipo: "combate", nombre: "El Espejo Roto", color: "#ff8a8a", hp: 58, velMovimiento: 118, cadenciaAtaque: 0.9 },
+];
+
 export const MINI_JEFES = {
   gula: { id: "gula", nombre: "El Glotón", pecado: "Gula", sprite: "🐷", hp: 100, vel: 60, ataque: 1.7, color: "#C17817" },
   lujuria: { id: "lujuria", nombre: "La Seducción", pecado: "Lujuria", sprite: "/images/mouri-game/jefes/lujuria.png", hp: 40, vel: 150, ataque: 2.1, color: "#D6567B" },
@@ -202,9 +251,9 @@ export const MINI_JEFES = {
 /* Día 6 (Ira) y Día 7 (Orgullo) usan escenas especiales ("carrera" y
  * "orgullo"), por eso no llevan shadowRate/miniJefe como los demás. */
 export const DAYS = [
-  { n: 1, name: "La Gula acecha", dur: 45, shadowRate: 0, shadowSpeed: 0, shadowHP: 1, needRate: 4.2, needDecay: 5, miniJefeEn: 22, miniJefe: "gula" },
-  { n: 2, name: "El vuelo de la Lujuria", dur: 60, shadowRate: 4.6, shadowSpeed: 24, shadowHP: 2, needRate: 3.8, needDecay: 6, unlock: "Nuevo poder: DISPARO DE LUZ (ESPACIO)", miniJefeEn: 30, miniJefe: "lujuria" },
-  { n: 3, name: "El peso de la Pereza", dur: 70, shadowRate: 5.2, shadowSpeed: 16, shadowHP: 2, needRate: 3.4, needDecay: 7, unlock: "Nuevo poder: SALTO (↑)", miniJefeEn: 28, miniJefe: "pereza" },
+  { n: 1, name: "La Gula acecha", dur: 45, shadowRate: 3.5, shadowSpeed: 20, shadowHP: 1, needRate: 4.2, needDecay: 5, unlock: "Nuevos poderes: SALTO (↑) y DISPARO DE LUZ (ESPACIO)", miniJefeEn: 22, miniJefe: "gula" },
+  { n: 2, name: "El vuelo de la Lujuria", dur: 60, shadowRate: 4.6, shadowSpeed: 24, shadowHP: 2, needRate: 3.8, needDecay: 6, miniJefeEn: 30, miniJefe: "lujuria" },
+  { n: 3, name: "El peso de la Pereza", dur: 70, shadowRate: 5.2, shadowSpeed: 16, shadowHP: 2, needRate: 3.4, needDecay: 7, miniJefeEn: 28, miniJefe: "pereza" },
   { n: 4, name: "La marea de la Envidia", dur: 80, shadowRate: 3.3, shadowSpeed: 30, shadowHP: 3, needRate: 3.1, needDecay: 7, miniJefeEn: 34, miniJefe: "envidia" },
   { n: 5, name: "El rincón de la Avaricia", dur: 90, shadowRate: 2.9, shadowSpeed: 33, shadowHP: 3, needRate: 2.9, needDecay: 8, unlock: "Nuevo poder: ESPECIAL — Rayo del Recuerdo (C)", miniJefeEn: 38, miniJefe: "avaricia" },
   { n: 6, name: "Carretera de la Ira", carrera: true, dur: T.iraDur },

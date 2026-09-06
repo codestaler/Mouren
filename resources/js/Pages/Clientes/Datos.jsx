@@ -257,8 +257,9 @@ export default function Datos() {
 
             <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out">
 
-                <header className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-10 animate-fade-in">
-                    <div className="min-w-0 flex-1">
+                {/* --- HEADER: título en su propia fila + "barra de acciones" separada abajo --- */}
+                <header className="mb-6 sm:mb-10 animate-fade-in">
+                    <div className="mb-4">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter leading-tight break-words">
                             Mantén tu info al día,
                             <span className="text-[#A68966]"> {nombreParaMostrar}</span>
@@ -266,25 +267,27 @@ export default function Datos() {
                         <p className="text-[10px] sm:text-[11px] italic opacity-70 mt-1">"Para que descanses mejor que en vida"</p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {tiene_plan_basico && (
-                            <a
-                                href="/mi-plan/certificado"
-                                className="flex items-center gap-2 bg-[#A68966] hover:bg-[#8f7455] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md transition-all"
-                            >
-                                📄 Certificado Básico
-                            </a>
-                        )}
-                        {tiene_plan_mascota && (
-                            <a
-                                href="/mi-plan-mascota/certificado"
-                                className="flex items-center gap-2 bg-[#5D4E3F] hover:bg-[#4A3E32] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md transition-all"
-                            >
-                                🐾 Huella Eterna
-                            </a>
-                        )}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {tiene_plan_basico && (
+                                <a
+                                    href="/mi-plan/certificado"
+                                    className="flex items-center gap-2 bg-[#A68966] hover:bg-[#8f7455] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                                >
+                                    📄 Certificado Básico
+                                </a>
+                            )}
+                            {tiene_plan_mascota && (
+                                <a
+                                    href="/mi-plan-mascota/certificado"
+                                    className="flex items-center gap-2 bg-[#5D4E3F] hover:bg-[#4A3E32] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                                >
+                                    🐾 Huella Eterna
+                                </a>
+                            )}
+                        </div>
 
-                        <div className="flex items-center gap-1.5 bg-white/30 dark:bg-black/20 p-1.5 px-3 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm text-[9px] sm:text-[10px] font-bold">
+                        <div className="flex items-center gap-1.5 bg-white/30 dark:bg-black/20 p-1.5 px-3 rounded-full border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-sm text-[9px] sm:text-[10px] font-bold self-start sm:self-auto shrink-0">
                             <button
                                 onClick={() => cambiarTema('claro')}
                                 className={usuario.tema === 'claro' ? 'text-[#5D4E3F] dark:text-[#EDE4D3] underline' : 'text-gray-400'}
@@ -303,7 +306,9 @@ export default function Datos() {
                 </header>
 
                 <div className="max-w-5xl mx-auto">
-                    <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 italic border-b pb-2 border-[#5D4E3F]/10 dark:border-[#4A4033]">Tus datos personales:</h2>
+                    <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 italic border-b pb-2 border-[#5D4E3F]/10 dark:border-[#4A4033] flex items-center gap-2">
+                        📝 <span>Tus datos personales:</span>
+                    </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch mb-10 sm:mb-12">
 

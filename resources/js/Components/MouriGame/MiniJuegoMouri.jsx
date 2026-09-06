@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ASSETS, FLOOR_IMG, DAY_BG, DIALOGOS, TUTORIAL_PASOS, T,
-  INTRO_SLIDES, CREDITOS_IMAGENES, DAYS, PERSONAJES, FINAL_IMG,
+  INTRO_SLIDES, CREDITOS_IMAGENES, DAYS, PERSONAJES, FINAL_IMG, ORGULLO_FASES,
 } from "./config";
 import { crearAudio } from "./audio";
 import {
   clamp, makeWorld, say, setScene, movePhysics, flowerPassives, tickNeeds,
   spawnShadow, tickShadows, tickOrbs, alive, has, healthy, gardenLight,
-  canShoot, canJump, canSpecial,
+  canShoot, canJump, canSpecial, vibrar,
 } from "./helpers";
 import { spawnMiniBoss, runMiniBoss } from "./minibosses";
 import { initIra, tickIra } from "./bosses-ira";
-import { initOrgullo, tickOrgullo, SIMBOLO_ICONO } from "./bosses-orgullo";
+import { initOrgullo, tickOrgullo, tickOrgulloCombate, avanzarFaseOrgullo, SIMBOLO_ICONO } from "./bosses-orgullo";
 import IntroScreen from "./IntroScreen";
 
 const dayCfg = (n) => DAYS.find((d) => d.n === n);
@@ -26,9 +26,28 @@ export default function MiniJuegoMouri({ onGameComplete }) {
   const [mute, setMute] = useState(false);
   const [tutorialAbierto, setTutorialAbierto] = useState(false);
   const [tutPaso, setTutPaso] = useState(0);
+  const [sugerirGiro, setSugerirGiro] = useState(false);
+  const [giroDescartado, setGiroDescartado] = useState(false);
   const completed = useRef(false);
   const rerender = useCallback(() => setFrame((f) => (f + 1) % 1e6), []);
   const A = audio.current;
+
+  // 🆕 En celulares angostos en vertical, sugerimos girar a horizontal
+  // (el juego se ve mejor así, pero no es obligatorio: se puede cerrar).
+  useEffect(() => {
+    const revisar = () => {
+      const angosto = window.innerWidth < 820;
+      const vertical = window.matchMedia("(orientation: portrait)").matches;
+      setSugerirGiro(angosto && vertical);
+    };
+    revisar();
+    window.addEventListener("resize", revisar);
+    window.addEventListener("orientationchange", revisar);
+    return () => {
+      window.removeEventListener("resize", revisar);
+      window.removeEventListener("orientationchange", revisar);
+    };
+  }, []);
 
   useEffect(() => {
     return () => window.dispatchEvent(new CustomEvent("sidebar:abrir"));
@@ -73,7 +92,8 @@ export default function MiniJuegoMouri({ onGameComplete }) {
   /* ---------- acciones ---------- */
   const doJump = useCallback(() => {
     const w = world.current;
-    if (w.scene !== "playing" || !canJump(w)) return;
+    const enCombateOrgullo = w.scene === "orgullo" && w.orgullo?.tipo === "combate";
+    if ((w.scene !== "playing" && !enCombateOrgullo) || !canJump(w)) return;
     if (w.mouri.onGround) { w.mouri.vy = T.jumpV; w.mouri.onGround = false; }
   }, []);
 
@@ -90,12 +110,14 @@ export default function MiniJuegoMouri({ onGameComplete }) {
 
   const doSpecial = useCallback(() => {
     const w = world.current;
-    if (w.scene !== "playing" || !canSpecial(w)) return;
+    const enCombateOrgullo = w.scene === "orgullo" && w.orgullo?.tipo === "combate";
+    if ((w.scene !== "playing" && !enCombateOrgullo) || !canSpecial(w)) return;
     if (w.special < 100) return;
     const h = healthy(w);
     w.special = 0; w.flash = 0.5; w.shadows = []; w.orbs = [];
     A.playSfx("especial");
     if (w.mini) { w.mini.hp -= 12 + h * 3; say(w, "¡Rayo del Recuerdo!", 2); }
+    else if (enCombateOrgullo) { w.orgullo.hp -= 12 + h * 3; say(w, "¡Rayo del Recuerdo!", 2); }
     else { for (const f of w.flowers) if (f.health > 0) f.health = clamp(f.health + 25, 0, T.flowerMax); say(w, "¡Rayo del Recuerdo! El jardín brilla.", 2); }
   }, [A]);
 
@@ -151,7 +173,7 @@ export default function MiniJuegoMouri({ onGameComplete }) {
         if (k === "Enter" || k === " " || e.code === "Space") { e.preventDefault(); advanceCreditos(); }
         return;
       }
-      if (w.scene === "orgullo" && w.orgullo && !w.orgullo.terminado) {
+      if (w.scene === "orgullo" && w.orgullo && !w.orgullo.terminado && w.orgullo.tipo === "memoria") {
         if (k === "ArrowLeft") { e.preventDefault(); tickOrgullo(w, 0, "left", A); }
         else if (k === "ArrowRight") { e.preventDefault(); tickOrgullo(w, 0, "right", A); }
         else if (k === "ArrowUp") { e.preventDefault(); tickOrgullo(w, 0, "up", A); }
@@ -208,7 +230,22 @@ export default function MiniJuegoMouri({ onGameComplete }) {
           startDialog(DIALOGOS.iraDerrota, () => { toGameOver(w, A, startDialog, rerender); });
         }
       } else if (w.scene === "orgullo") {
-        tickOrgullo(w, dt, null, A);
+        if (w.orgullo.tipo === "combate") {
+          movePhysics(w, dt, keys.current, A);
+          tickOrbs(w, dt, A);
+          tickOrgulloCombate(w, dt, A);
+        } else {
+          tickOrgullo(w, dt, null, A);
+        }
+        if (w.orgullo.faseCompletada && !w.orgullo._faseHandled) {
+          w.orgullo._faseHandled = true;
+          const faseSuperada = w.orgullo.faseCompletada;
+          startDialog(DIALOGOS.orgulloFase?.[faseSuperada] || [], () => {
+            avanzarFaseOrgullo(w);
+            A.playMusica(faseSuperada === 1 ? "orgulloFase2" : "orgulloFase3");
+            w.orgullo._faseHandled = false;
+          });
+        }
         if (w.orgullo.terminado === "victoria" && !w.orgullo._handled) {
           w.orgullo._handled = true;
           startDialog(DIALOGOS.orgulloVictoria, () => { toVictory(w, A, startDialog, rerender); });
@@ -270,7 +307,28 @@ export default function MiniJuegoMouri({ onGameComplete }) {
         @keyframes m-pulse{0%,100%{opacity:.55}50%{opacity:1}}
         @keyframes m-hitring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.3);opacity:0}}
         @keyframes m-bossenter{0%{transform:scale(.15) rotate(-8deg);opacity:0;filter:brightness(2.4)}60%{transform:scale(1.15) rotate(3deg);opacity:1;filter:brightness(1.6)}100%{transform:scale(1) rotate(0deg);opacity:1;filter:brightness(1)}}
+        .m-orgullo-icono{width:46px;height:46px;border-radius:10px;font-size:22px}
+        @media (max-width:480px){
+          .m-orgullo-secuencia{gap:6px}
+          .m-orgullo-icono{width:34px;height:34px;font-size:16px;border-radius:8px}
+        }
       `}</style>
+
+      {sugerirGiro && !giroDescartado && w.scene !== "intro" && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          background: "#FFE39A", color: "#4E3A25", fontWeight: 700, fontSize: 12,
+          padding: "6px 14px", textAlign: "center",
+        }}>
+          <span style={{ display: "inline-block", animation: "m-shake 1s infinite" }}>📱</span>
+          <span>Gira tu celular para una mejor vista</span>
+          <button
+            onClick={() => setGiroDescartado(true)}
+            style={{ background: "none", border: "none", color: "#4E3A25", fontWeight: 900, fontSize: 14, cursor: "pointer", padding: "0 4px" }}
+            aria-label="Cerrar sugerencia"
+          >✕</button>
+        </div>
+      )}
 
       {w.scene !== "intro" && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 18px", gap: 12, flexWrap: "wrap" }}>
@@ -417,7 +475,10 @@ export default function MiniJuegoMouri({ onGameComplete }) {
         )}
 
         {w.scene === "carrera" && <CarreraIra w={w} pct={pct} />}
-        {w.scene === "orgullo" && <OrgulloView w={w} />}
+        {w.scene === "orgullo" && (w.orgullo?.tipo === "combate"
+          ? <OrgulloCombate w={w} pct={pct} />
+          : <OrgulloView w={w} />
+        )}
 
         {w.scene === "title" && (
           <Overlay bg="rgba(20,30,20,.62)">
@@ -512,12 +573,26 @@ export default function MiniJuegoMouri({ onGameComplete }) {
       )}
 
       {w.scene === "orgullo" && w.orgullo && (
-        <div style={{ display: "flex", justifyContent: "center", padding: "10px 18px", gap: 8 }}>
-          <Tap onTap={() => tickOrgullo(w, 0, "left", A)}>◀</Tap>
-          <Tap onTap={() => tickOrgullo(w, 0, "up", A)}>▲</Tap>
-          <Tap onTap={() => tickOrgullo(w, 0, "shoot", A)}>✨</Tap>
-          <Tap onTap={() => tickOrgullo(w, 0, "right", A)}>▶</Tap>
-        </div>
+        w.orgullo.tipo === "combate" ? (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 18px", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Hold onDown={() => (keys.current.left = true)} onUp={() => (keys.current.left = false)}>←</Hold>
+              <Hold onDown={() => (keys.current.right = true)} onUp={() => (keys.current.right = false)}>→</Hold>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Tap onTap={doJump}>⤴</Tap>
+              <Hold onDown={() => (keys.current.shoot = true)} onUp={() => (keys.current.shoot = false)}>✨</Hold>
+              {canSpecial(w) && <Tap onTap={doSpecial} glow={w.special >= 100}>⚡</Tap>}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 18px", gap: 8 }}>
+            <Tap onTap={() => tickOrgullo(w, 0, "left", A)}>◀</Tap>
+            <Tap onTap={() => tickOrgullo(w, 0, "up", A)}>▲</Tap>
+            <Tap onTap={() => tickOrgullo(w, 0, "shoot", A)}>✨</Tap>
+            <Tap onTap={() => tickOrgullo(w, 0, "right", A)}>▶</Tap>
+          </div>
+        )
       )}
 
       {w.scene === "playing" && (
@@ -606,15 +681,26 @@ function CarreraIra({ w, pct }) {
   const r = w.ira;
   if (!r) return null;
   const CARRILES_X = [0.28, 0.5, 0.72];
+
+  // 🆕 piezas visuales aplanadas: cada obstáculo normal es 1 pieza, cada
+  // muro son 2 (una por carril bloqueado) — así no hace falta React.Fragment
+  const piezas = r.obstaculos.flatMap((o) => {
+    const profundidad = clamp(o.z / 900, 0, 1); // 1 = recién apareció (lejos), 0 = ya está encima
+    const tam = 20 + (1 - profundidad) * 34;     // 🆕 20px lejos → 54px cerca: ahora SÍ se ve venir
+    const opacidad = clamp(1.2 - profundidad, 0.28, 1);
+    const carriles = o.muro ? o.carriles : [o.carril];
+    return carriles.map((c) => ({ key: `${o.id}-${c}`, carril: c, z: o.z, tam, opacidad, muro: !!o.muro }));
+  });
+
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       <div style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: T.base + 40, background: "#3a3a3f" }} />
       {CARRILES_X.map((c, i) => (
         <div key={i} style={{ position: "absolute", left: `${c * 100}%`, bottom: 0, width: 3, height: T.base + 40, background: "rgba(255,255,255,.35)" }} />
       ))}
-      {r.obstaculos.map((o) => (
-        <div key={o.id} style={{ position: "absolute", left: `${CARRILES_X[o.carril] * 100}%`, bottom: T.base - 10 + (o.z * 0.35), transform: "translateX(-50%)", fontSize: 34, opacity: clamp(o.z / 300, 0.2, 1) }}>
-          <Sprite asset={ASSETS.obstaculo} size={34} />
+      {piezas.map((p) => (
+        <div key={p.key} style={{ position: "absolute", left: `${CARRILES_X[p.carril] * 100}%`, bottom: T.base - 10 + (p.z * 0.35), transform: "translateX(-50%)", fontSize: p.tam, opacity: p.opacidad, filter: p.muro ? "hue-rotate(320deg) saturate(1.5)" : "none" }}>
+          <Sprite asset={ASSETS.obstaculo} size={p.tam} />
         </div>
       ))}
       <div style={{ position: "absolute", left: `${(r.carrilVisual / T.CW) * 100}%`, bottom: T.base - 4, transform: "translateX(-50%)", fontSize: 54, opacity: r.invuln > 0 && Math.floor(r.invuln * 12) % 2 ? .35 : 1 }}>
@@ -625,9 +711,20 @@ function CarreraIra({ w, pct }) {
       </div>
       <div style={{ position: "absolute", top: 12, left: 18, right: 18, display: "flex", justifyContent: "space-between", color: "#fff", fontWeight: 700, fontSize: 13 }}>
         <span>{Array.from({ length: T.mouriMaxHP }).map((_, i) => (<span key={i} style={{ opacity: i < r.vidas ? 1 : .2 }}>❤️</span>))}</span>
+        <span>Fase {r.fase}/2</span>
         <span>La Ira se acerca: {Math.round(clamp(100 - (r.distanciaIra / 260) * 100, 0, 100))}%</span>
         <span>{Math.max(0, Math.ceil(T.iraDur - r.timer))}s</span>
       </div>
+      {r.avisoT > 0 && (
+        <div style={{
+          position: "absolute", top: 46, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(0,0,0,.6)", color: "#fff", fontWeight: 800, fontSize: 14,
+          padding: "7px 16px", borderRadius: 999, letterSpacing: .5, textAlign: "center",
+          opacity: clamp(r.avisoT, 0, 1), whiteSpace: "nowrap",
+        }}>
+          {r.avisoTexto}
+        </div>
+      )}
     </div>
   );
 }
@@ -637,31 +734,118 @@ function CarreraIra({ w, pct }) {
 function OrgulloView({ w }) {
   const o = w.orgullo;
   if (!o) return null;
-  const simboloActual = o.mostrando ? o.secuencia[o.mostrarIdx] : null;
+  const fCfg = ORGULLO_FASES[o.fase - 1] || ORGULLO_FASES[ORGULLO_FASES.length - 1];
+  const color = fCfg.color || "#7fd6ff";
   return (
-    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
+    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "12px 10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,.35)", border: `2px solid ${color}`, borderRadius: 999, padding: "3px 14px" }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color }}>FASE {o.fase}/{ORGULLO_FASES.length}</span>
+        <span style={{ fontSize: 11, color: "#c9bfa2" }}>· {fCfg.nombre}</span>
+      </div>
       <div style={{
-        fontSize: 90, filter: "drop-shadow(0 0 24px #7fd6ff)",
+        fontSize: "clamp(56px, 14vw, 90px)", filter: `drop-shadow(0 0 24px ${color})`,
         animation: o.entradaT > 0 ? "m-bossenter 1.2s ease-out" : "none",
       }}>👁️</div>
-      <div style={{ display: "flex", gap: 10 }}>
+      <div className="m-orgullo-secuencia" style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: "min(92vw, 520px)" }}>
         {o.secuencia.map((s, i) => (
-          <div key={i} style={{
-            width: 46, height: 46, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800,
+          <div key={i} className="m-orgullo-icono" style={{
+            display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800,
             background: o.mostrando ? (i === o.mostrarIdx ? "#ffe08a" : "#2a2140") : (i < o.jugadaIdx ? "#8fe08a" : "#2a2140"),
             color: o.mostrando ? (i === o.mostrarIdx ? "#4E3A25" : "#c9bfa2") : (i < o.jugadaIdx ? "#1c3d1a" : "#c9bfa2"),
-            border: "2px solid #786F49", transition: "background .15s",
+            border: `2px solid ${color}`, transition: "background .15s",
           }}>
             {(o.mostrando ? i <= o.mostrarIdx : true) ? SIMBOLO_ICONO[s] : "?"}
           </div>
         ))}
       </div>
-      <p style={{ color: o.flashError > 0 ? "#ff8a8a" : o.flashCorrecto > 0 ? "#8fe08a" : "#f3ecd8", fontSize: 15, fontWeight: 700 }}>{o.mensaje}</p>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", color: "#c9bfa2", fontSize: 13 }}>
-        <span>❤️ x{o.vidas}</span>
+      <p style={{ color: o.flashError > 0 ? "#ff8a8a" : o.flashCorrecto > 0 ? "#8fe08a" : "#f3ecd8", fontSize: 14, fontWeight: 700, textAlign: "center", padding: "0 10px", margin: 0 }}>{o.mensaje}</p>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", color: "#c9bfa2", fontSize: 13, flexWrap: "wrap", justifyContent: "center" }}>
+        <span>❤️ x{w.mouri.hp}</span>
         <span>·</span>
-        <span>Corazas del Orgullo: {o.corazas}</span>
+        <span>Corazas: {o.corazas}</span>
       </div>
+    </div>
+  );
+}
+
+/* ====================================================================== */
+/*  VISTA: El Orgullo — FASES DE COMBATE (disparo real + esquive)        */
+function OrgulloCombate({ w, pct }) {
+  const o = w.orgullo;
+  if (!o) return null;
+  const fCfg = ORGULLO_FASES[o.fase - 1] || ORGULLO_FASES[ORGULLO_FASES.length - 1];
+  const color = fCfg.color || "#ff8a8a";
+  const recienGolpeado = w.mouri.invuln > (T.invulnTime - 0.3);
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      {/* piso, igual que en el jardín, para que Mouri tenga dónde pararse */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, width: "100%", height: T.base,
+        background: FLOOR_IMG ? `url(${FLOOR_IMG})` : "#8bbf5a", backgroundSize: "cover", backgroundRepeat: "repeat-x",
+      }} />
+
+      {/* etiqueta de fase */}
+      <div style={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,.35)", border: `2px solid ${color}`, borderRadius: 999, padding: "3px 14px", zIndex: 5 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color }}>FASE {o.fase}/{ORGULLO_FASES.length}</span>
+        <span style={{ fontSize: 11, color: "#c9bfa2" }}>· {fCfg.nombre}</span>
+      </div>
+
+      {/* barra de vida del Orgullo */}
+      <div style={{ position: "absolute", top: 44, left: "50%", transform: "translateX(-50%)", width: "min(70vw, 340px)", zIndex: 5 }}>
+        <div style={{ height: 10, borderRadius: 6, background: "rgba(0,0,0,.4)", border: `2px solid ${color}`, overflow: "hidden" }}>
+          <div style={{ width: `${clamp((o.hp / o.hpMax) * 100, 0, 100)}%`, height: "100%", background: color, transition: "width .15s" }} />
+        </div>
+      </div>
+
+      {/* El Orgullo, deslizándose de un lado a otro */}
+      <div style={{ position: "absolute", left: pct(o.x), bottom: T.base + o.y, transform: "translateX(-50%)" }}>
+        <div style={{
+          fontSize: 64,
+          animation: o.entradaT > 0 ? "m-bossenter .9s ease-out" : "m-float 2s infinite",
+          opacity: o.hitT > 0 && Math.floor(o.hitT * 20) % 2 ? 0.35 : 1,
+          filter: `drop-shadow(0 0 16px ${color})`,
+        }}>👁️</div>
+      </div>
+
+      {/* orbes del Orgullo — se esquivan igual que en el jardín */}
+      {w.orbs.map((orbe) => (
+        <div key={orbe.id} style={{ position: "absolute", left: pct(orbe.x), bottom: T.base + orbe.y, transform: "translate(-50%,50%)", fontSize: orbe.big ? 74 : 40, filter: "hue-rotate(250deg) saturate(1.5)" }}>
+          <Sprite asset={ASSETS.orbe} size={orbe.big ? 74 : 40} />
+        </div>
+      ))}
+
+      {/* balas de Mouri */}
+      {w.bullets.map((b) => (
+        <div key={b.id} style={{ position: "absolute", left: pct(b.x), bottom: T.base + b.y, transform: "translate(-50%,50%)", fontSize: 18 }}>
+          <Sprite asset={ASSETS.bala} size={26} />
+        </div>
+      ))}
+
+      {/* Mouri */}
+      <div style={{ position: "absolute", left: pct(w.mouri.x), bottom: T.base + w.mouri.y, transform: "translateX(-50%)", opacity: w.mouri.invuln > 0 && Math.floor(w.mouri.invuln * 12) % 2 ? 0.35 : 1 }}>
+        <div style={{
+          fontSize: 70, animation: w.mouri.moving && w.mouri.onGround ? "m-bob .3s infinite" : "none",
+          transform: (w.mouri.facing === "left" && !ASSETS.mouriIzquierda) ? "scaleX(-1)" : "scaleX(1)",
+        }}>
+          <Sprite asset={(w.mouri.facing === "left" && ASSETS.mouriIzquierda) ? ASSETS.mouriIzquierda : ASSETS.mouri} size={70} />
+        </div>
+        {recienGolpeado && (
+          <div style={{ position: "absolute", left: "50%", top: "50%", width: 90, height: 90, marginLeft: -45, marginTop: -45, borderRadius: "50%", border: "4px solid #ff4d4d", pointerEvents: "none", animation: "m-hitring .3s ease-out" }} />
+        )}
+      </div>
+
+      {/* vidas y mensaje */}
+      <div style={{ position: "absolute", top: 10, left: 16, display: "flex", gap: 4, zIndex: 5 }}>
+        {Array.from({ length: T.mouriMaxHP }).map((_, i) => (
+          <span key={i} style={{ opacity: i < w.mouri.hp ? 1 : 0.2 }}>❤️</span>
+        ))}
+      </div>
+      {o.mensaje && (
+        <div style={{ position: "absolute", bottom: T.base + 14, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,.5)", color: "#f3ecd8", fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 999, whiteSpace: "nowrap" }}>
+          {o.mensaje}
+        </div>
+      )}
     </div>
   );
 }
@@ -752,12 +936,38 @@ function PixelBtn({ children, onClick }) {
 }
 
 function Hold({ children, onDown, onUp }) {
-  return <button style={{ background: "#FFF8E8", border: "3px solid #786F49", color: "#4E3A25", borderRadius: 16, padding: "12px 18px", fontWeight: 700, fontSize: 18, minWidth: 56, touchAction: "none", userSelect: "none" }}
-    onMouseDown={onDown} onMouseUp={onUp} onMouseLeave={onUp}
-    onTouchStart={(e) => { e.preventDefault(); onDown(); }} onTouchEnd={(e) => { e.preventDefault(); onUp(); }}>{children}</button>;
+  const [presionado, setPresionado] = useState(false);
+  const bajar = () => { setPresionado(true); vibrar(12); onDown(); };
+  const subir = () => { setPresionado(false); onUp(); };
+  return (
+    <button
+      style={{
+        background: "#FFF8E8", border: "3px solid #786F49", color: "#4E3A25", borderRadius: 18,
+        padding: "14px 20px", fontWeight: 700, fontSize: 22, minWidth: 64, minHeight: 64,
+        touchAction: "none", userSelect: "none", transition: "transform .08s",
+        transform: presionado ? "scale(0.9)" : "scale(1)",
+      }}
+      onMouseDown={bajar} onMouseUp={subir} onMouseLeave={subir}
+      onTouchStart={(e) => { e.preventDefault(); bajar(); }}
+      onTouchEnd={(e) => { e.preventDefault(); subir(); }}
+    >{children}</button>
+  );
 }
 
 function Tap({ children, onTap, glow }) {
-  return <button onClick={onTap} onTouchStart={(e) => { e.preventDefault(); onTap(); }}
-    style={{ background: glow ? "#FFE39A" : "#FFF8E8", border: "3px solid #786F49", color: "#4E3A25", borderRadius: 16, padding: "12px 18px", fontWeight: 700, fontSize: 18, minWidth: 56, touchAction: "none", userSelect: "none", boxShadow: glow ? "0 0 14px #ffcf4a" : "none" }}>{children}</button>;
+  const [presionado, setPresionado] = useState(false);
+  const tocar = () => { setPresionado(true); vibrar(15); onTap(); setTimeout(() => setPresionado(false), 100); };
+  return (
+    <button
+      onClick={tocar}
+      onTouchStart={(e) => { e.preventDefault(); tocar(); }}
+      style={{
+        background: glow ? "#FFE39A" : "#FFF8E8", border: "3px solid #786F49", color: "#4E3A25", borderRadius: 18,
+        padding: "14px 20px", fontWeight: 700, fontSize: 22, minWidth: 64, minHeight: 64,
+        touchAction: "none", userSelect: "none", transition: "transform .08s",
+        boxShadow: glow ? "0 0 14px #ffcf4a" : "none",
+        transform: presionado ? "scale(0.9)" : "scale(1)",
+      }}
+    >{children}</button>
+  );
 }

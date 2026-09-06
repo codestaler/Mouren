@@ -26,8 +26,8 @@ export const alive = (w) => w.flowers.filter((f) => f.health > 0);
 export const has = (w, type) => w.flowers.some((f) => f.type === type && f.health > 0);
 export const gardenLight = (w) => w.flowers.reduce((s, f) => s + Math.max(0, f.health), 0) / (T.flowerMax * w.flowers.length);
 
-export const canShoot = (w) => w.day >= 2 || w.scene === "boss" || !!w.mini;
-export const canJump = (w) => w.day >= 3 || w.scene === "boss";
+export const canShoot = (w) => w.day >= 1 || w.scene === "boss" || !!w.mini;
+export const canJump = (w) => w.day >= 1 || w.scene === "boss";
 export const canSpecial = (w) => w.day >= 5 || w.scene === "boss";
 
 export function makeWorld() {
@@ -156,6 +156,12 @@ export function tickShadows(w, dt, speed, A) {
   if (alive(w).length === 0) w.shadows = [];
 }
 
+// 🆕 Vibración táctil corta al recibir un golpe (celulares Android la
+// soportan; en iPhone o computador simplemente no hace nada, sin errores).
+export function vibrar(ms) {
+  if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(ms);
+}
+
 export function hurtMouri(w, A) {
   const m = w.mouri;
   if (m.invuln > 0) return false;
@@ -167,6 +173,7 @@ export function hurtMouri(w, A) {
   }
   m.hp -= 1; m.invuln = T.invulnTime; w.flash = .25; w.shake = .25;
   A.playSfx("golpe");
+  vibrar(60);
   return true;
 }
 

@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import BordePapel from '@/Components/BordePapel';
+import { Link, Head } from '@inertiajs/react';
 
 export default function Home() {
     const planesData = [
@@ -34,6 +35,11 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-[#F4EDE6] font-['Hepta_Slab'] relative overflow-x-hidden">
+            {/* Etiqueta Canónica para Googlebot */}
+        <Head>
+            <title>Funeraria Mouren - Servicios Funerarios</title>
+            <link rel="canonical" href="https://funerariamouren.site/" />
+        </Head>
             <Navbar />
 
             {/* 1. EL GIF DE FONDO UNIVERSAL */}
