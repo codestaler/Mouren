@@ -33,6 +33,17 @@ export default function Register({ tiposDocumento, generos }) {
 
     const today = new Date().toISOString().split('T')[0];
 
+    // 🆕 Reglas de la contraseña evaluadas en vivo, mientras el usuario escribe
+    const reglasPassword = {
+        longitud: data.password.length >= 8,
+        mayuscula: /[A-Z]/.test(data.password),
+        numero: /\d/.test(data.password),
+        especial: /[@$!%*?&.#_-]/.test(data.password),
+    };
+    const passwordValida = Object.values(reglasPassword).every(Boolean);
+    const confirmacionEscrita = data.password_confirmation.length > 0;
+    const passwordsCoinciden = confirmacionEscrita && data.password === data.password_confirmation;
+
     // 🛡️ Vigilamos que nadie cambie el "type" de los campos sensibles desde DevTools
     useEffect(() => {
         const expectedTypes = new Map([
@@ -313,14 +324,31 @@ export default function Register({ tiposDocumento, generos }) {
                                         {showPassword ? '🌸' : '👁️'}
                                     </button>
                                 </div>
-                                <span className="block text-[10px] text-[#A68966] mt-1 lowercase leading-tight">mínimo 8 caracteres, una mayúscula, un número y un carácter especial (@$!%*?&.#_-)</span>
+                                {/* 🆕 Checklist en vivo: cada regla se pone verde apenas se cumple */}
+                                <ul className="mt-1.5 space-y-0.5">
+                                    <li className={`text-[10px] lowercase flex items-center gap-1 transition-colors ${reglasPassword.longitud ? 'text-emerald-600 font-bold' : 'text-[#A68966]/70'}`}>
+                                        <span>{reglasPassword.longitud ? '✓' : '○'}</span> mínimo 8 caracteres
+                                    </li>
+                                    <li className={`text-[10px] lowercase flex items-center gap-1 transition-colors ${reglasPassword.mayuscula ? 'text-emerald-600 font-bold' : 'text-[#A68966]/70'}`}>
+                                        <span>{reglasPassword.mayuscula ? '✓' : '○'}</span> una letra mayúscula
+                                    </li>
+                                    <li className={`text-[10px] lowercase flex items-center gap-1 transition-colors ${reglasPassword.numero ? 'text-emerald-600 font-bold' : 'text-[#A68966]/70'}`}>
+                                        <span>{reglasPassword.numero ? '✓' : '○'}</span> un número
+                                    </li>
+                                    <li className={`text-[10px] lowercase flex items-center gap-1 transition-colors ${reglasPassword.especial ? 'text-emerald-600 font-bold' : 'text-[#A68966]/70'}`}>
+                                        <span>{reglasPassword.especial ? '✓' : '○'}</span> un carácter especial (@$!%*?&.#_-)
+                                    </li>
+                                </ul>
                             </div>
 
                             <div>
                                 <label className="block font-bold mb-1 text-xs lowercase">confirmar contraseña</label>
                                 <input ref={confirmRef} type={showPassword ? "text" : "password"} required className="w-full border-b border-[#5D4E3F]/40 bg-transparent py-2 outline-none focus:border-[#A68966]"
                                     value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value.replace(/\s/g, ''))} />
-                                <span className="block text-[10px] text-[#A68966] mt-1 lowercase">las contraseñas deben ser idénticas</span>
+                                {/* 🆕 Indicador en vivo de coincidencia */}
+                                <span className={`block text-[10px] mt-1.5 lowercase font-bold ${!confirmacionEscrita ? 'text-[#A68966]/70 font-normal' : passwordsCoinciden ? 'text-emerald-600' : 'text-red-500'}`}>
+                                    {!confirmacionEscrita ? 'las contraseñas deben ser idénticas' : passwordsCoinciden ? '✓ las contraseñas coinciden' : '✗ todavía no coinciden'}
+                                </span>
                             </div>
 
                             <div className="col-span-1 sm:col-span-2 mt-2 sm:mt-4">

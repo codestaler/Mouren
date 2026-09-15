@@ -8,7 +8,7 @@ import ModalCatalogoServicios from './Components/ModalCatalogoServicios';
 import ModalConfirmarEliminar from './Components/ModalConfirmarEliminar';
 import ModalExitoMouren from './Components/ModalExitoMouren';
 import ModalErrorMouren from './Components/ModalErrorMouren';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
 
 // 🆕 AJUSTA esta función si ya tienes/creas una calculadora de costos específica
@@ -39,7 +39,8 @@ export default function DetallesPlanMascota({
     canciones = [],
     todosLosServicios = [],
     todosLosRecuerdos = [],
-    especies = []
+    especies = [],
+    tienePlanHumano = false
 }) {
     const { auth } = usePage().props;
 
@@ -200,13 +201,29 @@ export default function DetallesPlanMascota({
             <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out relative z-10 mt-2">
                 <div className="max-w-7xl mx-auto">
 
-                    <header className="mb-6 sm:mb-8 text-center md:text-left relative z-20">
-                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
-                            Personaliza la protección de tus peluditos, <span className="text-[#8B7355] dark:text-[#FFD97D]">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
-                        </h1>
-                        <p className="text-[10px] sm:text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
-                            "Para que ellos también descansen mejor que en vida"
-                        </p>
+                    <header className="mb-6 sm:mb-8 relative z-20">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-center md:text-left">
+                            <div className="min-w-0">
+                                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
+                                    Personaliza la protección de tus peluditos, <span className="text-[#8B7355] dark:text-[#FFD97D]">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
+                                </h1>
+                                <p className="text-[10px] sm:text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
+                                    "Para que ellos también descansen mejor que en vida"
+                                </p>
+                            </div>
+
+                            {/* 🆕 Solo aparece si el usuario TAMBIÉN tiene un plan humano activo.
+                                Si tu backend todavía no manda "tienePlanHumano", este botón
+                                simplemente no se muestra — no rompe nada. */}
+                            {tienePlanHumano && (
+                                <Link
+                                    href="/detalles"
+                                    className="inline-flex items-center justify-center gap-2 bg-[#A68966] text-white px-5 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-[#8e7253] transition-all active:scale-95 self-center md:self-auto shrink-0"
+                                >
+                                    🌼 Ir a mi plan funerario
+                                </Link>
+                            )}
+                        </div>
                     </header>
 
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">

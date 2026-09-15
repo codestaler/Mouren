@@ -8,14 +8,20 @@ export default function Cartera({ facturas = [] }) {
     const usuario = auth?.user || {};
     const [procesando, setProcesando] = useState(false);
 
+    // 🆕 Las facturas ANULADAS (estado_factura_id === 4) nunca deben aparecer
+    // en esta vista — ni en la tabla, ni en las tarjetas de móvil, ni en los
+    // totales, ni en el conteo de "cobrables". Las filtramos aquí UNA sola
+    // vez, antes de que el resto del componente las toque para nada.
+    const facturasVisibles = facturas.filter(f => f.estado_factura_id !== 4);
+
     // Estado para almacenar las IDs de las facturas seleccionadas para pago múltiple
     const [seleccionadas, setSeleccionadas] = useState([]);
 
     // 🆕 NUEVO ESTADO: Almacena los montos específicos que el usuario decide abonar por cada factura
-    // Se inicializa dinámicamente con el saldo_pendiente real de cada factura
+    // Se inicializa dinámicamente con el saldo_pendiente real de cada factura visible
     const [valoresAbono, setValoresAbono] = useState(() => {
         const inicial = {};
-        facturas.forEach(f => {
+        facturasVisibles.forEach(f => {
             inicial[f.id] = Number(f.saldo_pendiente ?? f.total);
         });
         return inicial;
@@ -28,7 +34,8 @@ export default function Cartera({ facturas = [] }) {
     const nombreParaMostrar = usuario.name || "Usuario";
 
     // 🆕 CAMBIO: Filtrar las facturas que tengan saldo pendiente real (Pendientes = 1 o Abonadas = 3)
-    const facturasCobrables = facturas.filter(f => f.estado_factura_id === 1 || f.estado_factura_id === 3);
+    // (ya parte de facturasVisibles, así que una anulada jamás puede colarse aquí)
+    const facturasCobrables = facturasVisibles.filter(f => f.estado_factura_id === 1 || f.estado_factura_id === 3);
 
     // 🆕 CAMBIO: El total histórico de deuda ahora se calcula en base a lo que realmente falta por pagar (saldo_pendiente)
     const totalDeudaPendiente = facturasCobrables.reduce((sum, f) => sum + Number(f.saldo_pendiente ?? f.total), 0);
@@ -283,10 +290,10 @@ export default function Cartera({ facturas = [] }) {
                             </button>
                         </div>
 
-                        {/* 📱 VISTA MÓVIL: tarjetas apiladas, una por factura */}
+                        {/* 📱 VISTA MÓVIL: tarjetas apiladas, una por factura (ya sin anuladas) */}
                         <div className="md:hidden space-y-4">
-                            {facturas.length > 0 ? (
-                                facturas.map((factura) => {
+                            {facturasVisibles.length > 0 ? (
+                                facturasVisibles.map((factura) => {
                                     const esCobrable = factura.estado_factura_id === 1 || factura.estado_factura_id === 3;
                                     const saldoReal = Number(factura.saldo_pendiente ?? factura.total);
                                     const permiteAbonosParciales = Number(factura.total) > 60000;
@@ -393,7 +400,7 @@ export default function Cartera({ facturas = [] }) {
                             )}
                         </div>
 
-                        {/* 🖥️ VISTA ESCRITORIO/TABLET: tabla completa */}
+                        {/* 🖥️ VISTA ESCRITORIO/TABLET: tabla completa (ya sin anuladas) */}
                         <div className="hidden md:block overflow-x-auto">
                             <table className="w-full min-w-[820px] text-left text-xs border-collapse">
                                 <thead>
@@ -419,8 +426,8 @@ export default function Cartera({ facturas = [] }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {facturas.length > 0 ? (
-                                        facturas.map((factura) => {
+                                    {facturasVisibles.length > 0 ? (
+                                        facturasVisibles.map((factura) => {
                                             // Se permite pagar si el estado es Pendiente (1) o Abonado (3)
                                             const esCobrable = factura.estado_factura_id === 1 || factura.estado_factura_id === 3;
                                             const saldoReal = Number(factura.saldo_pendiente ?? factura.total);

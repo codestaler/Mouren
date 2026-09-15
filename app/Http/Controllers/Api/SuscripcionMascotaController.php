@@ -239,12 +239,20 @@ class SuscripcionMascotaController extends Controller
         $canciones = DB::table('canciones')->get();
         $especies = Especie::with('razas')->get();
 
+        // 🆕 ¿Este usuario TAMBIÉN tiene un plan humano (distinto de Huella Eterna) activo?
+        // Mismo patrón que ya usas en PlanController::index() para tieneHumano/tieneMascota.
+        $tienePlanHumano = Suscripcion::where('usuario_id', auth()->id())
+            ->where('estado', 'activo')
+            ->where('plan_id', '!=', 4)
+            ->exists();
+
         return Inertia::render('Clientes/DetallesPlanMascota', [
             'suscripcion'        => $suscripcion,
             'canciones'          => $canciones,
             'todosLosServicios'  => $todosLosServicios,
             'todosLosRecuerdos'  => $todosLosRecuerdos,
             'especies'           => $especies,
+            'tienePlanHumano'    => $tienePlanHumano, // 🆕
         ]);
     }
 

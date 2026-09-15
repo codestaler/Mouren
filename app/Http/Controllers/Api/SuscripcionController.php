@@ -283,6 +283,12 @@ return redirect()->route('mi.plan')->with('activado', true);
         });
     }
 
+        // 🆕 ¿Este usuario TAMBIÉN tiene un plan de mascota (Huella Eterna, id 4) activo?
+        // Mismo patrón que ya usas en PlanController::index() para tieneHumano/tieneMascota.
+        $tienePlanMascota = Suscripcion::where('usuario_id', auth()->id())
+            ->where('estado', 'activo')
+            ->where('plan_id', 4)
+            ->exists();
 
         // ... (Tu lógica de cálculo de precios se mantiene igual)
         return Inertia::render('Clientes/DetallesPlan', [
@@ -292,6 +298,7 @@ return redirect()->route('mi.plan')->with('activado', true);
         'canciones' => Cancion::all(),
         'generos' => \App\Models\Genero::all(),
         'tiposDocumento' => \App\Models\TipoDocumento::all(),
+        'tienePlanMascota' => $tienePlanMascota, // 🆕
     ]);
     }
 

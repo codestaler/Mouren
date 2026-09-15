@@ -171,10 +171,26 @@ class ChatMascotaController extends Controller
                 'type' => 'function',
                 'function' => [
                     'name' => 'mostrar_facturas',
-                    'description' => 'Muestra una tarjeta con el estado de cuenta: cuánto debe en total y '
-                        . 'la fecha de vencimiento de su próxima factura pendiente. Úsala cuando pregunte '
-                        . '"cuánto debo pagar", "cuándo vence mi cuota", "tengo facturas pendientes", etc.',
-                    'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+                    'description' => 'Muestra una tarjeta con el estado de cuenta del usuario. Úsala cuando '
+                        . 'pregunte "cuánto debo pagar", "cuándo vence mi cuota", "tengo facturas pendientes", '
+                        . '"cuál es mi cartera vencida", "qué tengo atrasado", etc. '
+                        . 'IMPORTANTE: usa el parámetro "tipo" para distinguir la intención real del usuario.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'tipo' => [
+                                'type' => 'string',
+                                'enum' => ['saldo_total', 'cartera_vencida'],
+                                'description' => 'saldo_total (por defecto): cuánto debe en total, incluyendo '
+                                    . 'facturas pendientes y las que ya tienen un abono parcial — úsalo para '
+                                    . '"cuánto debo", "mi estado de cuenta", "facturas pendientes". '
+                                    . 'cartera_vencida: SOLO facturas totalmente sin pagar (estado Pendiente) '
+                                    . 'y cuya fecha de vencimiento ya pasó — úsalo únicamente cuando el usuario '
+                                    . 'pregunte explícitamente por "cartera vencida", "lo vencido" o "lo atrasado".',
+                            ],
+                        ],
+                        'required' => [],
+                    ],
                 ],
             ],
             [
@@ -283,16 +299,28 @@ class ChatMascotaController extends Controller
                     return [['ok' => false, 'mensaje' => 'No hay usuario autenticado.'], null];
                 }
 
-                $facturas = Factura::where(function ($q) use ($usuario) {
+                // 🆕 'saldo_total' (comportamiento de siempre, sin cambios): Pendiente + Abonado.
+                // 'cartera_vencida' (nuevo): SOLO Pendiente (estado 1) y ya pasada su fecha de vencimiento.
+                $tipoConsulta = $argumentos['tipo'] ?? 'saldo_total';
+                $esVencida = $tipoConsulta === 'cartera_vencida';
+
+                $query = Factura::where(function ($q) use ($usuario) {
                     $q->whereHas('suscripcion', fn ($qq) => $qq->where('usuario_id', $usuario->id))
                       ->orWhere('usuario_id', $usuario->id);
-                })
-                ->whereIn('estado_factura_id', [1, 3]) // Pendiente o Abonada parcialmente
-                ->orderBy('fecha_vencimiento', 'asc')
-                ->get();
+                });
+
+                if ($esVencida) {
+                    $query->where('estado_factura_id', 1) // 🆕 solo Pendiente, nunca Abonado, para "vencida"
+                          ->where('fecha_vencimiento', '<', now()->toDateString()); // 🆕 ya pasada su fecha
+                } else {
+                    $query->whereIn('estado_factura_id', [1, 3]); // Pendiente o Abonada parcialmente (igual que antes)
+                }
+
+                $facturas = $query->orderBy('fecha_vencimiento', 'asc')->get();
 
                 $proxima = $facturas->first();
                 $datos = [
+                    'tipo' => $tipoConsulta, // 🆕 para que la tarjeta pueda mostrar el título correcto
                     'cantidad_pendientes' => $facturas->count(),
                     'total_pendiente' => (float) $facturas->sum('saldo_pendiente'),
                     'proxima_fecha_vencimiento' => $proxima?->fecha_vencimiento,
@@ -432,7 +460,9 @@ class ChatMascotaController extends Controller
             . "  Si tiene una duda muy puntual o algún error técnico con la página, dale el número de soporte 3247697845.\n"
             . "- SOBRE LOS PLANES DISPONIBLES: 'Descanso Sereno', 'Tributo a la Vida', 'Legado Eterno' y 'Huella Eterna' (exclusivo mascotas). Un mismo cliente puede tener varios planes activos a la vez.\n"
             . "{$bloqueServicios}"
-            . "- SOBRE LAS FACTURAS: el sistema automatiza el envío de facturas en PDF por correo periódicamente.\n"
+            . "- SOBRE LAS FACTURAS: el sistema automatiza el envío de facturas en PDF por correo periódicamente. "
+            . "  Si preguntan cuánto deben en general, usa mostrar_facturas con tipo saldo_total. Si preguntan "
+            . "  específicamente por su cartera VENCIDA o lo ATRASADO, usa mostrar_facturas con tipo cartera_vencida.\n"
             . "- JUEGO DISPONIBLE: 'Luciérnagas de la Memoria'. Ábrelo con sugerir_juego si el usuario "
             . "  parece aburrido, triste, quiere distraerse, o lo pide.\n"
             . "- HERRAMIENTAS VISUALES: usa mostrar_resumen_plan, mostrar_beneficiarios, mostrar_facturas "

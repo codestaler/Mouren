@@ -463,6 +463,9 @@ function TarjetaBeneficiarios({ datos }) {
 
 function TarjetaFacturas({ datos }) {
     const tieneDeuda = (datos?.cantidad_pendientes || 0) > 0;
+    // 🆕 Título distinto si la consulta fue específicamente por cartera vencida
+    // (datos.tipo es nuevo y opcional — si no viene, se comporta exactamente como antes)
+    const esVencida = datos?.tipo === 'cartera_vencida';
 
     return (
         <TarjetaBase>
@@ -470,22 +473,30 @@ function TarjetaFacturas({ datos }) {
                 <div className="w-9 h-9 rounded-full bg-[#FFD97D]/20 flex items-center justify-center shrink-0">
                     <Receipt size={16} className="text-[#FFD97D]" />
                 </div>
-                <p className="text-[9px] uppercase tracking-widest text-[#FFD97D] font-black">Estado de cuenta</p>
+                <p className="text-[9px] uppercase tracking-widest text-[#FFD97D] font-black">
+                    {esVencida ? 'Cartera vencida' : 'Estado de cuenta'}
+                </p>
             </div>
 
             {!tieneDeuda ? (
-                <p className="text-[11px] opacity-90">¡Estás al día! No tienes facturas pendientes 🎉</p>
+                <p className="text-[11px] opacity-90">
+                    {esVencida ? '¡No tienes facturas vencidas! 🎉' : '¡Estás al día! No tienes facturas pendientes 🎉'}
+                </p>
             ) : (
                 <>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-[10px] uppercase tracking-wider opacity-70">Total pendiente</span>
+                        <span className="text-[10px] uppercase tracking-wider opacity-70">
+                            {esVencida ? 'Total vencido' : 'Total pendiente'}
+                        </span>
                         <span className="text-base font-black text-[#FFD97D]">
                             ${Number(datos.total_pendiente).toLocaleString('es-CO')}
                         </span>
                     </div>
                     {datos.proxima_fecha_vencimiento && (
                         <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
-                            <span className="text-[10px] uppercase tracking-wider opacity-70">Próximo vencimiento</span>
+                            <span className="text-[10px] uppercase tracking-wider opacity-70">
+                                {esVencida ? 'Vencida desde' : 'Próximo vencimiento'}
+                            </span>
                             <span className="text-[11px] font-bold">
                                 {new Date(datos.proxima_fecha_vencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
                             </span>

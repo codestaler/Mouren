@@ -12,10 +12,10 @@ import ModalExitoMouren from "./Components/ModalExitoMouren";
 import ModalErrorMouren from "./Components/ModalErrorMouren";
 import ModalAvisoServicioNoPersonalizable from "./Components/ModalAvisoServicioNoPersonalizable";
 import ServiciosBaseIncluidosPanel from "./Components/ServiciosBaseIncluidosPanel";
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
 
-export default function DetallesPlan({ suscripcion = null, canciones = [], precioBasePuroPlan = 0, todosLosServicios = [], todosLosRecuerdos = [], generos = [], tiposDocumento = [] }) {
+export default function DetallesPlan({ suscripcion = null, canciones = [], precioBasePuroPlan = 0, todosLosServicios = [], todosLosRecuerdos = [], generos = [], tiposDocumento = [], tienePlanMascota = false }) {
     const { auth } = usePage().props;
 
     // --- VALIDACIÓN DE COBERTURA ACTIVA ---
@@ -29,8 +29,37 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 <Head title="Sin Cobertura Activa - Mouren" />
                 <Sidebar />
                 <main className="flex-1 w-full min-w-0 p-6 sm:p-10 content-shift transition-all duration-700 ease-in-out flex items-center justify-center">
-                    <h2 className="text-xl sm:text-2xl font-black text-[#5C4F3C] dark:text-[#EDE4D3]">Sin Cobertura Activa ☹</h2>
+                    <div className="text-center max-w-sm mx-auto animate-fade-in">
+                        <img
+                            src="/images/elementos_dashboard/detalles_plan/mouri_sin_cobertura.png"
+                            alt="Mouri"
+                            className="w-40 sm:w-52 mx-auto mb-6 drop-shadow-xl"
+                            onError={(e) => {
+                                // 🆕 Si no existe esa imagen todavía, usamos una que ya tienes en el proyecto
+                                if (!e.currentTarget.src.includes('mouri_error.png')) {
+                                    e.currentTarget.src = '/images/elementos_dashboard/detalles_plan/mouri_metal.png';
+                                }
+                            }}
+                        />
+                        <h2 className="text-xl sm:text-2xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] mb-2">
+                            Aún no tienes un plan activo
+                        </h2>
+                        <p className="text-xs sm:text-sm text-[#8A7A65] dark:text-[#EDE4D3]/60 mb-8 leading-relaxed">
+                            Inscríbete en uno de nuestros planes para empezar a personalizar la protección de tu familia.
+                        </p>
+                        <Link
+                            href="/planes"
+                            className="inline-block bg-[#A68966] text-white px-8 py-3.5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-md hover:bg-[#8e7253] transition-all active:scale-95"
+                        >
+                            Inscribirme ahora →
+                        </Link>
+                    </div>
                 </main>
+
+                <style>{`
+                    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+                `}</style>
             </div>
         );
     }
@@ -359,13 +388,29 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
             <main className="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-10 content-shift transition-all duration-700 ease-in-out relative z-10 mt-2">
                 <div className="max-w-7xl mx-auto">
 
-                    <header className="mb-6 sm:mb-8 text-center md:text-left relative z-20">
-                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
-                            Personaliza tu plan, <span className="text-[#8B7355] dark:text-[#FFD97D]">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
-                        </h1>
-                        <p className="text-[10px] sm:text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
-                            "Para que descanses mejor que en vida"
-                        </p>
+                    <header className="mb-6 sm:mb-8 relative z-20">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-center md:text-left">
+                            <div className="min-w-0">
+                                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] tracking-tight leading-none">
+                                    Personaliza tu plan, <span className="text-[#8B7355] dark:text-[#FFD97D]">{auth?.user?.nombre || 'Gabinete Clienta'}</span>
+                                </h1>
+                                <p className="text-[10px] sm:text-[11px] text-[#8A7A65] dark:text-[#EDE4D3]/60 mt-2 tracking-wide">
+                                    "Para que descanses mejor que en vida"
+                                </p>
+                            </div>
+
+                            {/* 🆕 Solo aparece si el usuario TAMBIÉN tiene un plan de mascota activo.
+                                Si tu backend todavía no manda "tienePlanMascota", este botón
+                                simplemente no se muestra — no rompe nada. */}
+                            {tienePlanMascota && (
+                                <Link
+                                    href="/detalles-mascota"
+                                    className="inline-flex items-center justify-center gap-2 bg-[#A68966] text-white px-5 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-[#8e7253] transition-all active:scale-95 self-center md:self-auto shrink-0"
+                                >
+                                    🐾 Ir a mi plan de mascota
+                                </Link>
+                            )}
+                        </div>
                     </header>
 
                     {/* 🆕 GRID PRINCIPAL DE DOS COLUMNAS */}

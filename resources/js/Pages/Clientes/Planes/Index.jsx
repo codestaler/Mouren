@@ -19,6 +19,8 @@ const TEMAS = [
         colorTexto: '#4A5D45',
         colorAcento: '#A68966',
         icono: Flame,
+        // 🆕 Misma imagen que ya usas en la tarjeta de este plan en Planes.jsx
+        imagen: '/images/planes/tarjetas/sereno/logo_descanso_sereno.webp',
         tagline: 'Paz, luz suave y flores que acompañan',
         historia: 'Descanso Sereno está pensado para quienes buscan un homenaje tranquilo: '
             + 'velas encendidas, flores frescas y un silencio respetuoso que acompaña sin apuro. '
@@ -31,6 +33,7 @@ const TEMAS = [
         colorTexto: '#E8D9A8',
         colorAcento: '#C9A86A',
         icono: Cpu,
+        imagen: '/images/planes/tarjetas/legado/logo_legado_eterno.gif',
         tagline: 'Un homenaje con alma retro-futurista',
         historia: 'Legado Eterno combina calidez humana con un toque tecnológico: proyecciones, '
             + 'streaming para quien no pueda estar presente, y una ambientación que se siente '
@@ -43,6 +46,7 @@ const TEMAS = [
         colorTexto: '#FFE9A8',
         colorAcento: '#E85C9E',
         icono: PartyPopper,
+        imagen: '/images/planes/tarjetas/tributo/logo_tributo.webp',
         tagline: 'Celebra la vida como se merece',
         historia: 'Última Rumba es para quienes prefieren celebrar en vez de solo despedir: música, '
             + 'color y un espíritu festivo que honra la vida vivida. La cobertura premium, con todo '
@@ -55,6 +59,7 @@ const TEMAS = [
         colorTexto: '#F4EDE3',
         colorAcento: '#8A7355',
         icono: PawPrint,
+        imagen: '/images/planes/tarjetas/huella/logo_huella_eterna.webp',
         tagline: 'Un lugar seguro para tu compañero fiel',
         historia: 'Huella Eterna es la protección pensada exclusivamente para esos miembros de la '
             + 'familia con cuatro patas. Un homenaje cálido y sencillo para que su recuerdo también '
@@ -93,7 +98,7 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
     });
 
     return (
-        <div className="flex min-h-screen bg-white font-['Hepta_Slab'] text-[#5D4E3F]">
+        <div className="flex min-h-screen bg-white dark:bg-[#2E2720] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3]">
             <Head title="Planes Disponibles - Mouren" />
 
             <Sidebar onToggle={(state) => setIsSidebarOpen(state)} />
@@ -101,7 +106,7 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
             <main className={`flex-1 transition-all duration-500 ease-in-out p-4 md:p-10 overflow-y-auto h-screen custom-scrollbar ${isSidebarOpen ? 'md:ml-72' : 'md:ml-20'}`}>
 
                 <header className="mb-8 mt-2 max-w-4xl">
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-[#5D4E3F] leading-tight">
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-[#5D4E3F] dark:text-[#EDE4D3] leading-tight">
                         Nuestros planes de <span className="text-[#A68966]">previsión</span>
                     </h1>
                     <div className="h-1 w-12 bg-[#A68966] mt-3 mb-3 rounded-full"></div>
@@ -114,7 +119,7 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
                             {tieneHumano && (
                                 <Link
                                     href="/mi-plan"
-                                    className="text-[9px] font-bold uppercase tracking-widest bg-[#F4EDE6] text-[#5D4E3F] px-3 py-2 rounded-full hover:bg-[#E3D9BC] transition"
+                                    className="text-[9px] font-bold uppercase tracking-widest bg-[#F4EDE6] dark:bg-[#3A322A] text-[#5D4E3F] dark:text-[#EDE4D3] px-3 py-2 rounded-full hover:bg-[#E3D9BC] dark:bg-[#4A3E32] transition"
                                 >
                                     ✓ Ya tienes un plan activo — ver mi plan
                                 </Link>
@@ -122,7 +127,7 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
                             {tieneMascota && (
                                 <Link
                                     href="/mi-plan-mascota"
-                                    className="text-[9px] font-bold uppercase tracking-widest bg-[#F4EDE6] text-[#5D4E3F] px-3 py-2 rounded-full hover:bg-[#E3D9BC] transition"
+                                    className="text-[9px] font-bold uppercase tracking-widest bg-[#F4EDE6] dark:bg-[#3A322A] text-[#5D4E3F] dark:text-[#EDE4D3] px-3 py-2 rounded-full hover:bg-[#E3D9BC] dark:bg-[#4A3E32] transition"
                                 >
                                     ✓ Ya tienes plan de mascota — ver mi plan
                                 </Link>
@@ -143,7 +148,7 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
 
                         return (
                             <div key={plan.id}
-                                 className="bg-[#FDFBF9] rounded-[35px] shadow-sm border border-[#5D4E3F]/5 overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-500 border-b-4 border-b-[#A68966] max-w-[340px]">
+                                 className="bg-[#FDFBF9] dark:bg-[#2E2720] rounded-[35px] shadow-sm border border-[#5D4E3F]/5 dark:border-white/10 overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-500 border-b-4 border-b-[#A68966] max-w-[340px]">
 
                                 <div className="h-40 bg-[#5D4E3F] text-white relative overflow-hidden p-6 flex flex-col justify-end">
                                     <div className="relative z-10">
@@ -154,16 +159,24 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
                                     </div>
 
                                     <img
-                                        src={rutaImagen}
+                                        src={tema.imagen || rutaImagen}
                                         className="absolute right-[-20px] bottom-[-30px] w-40 opacity-20 grayscale group-hover:rotate-12 group-hover:scale-110 transition-all duration-700 pointer-events-none z-0"
                                         alt={plan.nombre}
-                                        onError={(e) => { e.target.src = '/images/elementos_dashboard/inscripcion_planes/mouri_planes.webp'; }}
+                                        onError={(e) => {
+                                            // 🆕 Si la imagen del tema no existe, probamos la ruta calculada por
+                                            // nombre; si esa tampoco existe, caemos al genérico de siempre.
+                                            if (e.target.src.includes(encodeURI(tema.imagen || ''))) {
+                                                e.target.src = rutaImagen;
+                                            } else {
+                                                e.target.src = '/images/elementos_dashboard/inscripcion_planes/mouri_planes.webp';
+                                            }
+                                        }}
                                     />
                                 </div>
 
                                 <div className="p-6 flex-1 flex flex-col">
                                     <div className="mb-4 flex items-baseline gap-1">
-                                        <span className="text-2xl font-black text-[#5D4E3F]">
+                                        <span className="text-2xl font-black text-[#5D4E3F] dark:text-[#EDE4D3]">
                                             ${cuota.toLocaleString('es-CO')}
                                         </span>
                                         <span className="text-[9px] opacity-40 font-bold uppercase tracking-widest">/ mes</span>
@@ -204,7 +217,7 @@ export default function PlanesIndex({ planes, tieneHumano = false, tieneMascota 
                                         <a
                                             href={rutaPdf}
                                             download={`${nombreLimpio}.pdf`}
-                                            className="flex items-center justify-center gap-2 w-full py-2 text-[#5D4E3F]/30 hover:text-[#5D4E3F] transition-all text-[8px] uppercase font-black tracking-widest"
+                                            className="flex items-center justify-center gap-2 w-full py-2 text-[#5D4E3F]/30 dark:text-[#EDE4D3]/30 hover:text-[#5D4E3F] dark:text-[#EDE4D3] transition-all text-[8px] uppercase font-black tracking-widest"
                                         >
                                             <Download className="w-3 h-3" />
                                             descargar pdf
@@ -283,7 +296,7 @@ function ModalDescubrirPlan({ plan, cerrar }) {
             onClick={cerrar}
         >
             <div
-                className="w-full max-w-lg rounded-[32px] shadow-2xl animate-modal-in bg-white overflow-hidden flex flex-col max-h-[92vh]"
+                className="w-full max-w-lg rounded-[32px] shadow-2xl animate-modal-in bg-white dark:bg-[#2E2720] overflow-hidden flex flex-col max-h-[92vh]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* HEADER TEMÁTICO — ícono centrado con brillo, sin partículas cayendo */}
@@ -344,11 +357,11 @@ function ModalDescubrirPlan({ plan, cerrar }) {
                                 >
                                     <IconoTema size={30} style={{ color: tema.colorAcento }} />
                                 </div>
-                                <p className="text-[13px] leading-relaxed text-[#5D4E3F]/80 italic max-w-sm mx-auto">
+                                <p className="text-[13px] leading-relaxed text-[#5D4E3F]/80 dark:text-[#EDE4D3]/80 italic max-w-sm mx-auto">
                                     {tema.historia}
                                 </p>
-                                <div className="mt-5 inline-flex items-baseline gap-1 border border-[#5D4E3F]/10 rounded-2xl px-4 py-2">
-                                    <span className="text-xl font-black text-[#5D4E3F]">${cuota.toLocaleString('es-CO')}</span>
+                                <div className="mt-5 inline-flex items-baseline gap-1 border border-[#5D4E3F]/10 dark:border-[#4A4033] rounded-2xl px-4 py-2">
+                                    <span className="text-xl font-black text-[#5D4E3F] dark:text-[#EDE4D3]">${cuota.toLocaleString('es-CO')}</span>
                                     <span className="text-[9px] opacity-40 font-bold uppercase tracking-widest">/ mes</span>
                                 </div>
                             </div>
@@ -365,11 +378,11 @@ function ModalDescubrirPlan({ plan, cerrar }) {
                                 <p className="text-[9px] font-black uppercase tracking-widest mb-2" style={{ color: tema.colorAcento }}>
                                     Paso {slide.numero} del proceso
                                 </p>
-                                <p className="text-sm font-black text-[#5D4E3F] flex items-center justify-center gap-2 mb-2">
+                                <p className="text-sm font-black text-[#5D4E3F] dark:text-[#EDE4D3] flex items-center justify-center gap-2 mb-2">
                                     <slide.paso.icono size={15} style={{ color: tema.colorAcento }} />
                                     {slide.paso.titulo}
                                 </p>
-                                <p className="text-[11px] text-[#5D4E3F]/60 leading-relaxed max-w-xs mx-auto">
+                                <p className="text-[11px] text-[#5D4E3F]/60 dark:text-[#EDE4D3]/60 leading-relaxed max-w-xs mx-auto">
                                     {slide.paso.texto}
                                 </p>
                             </div>
@@ -393,7 +406,7 @@ function ModalDescubrirPlan({ plan, cerrar }) {
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-[11px] text-[#5D4E3F]/50 italic text-center max-w-xs mx-auto">
+                                    <p className="text-[11px] text-[#5D4E3F]/50 dark:text-[#EDE4D3]/50 italic text-center max-w-xs mx-auto">
                                         Podrás ver y agregar servicios extra al personalizar tu plan después de inscribirte.
                                     </p>
                                 )}
@@ -403,8 +416,8 @@ function ModalDescubrirPlan({ plan, cerrar }) {
                         {slide.tipo === 'cta' && (
                             <div className="text-center py-2">
                                 <SparklesIcon size={28} style={{ color: tema.colorAcento }} className="mx-auto mb-3" />
-                                <p className="text-sm font-black text-[#5D4E3F] mb-1">¿Listo para dar el paso?</p>
-                                <p className="text-[11px] text-[#5D4E3F]/60 mb-5 max-w-xs mx-auto">
+                                <p className="text-sm font-black text-[#5D4E3F] dark:text-[#EDE4D3] mb-1">¿Listo para dar el paso?</p>
+                                <p className="text-[11px] text-[#5D4E3F]/60 dark:text-[#EDE4D3]/60 mb-5 max-w-xs mx-auto">
                                     Activa {plan.nombre} hoy mismo y da tranquilidad a tu familia.
                                 </p>
                                 <Link
@@ -421,11 +434,11 @@ function ModalDescubrirPlan({ plan, cerrar }) {
                 </div>
 
                 {/* NAVEGACIÓN — mismo patrón de ◀ Anterior / puntos / Siguiente ▶ */}
-                <div className="px-6 py-4 border-t border-[#5D4E3F]/10 flex items-center justify-between shrink-0 bg-white">
+                <div className="px-6 py-4 border-t border-[#5D4E3F]/10 dark:border-[#4A4033] flex items-center justify-between shrink-0 bg-white dark:bg-[#2E2720]">
                     <button
                         onClick={anterior}
                         disabled={esPrimera}
-                        className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition bg-[#F4EDE6] text-[#5D4E3F] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#EAD9BE]"
+                        className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition bg-[#F4EDE6] dark:bg-[#3A322A] text-[#5D4E3F] dark:text-[#EDE4D3] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#EAD9BE] dark:bg-[#4A3E32]"
                     >
                         ◀ Anterior
                     </button>
@@ -456,7 +469,7 @@ function ModalDescubrirPlan({ plan, cerrar }) {
                     ) : (
                         <button
                             onClick={cerrar}
-                            className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition bg-[#F4EDE6] text-[#5D4E3F] hover:bg-[#EAD9BE]"
+                            className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition bg-[#F4EDE6] dark:bg-[#3A322A] text-[#5D4E3F] dark:text-[#EDE4D3] hover:bg-[#EAD9BE] dark:bg-[#4A3E32]"
                         >
                             Cerrar
                         </button>
