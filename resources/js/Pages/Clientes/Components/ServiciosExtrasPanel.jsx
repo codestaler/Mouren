@@ -1,4 +1,6 @@
 import { useState } from "react";
+import VistaPrevia3DCofre from "./VistaPrevia3DCofre";
+import VistaPrevia3DFloral from "./VistaPrevia3DFloral";
 /* ============================================================
  *  GUÍA DE PERSONALIZACIÓN (estilo "tutorial de videojuego")
  *  ============================================================
@@ -77,6 +79,14 @@ export default function ServiciosExtrasPanel({
             // en vez de una lista de ids escrita a mano. Boolean(Number(...)) cubre
             // true/false, 1/0 y "1"/"0" sin importar cómo llegue serializado.
             const esPersonalizable = Boolean(Number(item.personalizable));
+            // 🆕 El cofre 3D solo tiene sentido para el Ataúd. Otros servicios
+            // personalizables (como "Decoración Floral") no deben mostrarlo.
+            const esAtaud = (item.nombre || '').toLowerCase().includes('ataúd')
+                || (item.nombre || '').toLowerCase().includes('ataud')
+                || (item.nombre || '').toLowerCase().includes('cofre');
+            // 🆕 "Decoración Floral" muestra su propia corona 3D en su lugar.
+            const esFloral = (item.nombre || '').toLowerCase().includes('floral')
+                || (item.nombre || '').toLowerCase().includes('flores');
             const guia = GUIAS_PERSONALIZACION[item.id];
             const tieneGuia = esPersonalizable && guia && (guia.nota || (guia.pasos && guia.pasos.length > 0));
             const guiaAbierta = guiaAbiertaId === item.id;
@@ -102,17 +112,32 @@ export default function ServiciosExtrasPanel({
                 />
 
                 <div className="p-4 pl-5">
-                  {/* ---------- Fila 1: nombre + badge personalizable ---------- */}
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+                  {/* ---------- Fila 1: nombre + badge personalizable + quitar ----------
+                      🆕 El botón de quitar (✕) ahora vive AQUÍ, en su propia fila con
+                      shrink-0, en vez de depender de ml-auto dentro de la fila de
+                      acciones que se envuelve (flex-wrap). Antes, en pantallas angostas
+                      con varios botones de acción, la ✕ podía quedar sola y "flotando"
+                      al envolverse a una nueva línea. */}
+                  <div className="flex items-start justify-between gap-2">
                     <span className="font-black text-xs tracking-wide text-[#5D4E3F] dark:text-[#EDE4D3] uppercase flex items-center gap-2 min-w-0 flex-1">
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${esPersonalizable ? "bg-[#FFD97D]" : "bg-[#A68966]"}`}></span>
                       <span className="break-words">{item.nombre}</span>
                     </span>
-                    {esPersonalizable && (
-                      <span className="bg-[#FFD97D] text-[#5A4020] px-2 py-1 rounded-full text-[9px] font-black uppercase shadow-sm flex items-center gap-1 whitespace-nowrap shrink-0">
-                        ✨ Personalizable
-                      </span>
-                    )}
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {esPersonalizable && (
+                        <span className="bg-[#FFD97D] text-[#5A4020] px-2 py-1 rounded-full text-[9px] font-black uppercase shadow-sm flex items-center gap-1 whitespace-nowrap">
+                          ✨ <span className="hidden sm:inline">Personalizable</span>
+                        </span>
+                      )}
+                      <button
+                        onClick={() => quitarExtraGabinete(item.id)}
+                        className="text-rose-500 hover:text-rose-700 font-black px-1.5 text-sm transition hover:scale-110"
+                        aria-label="Quitar servicio"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
 
                   {/* ---------- Fila 2: precio ---------- */}
@@ -122,7 +147,7 @@ export default function ServiciosExtrasPanel({
                     </span>
                   </div>
 
-                  {/* ---------- Fila 3: acciones (envuelven en móvil) ---------- */}
+                  {/* ---------- Fila 3: acciones (envuelven en móvil, ya sin la ✕ mezclada) ---------- */}
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {esPersonalizable ? (
                       <button
@@ -167,14 +192,6 @@ export default function ServiciosExtrasPanel({
                         <span className={`transition-transform ${detallesAbierto ? "rotate-180" : ""}`}>▾</span>
                       </button>
                     )}
-                    {/* empujamos la X al final */}
-                    <button
-                      onClick={() => quitarExtraGabinete(item.id)}
-                      className="ml-auto text-rose-500 hover:text-rose-700 font-black px-2 text-sm transition hover:scale-110 shrink-0"
-                      aria-label="Quitar servicio"
-                    >
-                      ✕
-                    </button>
                   </div>
 
                   {/* ---------- Despliegue de personalización ---------- */}
@@ -187,19 +204,39 @@ export default function ServiciosExtrasPanel({
                     >
                       <div className="overflow-hidden">
                         <div className="p-3 rounded-xl bg-[#F4EDE6] dark:bg-[#3A322A] text-[11px] text-[#5D4E3F] dark:text-[#EDE4D3] space-y-1.5 border border-[#A68966]/20 dark:border-white/10">
-                          <p className="flex gap-2">
-                            <span className="text-[#A68966] font-black shrink-0">●</span>
-                            <span><span className="font-semibold">Cromática:</span> {item.personalizacion?.configuracion?.colorNombre}</span>
-                          </p>
-                          <p className="flex gap-2">
-                            <span className="text-[#A68966] font-black shrink-0">●</span>
-                            <span><span className="font-semibold">Arreglo:</span> {item.personalizacion?.configuracion?.florNombre}</span>
-                          </p>
-                          {item.personalizacion?.configuracion?.observacion && (
-                            <p className="italic text-[#8C7A67] dark:text-[#C2B49A] border-l-2 border-[#FFD97D] pl-2 ml-1">
-                              {item.personalizacion.configuracion.observacion}
-                            </p>
-                          )}
+                          <div className="flex flex-col sm:flex-row items-center gap-3">
+                            {/* 🆕 Vista previa 3D real, en vivo, del color y flor ya elegidos — solo para el Ataúd */}
+                            {detallesAbierto && esAtaud && (
+                              <VistaPrevia3DCofre
+                                colorNombre={item.personalizacion?.configuracion?.colorNombre}
+                                florNombre={item.personalizacion?.configuracion?.florNombre}
+                                size={110}
+                              />
+                            )}
+                            {/* 🆕 Corona floral 3D, para Decoración Floral */}
+                            {detallesAbierto && esFloral && (
+                              <VistaPrevia3DFloral
+                                colorNombre={item.personalizacion?.configuracion?.colorNombre}
+                                florNombre={item.personalizacion?.configuracion?.florNombre}
+                                size={110}
+                              />
+                            )}
+                            <div className="space-y-1.5 flex-1 min-w-0">
+                              <p className="flex gap-2">
+                                <span className="text-[#A68966] font-black shrink-0">●</span>
+                                <span><span className="font-semibold">Cromática:</span> {item.personalizacion?.configuracion?.colorNombre}</span>
+                              </p>
+                              <p className="flex gap-2">
+                                <span className="text-[#A68966] font-black shrink-0">●</span>
+                                <span><span className="font-semibold">Arreglo:</span> {item.personalizacion?.configuracion?.florNombre}</span>
+                              </p>
+                              {item.personalizacion?.configuracion?.observacion && (
+                                <p className="italic text-[#8C7A67] dark:text-[#C2B49A] border-l-2 border-[#FFD97D] pl-2 ml-1 break-words">
+                                  {item.personalizacion.configuracion.observacion}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

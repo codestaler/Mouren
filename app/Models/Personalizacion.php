@@ -11,6 +11,7 @@ class Personalizacion extends Model
     'suscripcion_id',
     'servicio_funerario_id',
     'servicio_id',
+    'afiliado_id', // 🆕 para que cada afiliado pueda tener la suya propia
     'configuracion'
 ];
 
@@ -26,5 +27,11 @@ class Personalizacion extends Model
     public function suscripcion()
     {
         return $this->belongsTo(Suscripcion::class);
+    }
+
+    // 🆕
+    public function afiliado()
+    {
+        return $this->belongsTo(Afiliado::class);
     }
 }

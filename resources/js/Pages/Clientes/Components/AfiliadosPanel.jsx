@@ -1,4 +1,5 @@
 import { useState } from "react";
+import VistaPrevia3DCofre from "./VistaPrevia3DCofre";
 
 export default function AfiliadosPanel({
     afiliados,
@@ -158,6 +159,24 @@ export default function AfiliadosPanel({
                                                     <span>🎵</span>
                                                     <span className="text-[#6A5A48] dark:text-[#C2B49A]">{cancion}</span>
                                                 </div>
+
+                                                {/* 🆕 El cofre que ESTE afiliado personalizó desde su propio enlace,
+                                                    si ya guardó uno. Solo lectura — se edita desde su enlace, no aquí. */}
+                                                {afi.personalizacion_cofre && (
+                                                    <div className="flex items-center gap-3 pt-2 border-t border-[#A68966]/10 dark:border-white/10 mt-2">
+                                                        <div className="w-16 h-16 shrink-0 rounded-lg bg-[#F4EDE6] dark:bg-black/20 flex items-center justify-center overflow-hidden">
+                                                            <VistaPrevia3DCofre
+                                                                colorNombre={afi.personalizacion_cofre.colorNombre}
+                                                                florNombre={afi.personalizacion_cofre.florNombre}
+                                                                size={60}
+                                                            />
+                                                        </div>
+                                                        <div className="text-[9px] text-[#6A5A48] dark:text-[#C2B49A]">
+                                                            <p className="font-black uppercase text-[#A68966] mb-0.5">Su cofre personalizado</p>
+                                                            <p>{afi.personalizacion_cofre.colorNombre} · {afi.personalizacion_cofre.florNombre}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </>
                                         )}
 

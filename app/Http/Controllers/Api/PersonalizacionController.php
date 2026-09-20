@@ -61,6 +61,32 @@ if ($request->has('servicios_adicionales')) {
         }
     }
 }
+
+// 🆕 GUARDAR PERSONALIZACIONES DE SERVICIOS BASE (como el Ataúd, que ahora
+// viene incluido en el plan y ya no es un "extra"). Antes esto solo se
+// pisaba en el bloque de arriba, así que un servicio base personalizado
+// jamás se guardaba de verdad. Mismo patrón, payload distinto, y OJO:
+// esto NO toca serviciosExtras()->sync() — un servicio base nunca se
+// adjunta como si fuera un extra.
+if ($request->has('servicios_base_personalizados')) {
+
+    foreach ($request->servicios_base_personalizados as $serv) {
+
+        if (!empty($serv['personalizacion'])) {
+
+            \App\Models\Personalizacion::updateOrCreate(
+                [
+                    'suscripcion_id' => $suscripcion->id,
+                    'servicio_id' => $serv['id']
+                ],
+                [
+                    'servicio_funerario_id' => null,
+                    'configuracion' => $serv['personalizacion']['configuracion'] ?? []
+                ]
+            );
+        }
+    }
+}
 // 3. ACTUALIZACIÓN DE AFILIADOS
 if ($request->has('afiliados')) {
     foreach ($request->afiliados as $data) {

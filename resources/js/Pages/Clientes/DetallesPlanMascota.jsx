@@ -5,15 +5,12 @@ import ServiciosExtrasPanel from './Components/ServiciosExtrasPanel';
 import ServiciosBaseIncluidosPanel from './Components/ServiciosBaseIncluidosPanel';
 import ModalMascota from './Components/ModalMascota';
 import ModalCatalogoServicios from './Components/ModalCatalogoServicios';
-import ModalConfirmarEliminar from './Components/ModalConfirmarEliminar';
+import ModalConfirmarEliminarMascota from './Components/ModalConfirmarEliminarMascota';
 import ModalExitoMouren from './Components/ModalExitoMouren';
 import ModalErrorMouren from './Components/ModalErrorMouren';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
 
-// 🆕 AJUSTA esta función si ya tienes/creas una calculadora de costos específica
-// para mascotas (equivalente a calcularTotalSuscripcion del lado humano). Por ahora
-// suma: cuota base del plan x cantidad de mascotas + recuerdo de cada mascota + servicios extra.
 function calcularTotalSuscripcionMascota(plan, mascotas, serviciosExtras, todosLosRecuerdos) {
     if (!plan) return 0;
     const base = Number(plan.cuota_base || 0);
@@ -44,7 +41,6 @@ export default function DetallesPlanMascota({
 }) {
     const { auth } = usePage().props;
 
-    // --- VALIDACIÓN DE COBERTURA ACTIVA ---
     if (!suscripcion || Object.keys(suscripcion).length === 0) {
         return (
             <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex flex-col md:flex-row relative overflow-x-hidden transition-colors duration-500">
@@ -57,7 +53,6 @@ export default function DetallesPlanMascota({
         );
     }
 
-    // --- ESTADOS ---
     const [serviciosExtras, setServiciosExtras] = useState(suscripcion?.servicios_extras || []);
     const [mascotas, setMascotas] = useState(suscripcion?.mascotas || []);
     const [cargandoGuardar, setCargandoGuardar] = useState(false);
@@ -65,14 +60,10 @@ export default function DetallesPlanMascota({
     const [datosCargados, setDatosCargados] = useState(false);
     const [modalConfig, setModalConfig] = useState({ tipo: null, visible: false });
     const [formMascota, setFormMascota] = useState({ id: null, nombre: '', especie_id: '', raza_id: '', fecha_nacimiento: '', cancion_id: '', recuerdo_id: '' });
-    const [idMascotaAEliminar, setIdMascotaAEliminar] = useState(null);
+    const [mascotaAEliminar, setMascotaAEliminar] = useState(null); // 🆕 objeto completo, no solo el id
 
     const plan = suscripcion.plan || {};
     const serviciosBaseFijos = plan.servicios || [];
-
-    // =======================
-    // MASCOTAS
-    // =======================
 
     const guardarMascotaGabinete = (e) => {
         e.preventDefault();
@@ -87,6 +78,13 @@ export default function DetallesPlanMascota({
     };
 
     const iniciarEdicionMascota = (mascota) => {
+        // 🆕 Una mascota fallecida no se puede editar, sin importar desde
+        // dónde se dispare esta función.
+        if (mascota.estado?.toLowerCase() === 'fallecido') {
+            alert('No puedes editar el registro de una mascota marcada como fallecida.');
+            return;
+        }
+
         const funeraria = mascota.servicio_funerario || {};
 
         setFormMascota({
@@ -103,19 +101,27 @@ export default function DetallesPlanMascota({
     };
 
     const ventanaConfirmarQuitar = (mascota) => {
-        setIdMascotaAEliminar(mascota.id);
+        // 🆕 Una mascota fallecida se conserva como registro, no se elimina.
+        if (mascota.estado?.toLowerCase() === 'fallecido') {
+            alert('El registro de una mascota fallecida se conserva y no se puede eliminar.');
+            return;
+        }
+
+        setMascotaAEliminar(mascota);
         abrirModal('CONFIRM_ELIMINAR_MASCOTA');
     };
 
     const ejecutarEliminacionMascota = () => {
-        setMascotas(mascotas.filter((m) => m.id !== idMascotaAEliminar));
-        setIdMascotaAEliminar(null);
+        // 🆕 Nunca permitir quedarte sin ninguna mascota registrada
+        if (mascotas.length <= 1) {
+            cerrarModal();
+            alert('Debes tener al menos una mascota registrada en tu plan. No puedes eliminarlas todas.');
+            return;
+        }
+        setMascotas(mascotas.filter((m) => m.id !== mascotaAEliminar?.id));
+        setMascotaAEliminar(null);
         cerrarModal();
     };
-
-    // =======================
-    // SERVICIOS EXTRAS (misma lógica que el lado humano)
-    // =======================
 
     const agregarExtraCatalogo = (servicio) => {
         const existe = serviciosExtras.some((s) => s.id === servicio.id);
@@ -131,7 +137,6 @@ export default function DetallesPlanMascota({
         setServiciosExtras(serviciosExtras.filter((s) => s.id !== id));
     };
 
-    // --- LÓGICA ---
     useEffect(() => {
         setDatosCargados(true);
     }, []);
@@ -163,14 +168,12 @@ export default function DetallesPlanMascota({
                 raza_id: m.raza_id || null,
                 fecha_nacimiento: m.fecha_nacimiento || null,
                 cancion_id: m.cancion_id || null,
-                // 🆕 recuerdo propio de esta mascota (antes se mandaba aparte como recuerdos_seleccionados)
                 recuerdo_id: m.recuerdo_id || null,
             })),
         };
 
         console.log('Payload que se envía (mascota):', JSON.stringify(payload, null, 2));
 
-        // 🆕 AJUSTA esta ruta si en tu web.php le pusiste otro nombre/URL
         router.post('/api/personalizacion/gabinete-mascota', payload, {
             preserveState: true,
             preserveScroll: true,
@@ -181,7 +184,9 @@ export default function DetallesPlanMascota({
             onError: (errors) => {
                 setCargandoGuardar(false);
                 console.error('Errores recibidos del servidor:', errors);
-                alert('Error detallado: ' + JSON.stringify(errors));
+                // 🆕 Ahora el backend manda un mensaje real y legible en
+                // errors.error — antes esto mostraba un JSON crudo poco claro.
+                alert(errors.error || 'Ocurrió un problema al guardar. Intenta de nuevo.');
             },
         });
     };
@@ -212,9 +217,6 @@ export default function DetallesPlanMascota({
                                 </p>
                             </div>
 
-                            {/* 🆕 Solo aparece si el usuario TAMBIÉN tiene un plan humano activo.
-                                Si tu backend todavía no manda "tienePlanHumano", este botón
-                                simplemente no se muestra — no rompe nada. */}
                             {tienePlanHumano && (
                                 <Link
                                     href="/detalles"
@@ -228,15 +230,13 @@ export default function DetallesPlanMascota({
 
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">
 
-                        {/* ============ COLUMNA IZQUIERDA ============ */}
                         <div className="min-w-0 space-y-6 sm:space-y-8 order-2 lg:order-1">
 
-                            {/* 🖼️ BANNER */}
                             <div className="flex flex-col md:flex-row items-center gap-0 relative z-20">
                                 <div className="relative w-40 sm:w-48 md:w-60 shrink-0 z-10">
                                     <div className="absolute inset-0 blur-3xl bg-[#5C4F3C]/10 dark:bg-white/5 scale-95 rounded-[40px]" />
                                     <img
-                                        src="/images/elementos_dashboard/inscripcion_planes/mouri_planes.webp"
+                                        src="/images/elementos_dashboard/detalles_plan/mouren_detalles_plan_pet.webp"
                                         alt="Mouri con mascotas"
                                         className="relative w-full h-full object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.25)] dark:drop-shadow-[0_30px_50px_rgba(0,0,0,0.6)] hover:scale-[1.02] transition-transform duration-300"
                                     />
@@ -269,14 +269,12 @@ export default function DetallesPlanMascota({
                                 </div>
                             </div>
 
-                            {/* 📊 RESUMEN */}
                             <ResumenCardsMascota
                                 cuotaTotalDinamica={cuotaTotalDinamica}
                                 cantidadMascotas={cantidadMascotas}
                                 cantidadServiciosTotales={cantidadServiciosTotales}
                             />
 
-                            {/* 🌿 SERVICIOS (ya filtrados en el backend por aplica_a = mascota/ambos) */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <ServiciosExtrasPanel
                                     serviciosExtras={serviciosExtras}
@@ -288,7 +286,6 @@ export default function DetallesPlanMascota({
                             </div>
                         </div>
 
-                        {/* ============ COLUMNA DERECHA ============ */}
                         <div className="min-w-0 space-y-5 order-1 lg:order-2 lg:sticky lg:top-8">
 
                             <MascotasPanel
@@ -321,7 +318,6 @@ export default function DetallesPlanMascota({
                     </div>
                 </div>
 
-                {/* MODALES */}
                 <ModalMascota
                     visible={modalConfig.visible && modalConfig.tipo === 'FORMULARIO_MASCOTA'}
                     formMascota={formMascota}
@@ -343,9 +339,10 @@ export default function DetallesPlanMascota({
                     cerrarModal={cerrarModal}
                 />
 
-                <ModalConfirmarEliminar
+                <ModalConfirmarEliminarMascota
                     visible={modalConfig.visible && modalConfig.tipo === 'CONFIRM_ELIMINAR_MASCOTA'}
-                    ejecutarEliminacionAfiliado={ejecutarEliminacionMascota}
+                    mascota={mascotaAEliminar}
+                    ejecutarEliminacion={ejecutarEliminacionMascota}
                     cerrarModal={cerrarModal}
                 />
 

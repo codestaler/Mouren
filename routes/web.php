@@ -246,6 +246,8 @@ Route::prefix('cliente/ajustes')->name('cliente.ajustes.')->group(function () {
         return back()->with('message', 'Nombre del beneficiario actualizado correctamente');
     })->name('afiliados.update');
 
+    Route::post('/afiliados/{id}/generar-enlace', [SuscripcionController::class, 'generarEnlacePersonalizacion']);
+
     // --- OTRAS RUTAS PROTEGIDAS ---
     Route::get('/mi-plan', [SuscripcionController::class, 'miPlan'])->name('mi.plan');
     Route::get('/detalles', [SuscripcionController::class, 'detallesPlan'])->name('detalles.plan');
@@ -317,6 +319,10 @@ Route::middleware('throttle:20,1')->prefix('consultas')->group(function () {
     Route::post('/pagos/procesar-lote', [ConsultaPublicaController::class, 'procesarLote']);
 });
 
+Route::middleware('throttle:20,1')->get('/afiliado/{token}', [\App\Http\Controllers\Public\AfiliadoPublicoController::class, 'mostrar']);
+Route::middleware('throttle:10,1')->post('/afiliado/{token}/verificar', [\App\Http\Controllers\Public\AfiliadoPublicoController::class, 'verificar']);
+
+Route::middleware('throttle:20,1')->post('/afiliado/{token}/personalizar', [\App\Http\Controllers\Public\AfiliadoPublicoController::class, 'guardarPersonalizacion']);
 
 // Comentamos la carga automática original para que no choque con tus controladores personalizados de Inertia
 // require __DIR__.'/auth.php';

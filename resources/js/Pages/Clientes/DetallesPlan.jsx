@@ -14,6 +14,12 @@ import ModalAvisoServicioNoPersonalizable from "./Components/ModalAvisoServicioN
 import ServiciosBaseIncluidosPanel from "./Components/ServiciosBaseIncluidosPanel";
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
+import EnlacesPersonalizacionAfiliados from './Components/EnlacesPersonalizacionAfiliados';
+import { resolverTemaPlanDetalles } from './Components/TemasPlan/temaPlanDetalles';
+import DecoracionPlanDetalles from './Components/TemasPlan/DecoracionPlanDetalles';
+import InformeSereno from './Components/TemasPlan/InformeSereno';
+import InformeLegado from './Components/TemasPlan/InformeLegado';
+import InformeRumba from './Components/TemasPlan/InformeRumba';
 
 export default function DetallesPlan({ suscripcion = null, canciones = [], precioBasePuroPlan = 0, todosLosServicios = [], todosLosRecuerdos = [], generos = [], tiposDocumento = [], tienePlanMascota = false }) {
     const { auth } = usePage().props;
@@ -42,17 +48,36 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                             }}
                         />
                         <h2 className="text-xl sm:text-2xl font-black text-[#5C4F3C] dark:text-[#EDE4D3] mb-2">
-                            Aún no tienes un plan activo
+                            {tienePlanMascota ? 'Aún no tienes un plan funerario' : 'Aún no tienes un plan activo'}
                         </h2>
                         <p className="text-xs sm:text-sm text-[#8A7A65] dark:text-[#EDE4D3]/60 mb-8 leading-relaxed">
-                            Inscríbete en uno de nuestros planes para empezar a personalizar la protección de tu familia.
+                            {tienePlanMascota
+                                ? 'Este espacio es para tu plan humano. Tu plan de mascota lo puedes ver y personalizar en su propia sección.'
+                                : 'Inscríbete en uno de nuestros planes para empezar a personalizar la protección de tu familia.'}
                         </p>
-                        <Link
-                            href="/planes"
-                            className="inline-block bg-[#A68966] text-white px-8 py-3.5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-md hover:bg-[#8e7253] transition-all active:scale-95"
-                        >
-                            Inscribirme ahora →
-                        </Link>
+                        {tienePlanMascota ? (
+                            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                                <Link
+                                    href="/detalles-mascota"
+                                    className="inline-block bg-[#A68966] text-white px-6 py-3.5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-md hover:bg-[#8e7253] transition-all active:scale-95"
+                                >
+                                    🐾 Ir a mi plan de mascota
+                                </Link>
+                                <Link
+                                    href="/planes"
+                                    className="inline-block bg-transparent border-2 border-[#A68966] text-[#A68966] dark:text-[#EDE4D3] px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[#A68966]/10 transition-all active:scale-95"
+                                >
+                                    Ver planes humanos
+                                </Link>
+                            </div>
+                        ) : (
+                            <Link
+                                href="/planes"
+                                className="inline-block bg-[#A68966] text-white px-8 py-3.5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-md hover:bg-[#8e7253] transition-all active:scale-95"
+                            >
+                                Inscribirme ahora →
+                            </Link>
+                        )}
                     </div>
                 </main>
 
@@ -76,9 +101,34 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     const [idAfiliadoAEliminar, setIdAfiliadoAEliminar] = useState(null);
     const [servicioAEditar, setServicioAEditar] = useState(null);
     const [personalizacionEstetica, setPersonalizacionEstetica] = useState({ colorId: '', colorNombre: '', florId: '', florNombre: '', observacion: '' });
+    // 🆕 Personalizaciones de servicios BASE (como el Ataúd), aparte de
+    // serviciosExtras porque los base no viven en ese arreglo — vienen de
+    // plan.servicios, que es un prop, no un estado editable directamente.
+    // Se guarda como { [servicioId]: { configuracion: {...} } }.
+    const [personalizacionesBase, setPersonalizacionesBase] = useState({});
+
+    // 🆕 Controla si se está viendo el Gabinete normal o el nuevo panel de Informe.
+    // Puramente de presentación — no afecta ningún dato ni la lógica de guardado.
+    const [vistaActiva, setVistaActiva] = useState('gabinete'); // 'gabinete' | 'informe'
+
+    // 🆕 Cambiar de vista también sube el scroll al inicio, para que la
+    // tarjeta se vea de una vez y no toque bajar para encontrarla.
+    const cambiarVista = (nuevaVista) => {
+        setVistaActiva(nuevaVista);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const plan = suscripcion.plan || {};
+    // 🆕 Tema visual + Informe según el plan — mismos colores que Inscribir.jsx
+    const tema = resolverTemaPlanDetalles(plan?.id);
     const serviciosBaseFijos = plan.servicios || [];
+    // 🆕 Mezclamos lo que ya viene guardado del backend con lo que el
+    // titular acaba de configurar en esta sesión (antes de guardar), para
+    // que el "Detalles" se vea al instante sin esperar a recargar la página.
+    const serviciosBaseFijosConPersonalizacion = serviciosBaseFijos.map((sb) => ({
+        ...sb,
+        personalizacion: personalizacionesBase[sb.id] || sb.personalizacion,
+    }));
     const VALOR_CUOTA_BASE_PLAN = plan.cuota_base ? Number(plan.cuota_base) : (suscripcion.cuota_mensual ? Number(suscripcion.cuota_mensual) : 0);
     const maxAfiliadosIncluidos = plan.max_afiliados ? Number(plan.max_afiliados) : 3;
 
@@ -239,20 +289,37 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         e.preventDefault();
         if (!servicioAEditar) return;
 
-        setServiciosExtras(
-            serviciosExtras.map((s) =>
-                s.id === servicioAEditar.id
-                    ? {
-                        ...s,
-                        personalizacion: {
-                            configuracion: {
-                                ...personalizacionEstetica
-                            }
+        // 🆕 ¿Este servicio vive en serviciosExtras, o es uno de los base
+        // (como el Ataúd)? Antes SIEMPRE se guardaba como si fuera extra,
+        // así que un servicio base personalizado nunca se reflejaba ni se
+        // enviaba al guardar.
+        const esExtra = serviciosExtras.some((s) => s.id === servicioAEditar.id);
+
+        if (esExtra) {
+            setServiciosExtras(
+                serviciosExtras.map((s) =>
+                    s.id === servicioAEditar.id
+                        ? {
+                            ...s,
+                            personalizacion: {
+                                configuracion: {
+                                    ...personalizacionEstetica
+                                }
                         }
                     }
                     : s
-            )
-        );
+                )
+            );
+        } else {
+            // 🆕 Es un servicio base (como el Ataúd) — se guarda en su
+            // propio estado, separado, y sí se manda al backend más abajo.
+            setPersonalizacionesBase((prev) => ({
+                ...prev,
+                [servicioAEditar.id]: {
+                    configuracion: { ...personalizacionEstetica }
+                }
+            }));
+        }
 
         cerrarModal();
     };
@@ -329,6 +396,13 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                 precio: s.precio_pagado,
                 personalizacion: s.personalizacion || null
             })),
+            // 🆕 Personalizaciones de servicios BASE (como el Ataúd) que el
+            // titular haya configurado en esta sesión. Solo mandamos los que
+            // de verdad tienen algo guardado, para no mandar ruido de más.
+            servicios_base_personalizados: Object.entries(personalizacionesBase).map(([id, personalizacion]) => ({
+                id: Number(id),
+                personalizacion
+            })),
             afiliados: afiliados.map(a => ({
                 // Verifica si el campo se llama realmente 'id'. 
                 // Si no, cámbialo por el nombre correcto, ej: a.id_afiliado o a.usuario_id
@@ -377,7 +451,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
         // columna izquierda ancha (banner + resumen + servicios) y columna derecha
         // angosta y fija al hacer scroll (lista de miembros + botón de guardar),
         // manteniendo la paleta y el modo oscuro de Mouren.
-        <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex flex-col md:flex-row relative overflow-x-hidden transition-colors duration-500">
+        <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#221D17] font-['Hepta_Slab'] text-[#5D4E3F] dark:text-[#EDE4D3] flex flex-col md:flex-row relative z-0 overflow-x-hidden transition-colors duration-500">
             <Head title="Detalles del Plan - Mouren" />
             <Sidebar />
 
@@ -410,8 +484,26 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                     🐾 Ir a mi plan de mascota
                                 </Link>
                             )}
+
+                            {/* 🆕 Botón que desliza la pantalla hacia el Informe temático del plan */}
+                            <button
+                                onClick={() => cambiarVista(vistaActiva === 'gabinete' ? 'informe' : 'gabinete')}
+                                className="inline-flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-md transition-all active:scale-95 self-center md:self-auto shrink-0"
+                                style={{ backgroundColor: tema.color }}
+                            >
+                                {vistaActiva === 'gabinete' ? `${tema.icono} Ver Informe` : '← Volver a mi Gabinete'}
+                            </button>
                         </div>
                     </header>
+
+                    {/* 🆕 Se muestra uno u otro según vistaActiva. Simple a propósito:
+                        sin transform, sin ancho al 200%, sin trucos de CSS que puedan
+                        fallar — solo un mostrar/ocultar normal de React. */}
+                    {vistaActiva === 'gabinete' && (
+                        <div className="relative animate-fade-in">
+
+                    {/* 🆕 Decoración de fondo acorde al plan, también en el Gabinete */}
+                    <DecoracionPlanDetalles tema={tema} />
 
                     {/* 🆕 GRID PRINCIPAL DE DOS COLUMNAS */}
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">
@@ -479,7 +571,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                     abrirConfiguradorEstetico={abrirConfiguradorEstetico}
                                     quitarExtraGabinete={quitarExtraGabinete}
                                 />
-                                <ServiciosBaseIncluidosPanel serviciosBaseFijos={serviciosBaseFijos} />
+                                <ServiciosBaseIncluidosPanel serviciosBaseFijos={serviciosBaseFijosConPersonalizacion} abrirConfiguradorEstetico={abrirConfiguradorEstetico} />
                             </div>
                         </div>
 
@@ -497,6 +589,9 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                 abrirModal={abrirModal}
                                 setFormAfiliado={setFormAfiliado}
                             />
+
+                            {/* 🆕 Enlaces privados de personalización para cada afiliado */}
+                            <EnlacesPersonalizacionAfiliados afiliados={afiliados} />
 
                             {/* 🆕 CTA "Guardar Personalización", estilo tarjeta oscura tipo "Upgrade to Premium" */}
                             <div className="relative overflow-hidden bg-[#302A1D] dark:bg-[#2E2720] text-white rounded-[24px] p-5 sm:p-6 shadow-xl border border-white/10">
@@ -517,6 +612,42 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                             </div>
                         </div>
                     </div>
+                        </div>
+                    )}
+
+                    {vistaActiva === 'informe' && (
+                        <div className="relative animate-fade-in">
+                            <DecoracionPlanDetalles tema={tema} />
+                            {plan?.id === 2 ? (
+                                    <InformeLegado
+                                        plan={plan}
+                                        afiliados={afiliados}
+                                        serviciosExtras={serviciosExtras}
+                                        cuotaTotalDinamica={cuotaTotalDinamica}
+                                        valorCuotaBase={VALOR_CUOTA_BASE_PLAN}
+                                        onVolver={() => setVistaActiva('gabinete')}
+                                    />
+                                ) : plan?.id === 3 ? (
+                                    <InformeRumba
+                                        afiliados={afiliados}
+                                        serviciosExtras={serviciosExtras}
+                                        canciones={canciones}
+                                        cuotaTotalDinamica={cuotaTotalDinamica}
+                                        valorCuotaBase={VALOR_CUOTA_BASE_PLAN}
+                                        onVolver={() => setVistaActiva('gabinete')}
+                                    />
+                                ) : (
+                                    <InformeSereno
+                                        afiliados={afiliados}
+                                        serviciosExtras={serviciosExtras}
+                                        todosLosRecuerdos={todosLosRecuerdos}
+                                        canciones={canciones}
+                                        cuotaTotalDinamica={cuotaTotalDinamica}
+                                        onVolver={() => setVistaActiva('gabinete')}
+                                    />
+                                )}
+                        </div>
+                    )}
                 </div>
 
                 {/* --- PARTE AFILIADOS --- */}
@@ -601,6 +732,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     serviciosBase={serviciosBaseFijos}  
                 />
             </main>
+
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+            `}</style>
         </div>
     );
 }

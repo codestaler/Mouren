@@ -1,3 +1,20 @@
+import VistaPrevia3DCofre from "./VistaPrevia3DCofre";
+import VistaPrevia3DFloral from "./VistaPrevia3DFloral";
+
+// 🆕 El cofre 3D solo tiene sentido para el Ataúd Personalizado. Para
+// cualquier otro servicio personalizable (como "Decoración Floral"),
+// usamos la vista plana de siempre — así no le sale una tumba a algo
+// que no es un ataúd.
+const esServicioAtaud = (servicio) =>
+    (servicio?.nombre || '').toLowerCase().includes('ataúd') ||
+    (servicio?.nombre || '').toLowerCase().includes('ataud') ||
+    (servicio?.nombre || '').toLowerCase().includes('cofre');
+
+// 🆕 Servicios de decoración floral muestran una corona 3D en vez del cofre.
+const esServicioFloral = (servicio) =>
+    (servicio?.nombre || '').toLowerCase().includes('floral') ||
+    (servicio?.nombre || '').toLowerCase().includes('flores');
+
 export default function ModalPersonalizacionEstetica({
     visible,
     servicioAEditar,
@@ -13,6 +30,8 @@ export default function ModalPersonalizacionEstetica({
 
     const colorElegido = opcionesColores.find((c) => c.id === personalizacionEstetica.colorId);
     const florElegida = opcionesFlores.find((f) => f.id === personalizacionEstetica.florId);
+    const esAtaud = esServicioAtaud(servicioAEditar);
+    const esFloral = esServicioFloral(servicioAEditar);
 
 
     const imagenFlor = (fl) =>
@@ -39,27 +58,54 @@ export default function ModalPersonalizacionEstetica({
                     {/* COLUMNA IZQUIERDA: vista previa + colores */}
                     <div className="space-y-5 text-xs">
 
-                        <div className="relative rounded-2xl border border-[#D9CEB6] bg-white overflow-visible h-28 flex items-center justify-center">
-                            <img
-                                src={imagenFlor(florElegida)}
-                                alt=""
-                                className="relative z-10 w-40 h-40 object-contain overflow-visible"
-                                style={{ filter: " contrast(1.1)" }}
-                            />
-                            {colorElegido && (
-                                <div
-                                    className="absolute inset-0 pointer-events-none transition-colors duration-300 rounded-xl"
-                                    style={{
-                                        backgroundColor: colorElegido.hex,
-                                        mixBlendMode: "multiply",
-                                        opacity: 0.90,
-                                    }}
+                        {esAtaud ? (
+                            // 🆕 Vista previa 3D EN VIVO — solo para el Ataúd Personalizado.
+                            <div className="relative rounded-2xl border border-[#D9CEB6] bg-white overflow-hidden h-40 flex items-center justify-center">
+                                <VistaPrevia3DCofre
+                                    colorNombre={personalizacionEstetica.colorNombre}
+                                    florNombre={personalizacionEstetica.florNombre}
+                                    size={150}
                                 />
-                            )}
-                            <div className="absolute bottom-1.5 right-2.5 text-[9px] font-black uppercase text-[#60533E]/60">
-                                Vista previa
+                                <div className="absolute bottom-1.5 right-2.5 text-[9px] font-black uppercase text-[#60533E]/60">
+                                    Vista previa 3D
+                                </div>
                             </div>
-                        </div>
+                        ) : esFloral ? (
+                            // 🆕 Vista previa 3D EN VIVO — corona floral, para Decoración Floral.
+                            <div className="relative rounded-2xl border border-[#D9CEB6] bg-white overflow-hidden h-40 flex items-center justify-center">
+                                <VistaPrevia3DFloral
+                                    colorNombre={personalizacionEstetica.colorNombre}
+                                    florNombre={personalizacionEstetica.florNombre}
+                                    size={150}
+                                />
+                                <div className="absolute bottom-1.5 right-2.5 text-[9px] font-black uppercase text-[#60533E]/60">
+                                    Vista previa 3D
+                                </div>
+                            </div>
+                        ) : (
+                            // Vista previa plana de siempre, para cualquier otro servicio personalizable
+                            <div className="relative rounded-2xl border border-[#D9CEB6] bg-white overflow-visible h-28 flex items-center justify-center">
+                                <img
+                                    src={imagenFlor(florElegida)}
+                                    alt=""
+                                    className="relative z-10 w-40 h-40 object-contain overflow-visible"
+                                    style={{ filter: " contrast(1.1)" }}
+                                />
+                                {colorElegido && (
+                                    <div
+                                        className="absolute inset-0 pointer-events-none transition-colors duration-300 rounded-xl"
+                                        style={{
+                                            backgroundColor: colorElegido.hex,
+                                            mixBlendMode: "multiply",
+                                            opacity: 0.90,
+                                        }}
+                                    />
+                                )}
+                                <div className="absolute bottom-1.5 right-2.5 text-[9px] font-black uppercase text-[#60533E]/60">
+                                    Vista previa
+                                </div>
+                            </div>
+                        )}
 
                         <div>
                             <label className="font-black text-gray-600 uppercase text-[10px] block mb-2">

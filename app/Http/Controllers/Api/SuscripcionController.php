@@ -281,6 +281,32 @@ return redirect()->route('mi.plan')->with('activado', true);
                 ? ['configuracion' => $personalizacion->configuracion]
                 : null;
         });
+
+        // 🆕 Mismo pegado, pero para los servicios BASE del plan (por ejemplo,
+        // el Ataúd Personalizado que ahora viene incluido, no como extra).
+        if ($suscripcion->plan && $suscripcion->plan->servicios) {
+            $suscripcion->plan->servicios->each(function ($servicio) use ($personalizaciones) {
+                $personalizacion = $personalizaciones->get($servicio->id);
+                $servicio->personalizacion = $personalizacion
+                    ? ['configuracion' => $personalizacion->configuracion]
+                    : null;
+            });
+        }
+
+        // 🆕 Y ahora la personalización PROPIA de cada afiliado (la que
+        // guardó desde su propio enlace privado) — para que el titular
+        // pueda ver acá en el Gabinete cómo quedó el cofre de cada uno.
+        $personalizacionesPorAfiliado = \App\Models\Personalizacion::where('suscripcion_id', $suscripcion->id)
+            ->whereNotNull('afiliado_id')
+            ->get()
+            ->keyBy('afiliado_id');
+
+        $suscripcion->afiliados->each(function ($afiliado) use ($personalizacionesPorAfiliado) {
+            $personalizacion = $personalizacionesPorAfiliado->get($afiliado->id);
+            $afiliado->personalizacion_cofre = $personalizacion
+                ? $personalizacion->configuracion
+                : null;
+        });
     }
 
         // 🆕 ¿Este usuario TAMBIÉN tiene un plan de mascota (Huella Eterna, id 4) activo?
@@ -317,6 +343,31 @@ return redirect()->route('mi.plan')->with('activado', true);
         } catch (\Exception $e) {
             return back()->with('error', 'Error al eliminar.');
         }
+    }
+
+    /**
+     * 🆕 PIEZA 1: genera (o reutiliza) el enlace de "Enviar personalización"
+     * de un afiliado. Solo el titular DUEÑO de la suscripción a la que
+     * pertenece ese afiliado puede generarlo — nadie más.
+     *
+     * Devuelve JSON (no Inertia) porque el frontend (EnlacesPersonalizacionAfiliados.jsx)
+     * lo consume con axios.post(...) y copia data.url al portapapeles, sin
+     * salir de la pantalla del Gabinete.
+     */
+    public function generarEnlacePersonalizacion($id)
+    {
+        $afiliado = Afiliado::with('suscripcion')->findOrFail($id);
+
+        // 🔒 Solo el titular dueño de esta suscripción puede generar el enlace
+        if (!$afiliado->suscripcion || $afiliado->suscripcion->usuario_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para generar este enlace.');
+        }
+
+        $token = $afiliado->obtenerOCrearToken();
+
+        return response()->json([
+            'url' => url("/afiliado/{$token}"),
+        ]);
     }
 
     public function certificadoAfiliacion()

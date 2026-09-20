@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Afiliado extends Model
 {
@@ -22,6 +23,7 @@ class Afiliado extends Model
         'tipo_documento_id',
         'cedula',
         'fecha_nacimiento',
+        'token', // 🆕 para el enlace de "Enviar personalización"
     ];
 
     protected $casts = [
@@ -67,5 +69,18 @@ class Afiliado extends Model
         return $this->hasOne(ServicioFunerario::class, 'afiliado_id');
     }
 
-    
+    /**
+     * 🆕 Devuelve el token de este afiliado, creándolo la primera vez que se
+     * pide (así los afiliados ya existentes, que no tenían token, lo reciben
+     * automáticamente apenas alguien genere su enlace de personalización).
+     */
+    public function obtenerOCrearToken(): string
+    {
+        if (!$this->token) {
+            $this->token = Str::random(48);
+            $this->save();
+        }
+
+        return $this->token;
+    }
 }
