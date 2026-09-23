@@ -57,7 +57,7 @@ export default function ModalConfirmarEliminarAfiliado({ visible, afiliado, ejec
                             Confirmación final
                         </h4>
                         <p className="text-[11px] text-[#6A5A48] dark:text-[#C2B49A]">
-                            Para confirmar de verdad, escribe el nombre exacto:
+                            Para confirmar de verdad, escribe el nombre exacto :
                         </p>
                         <p className="text-sm font-black text-[#5D4E3F] dark:text-[#FFD97D]">{afiliado.nombre}</p>
                         <input
