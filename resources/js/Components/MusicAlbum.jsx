@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Volume2, Volume1, VolumeX } from 'lucide-react';
 
 const musicTracks = [
-    { id: 1, title: 'Descanso Sereno', file: '/images/planes/album/Descanso_Sereno.mp4' },
+    { id: 1, title: 'Descanso Sereno', file: '/images/planes/album/Descanso_Sereno.mp3' },
     { id: 2, title: 'Eterna Luz', file: '/images/planes/album/Eterna_luz.mp4' },
     { id: 3, title: 'S.E.N.A', file: '/images/planes/album/S.E.N.A.mp3' },
     { id: 4, title: 'siste fest', file: '/images/planes/album/siste fest.mp3' },

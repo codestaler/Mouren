@@ -760,6 +760,13 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
 
     const enviarInscripcion = () => {
 
+        // 🆕 Antes esto no se validaba nunca: la casilla de autorización
+        // existía en pantalla pero no bloqueaba nada. Ahora si no está
+        // marcada, avisamos y no dejamos enviar.
+        if (!aceptoTerminos) {
+            return alert("Mouri dice: Antes de activar tu protección, marca la casilla de autorización para aceptar los términos del contrato.");
+        }
+
         post(route('cliente.suscripciones.store'), {
 
             data: {
@@ -1382,8 +1389,8 @@ export default function Inscribir({ plan = {}, servicios = [], recuerdos = [], c
                                 )}
                                 <button
                                     onClick={() => paso === 4 ? enviarInscripcion() : validarPaso()}
-                                    disabled={processing}
-                                    className="bg-[#5D4E3F] text-white px-6 sm:px-12 py-3.5 sm:py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] ml-auto shadow-lg hover:bg-[#4A3E32] hover:scale-[1.03] active:scale-[0.98] transition-all whitespace-nowrap"
+                                    disabled={processing || (paso === 4 && !aceptoTerminos)}
+                                    className="bg-[#5D4E3F] text-white px-6 sm:px-12 py-3.5 sm:py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] ml-auto shadow-lg hover:bg-[#4A3E32] hover:scale-[1.03] active:scale-[0.98] transition-all whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
                                     {paso === 4 ? (processing ? 'procesando...' : 'activar protección') : 'siguiente'}
                                 </button>

@@ -89,6 +89,11 @@ if ($request->has('servicios_base_personalizados')) {
 }
 // 3. ACTUALIZACIÓN DE AFILIADOS
 if ($request->has('afiliados')) {
+    // 🆕 Vamos guardando los ids de los afiliados que SÍ vinieron en el
+    // payload (nuevos, actualizados o fallecidos conservados), para poder
+    // borrar al final los que ya no están — igual que se hizo con mascotas.
+    $idsAfiliadosRecibidos = [];
+
     foreach ($request->afiliados as $data) {
 
         $esNuevo = ($data['id'] > 1000000000);
@@ -98,6 +103,7 @@ if ($request->has('afiliados')) {
     if (!$esNuevo) {
         $afiliadoExistente = \App\Models\Afiliado::find($data['id']);
         if ($afiliadoExistente && strtolower($afiliadoExistente->estado) === 'fallecido') {
+            $idsAfiliadosRecibidos[] = $afiliadoExistente->id; // 🆕 lo conservamos, no se borra
             continue; // no se toca, pero tampoco truena el guardado
         }
     }
@@ -166,7 +172,7 @@ if ($request->has('afiliados')) {
 
         // Ahora insertamos/actualizamos el servicio funerario (canción + recuerdo propio)
         \App\Models\ServicioFunerario::updateOrCreate(
-            ['afiliado_id' => $afiliadoId], 
+            ['afiliado_id' => $afiliadoId],
             [
                 'observaciones'  => $data['observaciones'] ?? "Sin observaciones",
                 'fecha_inicio'   => now(),
@@ -175,6 +181,40 @@ if ($request->has('afiliados')) {
                 'costo_recuerdo' => $costoRecuerdo,
             ]
         );
+
+        $idsAfiliadosRecibidos[] = $afiliadoId; // 🆕 este afiliado sí sigue vivo en el payload
+    }
+
+    // 🆕 Elimina los afiliados que ya no vinieron en el payload (ej: el
+    // titular le dio "Eliminar" en el Gabinete). Solo si de verdad
+    // recibimos al menos un afiliado, para no borrar todo por accidente
+    // si $idsAfiliadosRecibidos llegara vacío. Nunca se borra al titular.
+    if (!empty($idsAfiliadosRecibidos)) {
+        $idsAfiliadosABorrar = \App\Models\Afiliado::where('suscripcion_id', $suscripcion->id)
+            ->whereNotIn('id', $idsAfiliadosRecibidos)
+            ->whereRaw('LOWER(TRIM(parentesco)) != ?', ['titular'])
+            ->pluck('id');
+
+        if ($idsAfiliadosABorrar->isNotEmpty()) {
+            // 🆕 Antes de borrar al afiliado, limpiamos TODO lo que dependa de
+            // él en la base de datos, para no violar ninguna restricción de
+            // llave foránea (el mismo error 1451 que ya arreglamos en mascotas):
+            //   1) su(s) servicio(s) funerario(s) — y, por si acaso, cualquier
+            //      ceremonia o trazabilidad que dependiera de esos servicios.
+            //   2) cualquier personalización propia que haya guardado desde su
+            //      enlace privado (tabla personalizaciones, columna afiliado_id).
+            $serviciosFunerariosABorrar = \App\Models\ServicioFunerario::whereIn('afiliado_id', $idsAfiliadosABorrar)->get();
+
+            foreach ($serviciosFunerariosABorrar as $servicioFunerario) {
+                $servicioFunerario->ceremonias()->delete();
+                $servicioFunerario->trazabilidades()->delete();
+            }
+
+            \App\Models\ServicioFunerario::whereIn('afiliado_id', $idsAfiliadosABorrar)->delete();
+            \App\Models\Personalizacion::whereIn('afiliado_id', $idsAfiliadosABorrar)->delete();
+
+            \App\Models\Afiliado::whereIn('id', $idsAfiliadosABorrar)->delete();
+        }
     }
 }
 

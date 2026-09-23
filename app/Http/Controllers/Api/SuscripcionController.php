@@ -48,10 +48,19 @@ public function miPlan()
 
     if ($planHumano && $planHumano->afiliados->count() > 0) {
 
-    $primerAfiliado = $planHumano->afiliados->first();
+    // 🆕 Antes se tomaba el PRIMER afiliado que trajera la relación, sin
+    // ningún orden garantizado. Si ese primero era un beneficiario que se
+    // agregó después (desde el Gabinete) sin elegir canción, el tributo
+    // aparecía vacío — aunque la canción SÍ estuviera guardada, solo que
+    // en el servicio funerario de OTRO afiliado (normalmente el titular,
+    // que es quien la elige al inscribirse). Ahora buscamos primero al
+    // titular de forma explícita, y solo si no existe usamos el primero.
+    $afiliadoTributo = $planHumano->afiliados->first(function ($a) {
+        return strtolower(trim($a->parentesco ?? '')) === 'titular';
+    }) ?? $planHumano->afiliados->first();
 
     $servicio = DB::table('servicios_funerarios')
-        ->where('afiliado_id', $primerAfiliado->id)
+        ->where('afiliado_id', $afiliadoTributo->id)
         ->latest()
         ->first();
 

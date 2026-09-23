@@ -7,7 +7,7 @@ import AfiliadosPanel from "./Components/AfiliadosPanel";
 import ModalAfiliado from "./Components/ModalAfiliado";
 import ModalPersonalizacionEstetica from "./Components/ModalPersonalizacionEstetica";
 import ModalCatalogoServicios from "./Components/ModalCatalogoServicios";
-import ModalConfirmarEliminar from "./Components/ModalConfirmarEliminar";
+import ModalConfirmarEliminarAfiliado from "./Components/ModalConfirmarEliminarAfiliado";
 import ModalExitoMouren from "./Components/ModalExitoMouren";
 import ModalErrorMouren from "./Components/ModalErrorMouren";
 import ModalAvisoServicioNoPersonalizable from "./Components/ModalAvisoServicioNoPersonalizable";
@@ -98,7 +98,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     const [datosCargados, setDatosCargados] = useState(false);
     const [modalConfig, setModalConfig] = useState({ tipo: null, visible: false });
     const [formAfiliado, setFormAfiliado] = useState({ id: null, nombre: '', parentesco: '', observacion_funeraria: '' });
-    const [idAfiliadoAEliminar, setIdAfiliadoAEliminar] = useState(null);
+    const [afiliadoAEliminar, setAfiliadoAEliminar] = useState(null); // 🆕 objeto completo, no solo el id
     const [servicioAEditar, setServicioAEditar] = useState(null);
     const [personalizacionEstetica, setPersonalizacionEstetica] = useState({ colorId: '', colorNombre: '', florId: '', florNombre: '', observacion: '' });
     // 🆕 Personalizaciones de servicios BASE (como el Ataúd), aparte de
@@ -209,7 +209,7 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
     };
 
     const ventanaConfirmarQuitar = (afi) => {
-        setIdAfiliadoAEliminar(afi.id);
+        setAfiliadoAEliminar(afi);
         abrirModal('CONFIRM_ELIMINAR_AFILIADO');
     };
 
@@ -217,11 +217,11 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
 
         setAfiliados(
             afiliados.filter(
-                (a) => a.id !== idAfiliadoAEliminar
+                (a) => a.id !== afiliadoAEliminar?.id
             )
         );
 
-        setIdAfiliadoAEliminar(null);
+        setAfiliadoAEliminar(null);
 
         cerrarModal();
     };
@@ -604,9 +604,17 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                                     <button
                                         onClick={enviarDatosAlGabineteBackend}
                                         disabled={cargandoGuardar}
-                                        className="w-full px-6 py-3.5 bg-[#A68966] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-md transition-all hover:bg-[#8e7253] disabled:opacity-50"
+                                        className="w-full px-6 py-3.5 bg-[#A68966] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-md transition-all hover:bg-[#8e7253] disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {cargandoGuardar ? 'Guardando en Bóveda...' : 'Guardar Personalización →'}
+                                        {cargandoGuardar ? (
+                                            <>
+                                                {/* 🆕 Pequeña animación de carga mientras guarda */}
+                                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Guardando en Bóveda...
+                                            </>
+                                        ) : (
+                                            'Guardar Personalización →'
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -709,13 +717,14 @@ export default function DetallesPlan({ suscripcion = null, canciones = [], preci
                     cerrarModal={cerrarModal}
                 />
 
-                {/* Confirmar Eliminación */}
-                <ModalConfirmarEliminar
+                {/* Confirmar Eliminación — doble autorización + aviso de costo */}
+                <ModalConfirmarEliminarAfiliado
                     visible={
                         modalConfig.visible &&
                         modalConfig.tipo === "CONFIRM_ELIMINAR_AFILIADO"
                     }
-                    ejecutarEliminacionAfiliado={ejecutarEliminacionAfiliado}
+                    afiliado={afiliadoAEliminar}
+                    ejecutarEliminacion={ejecutarEliminacionAfiliado}
                     cerrarModal={cerrarModal}
                 />
 

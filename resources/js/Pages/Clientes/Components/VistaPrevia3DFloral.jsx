@@ -1,10 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 
-// Mismos nombres/colores que ya usa VistaPrevia3DCofre — el "color"
-// aquí se interpreta como el color de la CINTA de la corona (una corona
-// funeraria real siempre lleva una cinta), y la "flor" es el color real
-// del arreglo floral. Encaja con lo que el cliente ya elige en el modal.
+// Mismos nombres/colores que ya usa VistaPrevia3DCofre — el "color" aquí
+// es la cinta de la corona, la "flor" es el color real del arreglo.
 const HEX_POR_COLOR = {
     blanco: '#F5F0E8',
     dorado: '#D4AF37',
@@ -33,9 +31,21 @@ function resolverHexFlor(nombre) {
     return HEX_POR_FLOR[nombre.trim().toLowerCase()] || '#E8A9C4';
 }
 
+// 🆕 Misma textura de degradado por bandas que el cofre, para que ambas
+// vistas 3D se sientan de la misma "familia" de estilo cartoon.
+function crearGradienteToon() {
+    const bandas = new Uint8Array([70, 130, 190, 255]);
+    const gradiente = new THREE.DataTexture(bandas, bandas.length, 1, THREE.RedFormat);
+    gradiente.needsUpdate = true;
+    gradiente.minFilter = THREE.NearestFilter;
+    gradiente.magFilter = THREE.NearestFilter;
+    return gradiente;
+}
+
 // 🆕 Vista previa 3D de una CORONA/ARREGLO FLORAL — distinta a propósito
-// del cofre, para que "Decoración Floral" no muestre un ataúd. Mismo
-// patrón de arrastrar-para-rotar que VistaPrevia3DCofre.
+// del cofre, para que "Decoración Floral" no muestre un ataúd. Mismo estilo
+// cartoon años 30 (sombreado por bandas + contorno negro) y mismo patrón
+// de arrastrar-para-rotar que VistaPrevia3DCofre.
 export default function VistaPrevia3DFloral({ colorNombre, florNombre, size = 150 }) {
     const mountRef = useRef(null);
 
@@ -45,6 +55,7 @@ export default function VistaPrevia3DFloral({ colorNombre, florNombre, size = 15
 
         const cintaHex = resolverHexColor(colorNombre);
         const florHex = resolverHexFlor(florNombre);
+        const gradienteToon = crearGradienteToon();
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
@@ -58,54 +69,70 @@ export default function VistaPrevia3DFloral({ colorNombre, florNombre, size = 15
 
         const grupo = new THREE.Group();
 
+        const materialesParaLimpiar = [];
+        const geometriasParaLimpiar = [gradienteToon];
+
+        // 🆕 Mismo truco de contorno negro (malla invertida) que en el cofre
+        function piezaConContorno(geometria, colorHex, posicion = [0, 0, 0], rotacion = [0, 0, 0], escalaContorno = 1.07) {
+            const mat = new THREE.MeshToonMaterial({ color: colorHex, gradientMap: gradienteToon });
+            const mesh = new THREE.Mesh(geometria, mat);
+            mesh.position.set(...posicion);
+            mesh.rotation.set(...rotacion);
+            grupo.add(mesh);
+
+            const contornoMat = new THREE.MeshBasicMaterial({ color: 0x231a12, side: THREE.BackSide });
+            const contorno = new THREE.Mesh(geometria, contornoMat);
+            contorno.position.set(...posicion);
+            contorno.rotation.set(...rotacion);
+            contorno.scale.multiplyScalar(escalaContorno);
+            grupo.add(contorno);
+
+            materialesParaLimpiar.push(mat, contornoMat);
+            geometriasParaLimpiar.push(geometria);
+            return mesh;
+        }
+
         // Base de la corona: un aro de "follaje" verde
         const aroGeo = new THREE.TorusGeometry(1.3, 0.28, 12, 32);
-        const aroMat = new THREE.MeshStandardMaterial({ color: 0x4a6b3f, roughness: 0.8 });
-        const aro = new THREE.Mesh(aroGeo, aroMat);
-        grupo.add(aro);
+        piezaConContorno(aroGeo, 0x4a6b3f, [0, 0, 0], [0, 0, 0], 1.04);
 
         // Flores repartidas alrededor del aro, con el color real elegido
-        const florMat = new THREE.MeshStandardMaterial({ color: florHex, roughness: 0.5 });
         const NUM_FLORES = 14;
         for (let i = 0; i < NUM_FLORES; i++) {
             const angulo = (i / NUM_FLORES) * Math.PI * 2;
-            const flor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), florMat);
-            flor.position.set(Math.cos(angulo) * 1.3, Math.sin(angulo) * 1.3, 0.15);
-            grupo.add(flor);
+            const x = Math.cos(angulo) * 1.3;
+            const y = Math.sin(angulo) * 1.3;
 
-            // un centro más chico y claro, para dar textura de pétalo
-            const centro = new THREE.Mesh(
-                new THREE.SphereGeometry(0.09, 8, 8),
-                new THREE.MeshStandardMaterial({ color: 0xFFF3D6, roughness: 0.4 })
-            );
-            centro.position.set(Math.cos(angulo) * 1.3, Math.sin(angulo) * 1.3, 0.32);
+            const florGeo = new THREE.SphereGeometry(0.22, 10, 10);
+            piezaConContorno(florGeo, florHex, [x, y, 0.15]);
+
+            // un centro más chico y claro, para dar textura de pétalo (sin contorno propio, va encima)
+            const centroMat = new THREE.MeshToonMaterial({ color: 0xFFF3D6, gradientMap: gradienteToon });
+            const centroGeo = new THREE.SphereGeometry(0.09, 8, 8);
+            const centro = new THREE.Mesh(centroGeo, centroMat);
+            centro.position.set(x, y, 0.32);
             grupo.add(centro);
+            materialesParaLimpiar.push(centroMat);
+            geometriasParaLimpiar.push(centroGeo);
         }
 
         // Cinta con el color elegido, colgando abajo
-        const cintaMat = new THREE.MeshStandardMaterial({ color: cintaHex, metalness: 0.2, roughness: 0.4, side: THREE.DoubleSide });
-        const cintaIzq = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 1.3), cintaMat);
-        cintaIzq.position.set(-0.18, -1.7, 0.1);
-        cintaIzq.rotation.z = 0.12;
-        grupo.add(cintaIzq);
-        const cintaDer = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 1.15), cintaMat);
-        cintaDer.position.set(0.18, -1.65, 0.1);
-        cintaDer.rotation.z = -0.15;
-        grupo.add(cintaDer);
+        const cintaIzqGeo = new THREE.PlaneGeometry(0.32, 1.3);
+        piezaConContorno(cintaIzqGeo, cintaHex, [-0.18, -1.7, 0.1], [0, 0, 0.12], 1.12);
+
+        const cintaDerGeo = new THREE.PlaneGeometry(0.32, 1.15);
+        piezaConContorno(cintaDerGeo, cintaHex, [0.18, -1.65, 0.1], [0, 0, -0.15], 1.12);
+
         // moño central de la cinta
-        const monio = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), cintaMat);
-        monio.position.set(0, -1.05, 0.15);
-        grupo.add(monio);
+        const monioGeo = new THREE.SphereGeometry(0.16, 10, 10);
+        piezaConContorno(monioGeo, cintaHex, [0, -1.05, 0.15]);
 
         scene.add(grupo);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const luz1 = new THREE.PointLight(0xFFD97D, 1.5, 15);
-        luz1.position.set(3, 3, 3);
-        scene.add(luz1);
-        const luz2 = new THREE.PointLight(0xA68966, 0.9, 15);
-        luz2.position.set(-3, -1, 2);
-        scene.add(luz2);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        const luzPrincipal = new THREE.DirectionalLight(0xFFF3D6, 0.9);
+        luzPrincipal.position.set(3, 3, 4);
+        scene.add(luzPrincipal);
 
         // Arrastrar para rotar — mismo patrón que el cofre
         let arrastrando = false;
@@ -166,12 +193,20 @@ export default function VistaPrevia3DFloral({ colorNombre, florNombre, size = 15
             el.removeEventListener('touchstart', iniciarArrastre);
             el.removeEventListener('touchmove', moverArrastre);
             el.removeEventListener('touchend', terminarArrastre);
-            aroGeo.dispose(); aroMat.dispose();
-            florMat.dispose(); cintaMat.dispose();
+            materialesParaLimpiar.forEach((m) => m.dispose());
+            geometriasParaLimpiar.forEach((g) => g.dispose());
             renderer.dispose();
             if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
         };
     }, [colorNombre, florNombre, size]);
 
-    return <div ref={mountRef} style={{ width: size, height: size }} className="mx-auto" />;
+    return (
+        <div className="relative mx-auto" style={{ width: size, height: size }}>
+            <div ref={mountRef} style={{ width: size, height: size }} />
+            <div
+                className="absolute inset-0 pointer-events-none rounded-full"
+                style={{ boxShadow: 'inset 0 0 24px rgba(35,26,18,0.18)' }}
+            />
+        </div>
+    );
 }

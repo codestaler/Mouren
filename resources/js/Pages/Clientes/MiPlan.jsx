@@ -1,6 +1,154 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as THREE from 'three';
 import { Head, usePage, Link, router } from '@inertiajs/react';
 import Sidebar from './Sidebar';
+
+// 🆕 Bola disco 3D de verdad (mismo motor Three.js que ya usa Inscribir.jsx
+// para Última Rumba), en versión chiquita y siempre girando — puramente
+// decorativa, no necesita botones ni estado.
+function BolaDisco3DMiniPlan({ size = 48 }) {
+    const mountRef = useRef(null);
+
+    useEffect(() => {
+        const mount = mountRef.current;
+        if (!mount) return;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        camera.position.set(0, 0, 4.2);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(size, size);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        mount.appendChild(renderer.domElement);
+
+        const geometry = new THREE.IcosahedronGeometry(1.3, 2);
+        const material = new THREE.MeshStandardMaterial({ color: 0xC9A876, metalness: 1, roughness: 0.15, flatShading: true });
+        const ball = new THREE.Mesh(geometry, material);
+        scene.add(ball);
+
+        const wire = new THREE.LineSegments(
+            new THREE.WireframeGeometry(geometry),
+            new THREE.LineBasicMaterial({ color: 0x5D4E3F, transparent: true, opacity: 0.35 })
+        );
+        ball.add(wire);
+
+        // 🆕 Antes estas dos luces daban toda la vuelta a la bola muy rápido
+        // (t*2 y t*1.5 por frame). Como la bola tiene caras planas y
+        // metálicas (flatShading), cada vez que una luz pasaba rozando una
+        // cara se veía un destello brusco de encendido/apagado — eso era el
+        // "parpadeo" que quedaba, aunque el rayo de color de atrás ya no
+        // parpadeara. Bajamos la velocidad con la que giran las luces para
+        // que el brillo se deslice suave por la bola en vez de destellar.
+        const luz1 = new THREE.PointLight(0xFFC600, 2.4, 10);
+        luz1.position.set(2, 2, 2);
+        scene.add(luz1);
+        const luz2 = new THREE.PointLight(0xA68966, 1.6, 10);
+        luz2.position.set(-2, -1, 2);
+        scene.add(luz2);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+        let raf; let t = 0;
+        const animar = () => {
+            t += 0.01;
+            ball.rotation.y += 0.022;
+            ball.rotation.x = Math.sin(t) * 0.06;
+            luz1.position.x = Math.sin(t * 0.7) * 2.5;
+            luz1.position.z = Math.cos(t * 0.7) * 2.5;
+            luz2.position.x = Math.cos(t * 0.55) * 2.5;
+            luz2.position.z = Math.sin(t * 0.55) * 2.5;
+            renderer.render(scene, camera);
+            raf = requestAnimationFrame(animar);
+        };
+        animar();
+
+        return () => {
+            cancelAnimationFrame(raf);
+            geometry.dispose();
+            material.dispose();
+            wire.geometry.dispose();
+            wire.material.dispose();
+            renderer.dispose();
+            if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+        };
+    }, [size]);
+
+    return <div ref={mountRef} style={{ width: size, height: size }} />;
+}
+
+// 🆕 Mismo tema visual por plan que ya usa Inscribir.jsx (mismos colores,
+// mismo ícono, mismo "motivo" decorativo), para que Mi Plan se sienta parte
+// de la misma personalización que el cliente eligió. Solo aplica al plan
+// HUMANO (Descanso Sereno / Legado Eterno / Última Rumba) — el plan de
+// mascota conserva su propio estilo tal cual, sin ningún cambio.
+const TEMAS_PLAN = {
+    1: { color: '#5D4E3F', colorSuave: '#8C6A4F', icono: '🕯️', nombre: 'sereno', motivo: 'flores' },
+    2: { color: '#8C6A4F', colorSuave: '#A68966', icono: '◈', nombre: 'legado', motivo: 'tecnologia' },
+    3: { color: '#A68966', colorSuave: '#5D4E3F', icono: '✦', nombre: 'rumba', motivo: 'disco' },
+};
+
+// 🆕 Efectos decorativos pequeños, uno por tema — velitas para Descanso
+// Sereno, lucecitas LED para Legado Eterno, luces de disco para Última
+// Rumba. Puramente visual (pointer-events-none, z-0): va DETRÁS de todo
+// el contenido de la tarjeta hero, nunca tapa ni estorba ningún botón.
+function DecoracionMiniTema({ tema }) {
+    if (!tema) return null;
+
+    if (tema.motivo === 'flores') {
+        const velitas = [
+            { top: '10%', left: '92%' }, { top: '60%', left: '4%' }, { top: '85%', left: '88%' },
+        ];
+        return (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+                {velitas.map((v, i) => (
+                    <span
+                        key={i}
+                        className="absolute rounded-full mini-velita-plan"
+                        style={{
+                            top: v.top, left: v.left, width: 10, height: 10,
+                            background: 'radial-gradient(circle, #FFE9A8 0%, #FFC600 45%, transparent 75%)',
+                            boxShadow: '0 0 12px 4px rgba(255,198,0,0.45)',
+                            animationDelay: `${i * 0.8}s`,
+                        }}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    if (tema.motivo === 'tecnologia') {
+        return (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+                <div
+                    className="absolute inset-0 opacity-[0.08]"
+                    style={{ backgroundImage: 'repeating-linear-gradient(0deg, #FFFFFF 0px, #FFFFFF 1.5px, transparent 1.5px, transparent 4px)' }}
+                />
+                <div className="absolute top-4 right-4 flex gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full mini-led-plan" style={{ backgroundColor: tema.color, animationDelay: '0s' }} />
+                    <span className="w-1.5 h-1.5 rounded-full mini-led-plan" style={{ backgroundColor: '#FFC600', animationDelay: '0.45s' }} />
+                    <span className="w-1.5 h-1.5 rounded-full mini-led-plan" style={{ backgroundColor: tema.colorSuave, animationDelay: '0.9s' }} />
+                </div>
+            </div>
+        );
+    }
+
+    if (tema.motivo === 'disco') {
+        // 🆕 Antes eran varias luces circulares prendiéndose y apagándose
+        // (parpadeo). Ahora es una sola franja larga de colores que se
+        // desliza suave de un lado a otro, sin parpadear — más parecida a
+        // un rayo real de luz de disco. La bola disco 3D sigue igual.
+        return (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+                <span className="mini-rayo-disco-plan" />
+                <div className="absolute bottom-2 left-2 opacity-90 drop-shadow-lg">
+                    <BolaDisco3DMiniPlan size={44} />
+                </div>
+            </div>
+        );
+    }
+
+    return null;
+}
 
 export default function MiPlan({
     planHumano = null,
@@ -39,6 +187,11 @@ export default function MiPlan({
 
     // Modo de visualización de la tarjeta de beneficiarios
     const mostrandoMascotas = (!planHumano && planMascota) || modoMascota;
+
+    // 🆕 Tema visual del plan humano activo (solo cuando NO estamos viendo
+    // la línea de mascotas). Si no hay plan humano o estamos en modo
+    // mascota, queda en null y todo se ve exactamente como antes.
+    const temaPlan = (!mostrandoMascotas && planHumano?.plan?.id) ? TEMAS_PLAN[planHumano.plan.id] : null;
 
     // 1. CAPTURA DEL OBJETO CANCIÓN
     const cancionObjeto = suscripcion?.cancion_tributo || suscripcion?.cancion;
@@ -155,6 +308,9 @@ export default function MiPlan({
                                     }`}
                             >
 
+                                {/* 🆕 Efectos del tema del plan, detrás de todo */}
+                                <DecoracionMiniTema tema={temaPlan} />
+
                                 {suscripcion && planHumano && (
                                     <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
                                         {!tienePlanMascotaContratado && (
@@ -237,7 +393,7 @@ export default function MiPlan({
                                                 {modoMascota
                                                     ? 'Huella Eterna 🐾'
                                                     : (planHumano
-                                                        ? planHumano.plan?.nombre
+                                                        ? <>{temaPlan && <span className="mr-1">{temaPlan.icono}</span>}{planHumano.plan?.nombre}</>
                                                         : (planMascota
                                                             ? planMascota.plan?.nombre
                                                             : 'Inscríbete a un plan'
@@ -457,7 +613,10 @@ export default function MiPlan({
                             </div>
 
                             {/* --- Tributo musical (estilo tarjeta de app destacada) --- */}
-                            <div className={`rounded-[26px] overflow-hidden shadow-xl flex-1 flex flex-col transition-all duration-500 ${reproduciendo ? 'bg-[#362A1F] text-white' : 'bg-[#5D4E3F] text-white'}`}>
+                            <div
+                                className={`rounded-[26px] overflow-hidden shadow-xl flex-1 flex flex-col transition-all duration-500 ${reproduciendo ? 'bg-[#362A1F] text-white' : 'bg-[#5D4E3F] text-white'}`}
+                                style={temaPlan ? { borderTop: `3px solid ${temaPlan.color}` } : undefined}
+                            >
                                 <div className="relative h-28 sm:h-32 shrink-0">
                                     {/* 👉 Cambia este src por la portada/imagen de tu tributo musical */}
                                     <img
@@ -538,6 +697,40 @@ export default function MiPlan({
                     0% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
                     100% { background-position: 0% 50%; }
+                }
+
+                /* 🆕 Efectos del tema por plan (mini personalización) */
+                @keyframes miniVelitaPlanParpadea {
+                    0%, 100% { opacity: 0.55; transform: scale(1); }
+                    50% { opacity: 1; transform: scale(1.25); }
+                }
+                .mini-velita-plan { animation: miniVelitaPlanParpadea 2.2s ease-in-out infinite; }
+                @keyframes miniLedPlanParpadea {
+                    0%, 100% { opacity: 0.25; }
+                    50% { opacity: 1; }
+                }
+                .mini-led-plan { animation: miniLedPlanParpadea 1.6s ease-in-out infinite; }
+                /* 🆕 Rayo largo de colores para Última Rumba — se desliza
+                   suave de un lado a otro, con opacidad SIEMPRE fija (sin
+                   parpadeo, tal como pediste). */
+                .mini-rayo-disco-plan {
+                    position: absolute;
+                    top: 38%;
+                    left: -30%;
+                    width: 160%;
+                    height: 46px;
+                    background: linear-gradient(90deg, transparent 0%, #FFC600 20%, #C9A876 40%, #A68966 60%, #8C6A4F 80%, transparent 100%);
+                    opacity: 0.3;
+                    filter: blur(10px);
+                    transform: rotate(-14deg) translateX(-6%);
+                    animation: miniRayoDiscoPlanDesliza 7s ease-in-out infinite alternate;
+                }
+                @keyframes miniRayoDiscoPlanDesliza {
+                    0% { transform: rotate(-14deg) translateX(-6%); }
+                    100% { transform: rotate(-14deg) translateX(6%); }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .mini-velita-plan, .mini-led-plan, .mini-rayo-disco-plan { animation: none !important; }
                 }
             `}</style>
         </div>
