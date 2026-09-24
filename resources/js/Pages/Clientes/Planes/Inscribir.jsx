@@ -178,56 +178,74 @@ function BolaDisco3D({ size = 90 }) {
         const mount = mountRef.current;
         if (!mount) return;
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-        camera.position.set(0, 0, 4.2);
+        // 🆕 Si el dispositivo/navegador no logra crear el contexto 3D
+        // (pasa en algunos celulares o navegadores), antes eso tumbaba TODA
+        // la página en blanco al llegar aquí. Ahora, si algo falla al armar
+        // la bola disco 3D, simplemente no se muestra — el resto de la
+        // página (y el botón de "presentar") sigue funcionando normal.
+        let renderer, geometry, material, wire, raf;
+        try {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+            camera.position.set(0, 0, 4.2);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(size, size);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        mount.appendChild(renderer.domElement);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(size, size);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            mount.appendChild(renderer.domElement);
 
-        const geometry = new THREE.IcosahedronGeometry(1.3, 2);
-        const material = new THREE.MeshStandardMaterial({ color: 0xC9A876, metalness: 1, roughness: 0.15, flatShading: true });
-        const ball = new THREE.Mesh(geometry, material);
-        scene.add(ball);
+            geometry = new THREE.IcosahedronGeometry(1.3, 2);
+            material = new THREE.MeshStandardMaterial({ color: 0xC9A876, metalness: 1, roughness: 0.15, flatShading: true });
+            const ball = new THREE.Mesh(geometry, material);
+            scene.add(ball);
 
-        const wire = new THREE.LineSegments(
-            new THREE.WireframeGeometry(geometry),
-            new THREE.LineBasicMaterial({ color: 0x5D4E3F, transparent: true, opacity: 0.35 })
-        );
-        ball.add(wire);
+            wire = new THREE.LineSegments(
+                new THREE.WireframeGeometry(geometry),
+                new THREE.LineBasicMaterial({ color: 0x5D4E3F, transparent: true, opacity: 0.35 })
+            );
+            ball.add(wire);
 
-        const luz1 = new THREE.PointLight(0xFFC600, 3, 10);
-        luz1.position.set(2, 2, 2);
-        scene.add(luz1);
-        const luz2 = new THREE.PointLight(0xA68966, 2, 10);
-        luz2.position.set(-2, -1, 2);
-        scene.add(luz2);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const luz1 = new THREE.PointLight(0xFFC600, 3, 10);
+            luz1.position.set(2, 2, 2);
+            scene.add(luz1);
+            const luz2 = new THREE.PointLight(0xA68966, 2, 10);
+            luz2.position.set(-2, -1, 2);
+            scene.add(luz2);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-        let raf; let t = 0;
-        const animar = () => {
-            t += 0.01;
-            ball.rotation.y += 0.022;
-            ball.rotation.x = Math.sin(t) * 0.06;
-            luz1.position.x = Math.sin(t * 2) * 2.5;
-            luz1.position.z = Math.cos(t * 2) * 2.5;
-            luz2.position.x = Math.cos(t * 1.5) * 2.5;
-            luz2.position.z = Math.sin(t * 1.5) * 2.5;
-            renderer.render(scene, camera);
-            raf = requestAnimationFrame(animar);
-        };
-        animar();
+            let t = 0;
+            const animar = () => {
+                try {
+                    t += 0.01;
+                    ball.rotation.y += 0.022;
+                    ball.rotation.x = Math.sin(t) * 0.06;
+                    luz1.position.x = Math.sin(t * 2) * 2.5;
+                    luz1.position.z = Math.cos(t * 2) * 2.5;
+                    luz2.position.x = Math.cos(t * 1.5) * 2.5;
+                    luz2.position.z = Math.sin(t * 1.5) * 2.5;
+                    renderer.render(scene, camera);
+                    raf = requestAnimationFrame(animar);
+                } catch (err) {
+                    console.error('Bola disco 3D: se detuvo por un error, sin afectar el resto de la página.', err);
+                }
+            };
+            animar();
+        } catch (err) {
+            console.error('Bola disco 3D: no se pudo iniciar en este dispositivo, se omite sin afectar el resto de la página.', err);
+        }
 
         return () => {
-            cancelAnimationFrame(raf);
-            geometry.dispose();
-            material.dispose();
-            wire.geometry.dispose();
-            wire.material.dispose();
-            renderer.dispose();
-            if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+            if (raf) cancelAnimationFrame(raf);
+            try {
+                geometry?.dispose();
+                material?.dispose();
+                wire?.geometry?.dispose();
+                wire?.material?.dispose();
+                renderer?.dispose();
+                if (renderer && mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+            } catch (err) {
+                // limpieza best-effort — si algo no llegó a crearse, no pasa nada
+            }
         };
     }, [size]);
 

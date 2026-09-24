@@ -286,7 +286,18 @@ class SuscripcionMascotaController extends Controller
                 $idsRecibidos = [];
 
                 foreach ($request->mascotas as $mascotaData) {
-                    $esNueva = empty($mascotaData['id']) || !is_numeric($mascotaData['id']);
+                    // 🆕 Antes esto solo miraba si el id venía vacío o no era
+                    // numérico — pero una mascota NUEVA que el navegador
+                    // todavía no mandó a guardar trae un id temporal enorme
+                    // (Date.now(), por ejemplo 1758586523000), que SÍ es
+                    // numérico. Por eso se trataba como "ya existente", se
+                    // buscaba en la base de datos, no se encontraba, y
+                    // simplemente no se hacía nada: la mascota nunca se
+                    // creaba, aunque el mensaje de "guardado" apareciera
+                    // igual. Ahora, igual que ya se hace con los afiliados,
+                    // también se considera nueva si el id es un número
+                    // gigante como ese.
+                    $esNueva = empty($mascotaData['id']) || !is_numeric($mascotaData['id']) || $mascotaData['id'] > 1000000000;
 
                     if ($esNueva) {
                         $mascota = Mascota::create([

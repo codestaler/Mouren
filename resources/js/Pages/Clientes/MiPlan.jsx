@@ -13,63 +13,81 @@ function BolaDisco3DMiniPlan({ size = 48 }) {
         const mount = mountRef.current;
         if (!mount) return;
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-        camera.position.set(0, 0, 4.2);
+        // 🆕 Si el dispositivo/navegador no logra crear el contexto 3D
+        // (pasa en algunos celulares o navegadores), antes eso tumbaba TODA
+        // la página en blanco justo al llegar a Mi Plan. Ahora, si algo
+        // falla al armar la bola disco 3D, simplemente no se muestra — el
+        // resto de la página sigue funcionando normal.
+        let renderer, geometry, material, wire, raf;
+        try {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+            camera.position.set(0, 0, 4.2);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(size, size);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        mount.appendChild(renderer.domElement);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(size, size);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            mount.appendChild(renderer.domElement);
 
-        const geometry = new THREE.IcosahedronGeometry(1.3, 2);
-        const material = new THREE.MeshStandardMaterial({ color: 0xC9A876, metalness: 1, roughness: 0.15, flatShading: true });
-        const ball = new THREE.Mesh(geometry, material);
-        scene.add(ball);
+            geometry = new THREE.IcosahedronGeometry(1.3, 2);
+            material = new THREE.MeshStandardMaterial({ color: 0xC9A876, metalness: 1, roughness: 0.15, flatShading: true });
+            const ball = new THREE.Mesh(geometry, material);
+            scene.add(ball);
 
-        const wire = new THREE.LineSegments(
-            new THREE.WireframeGeometry(geometry),
-            new THREE.LineBasicMaterial({ color: 0x5D4E3F, transparent: true, opacity: 0.35 })
-        );
-        ball.add(wire);
+            wire = new THREE.LineSegments(
+                new THREE.WireframeGeometry(geometry),
+                new THREE.LineBasicMaterial({ color: 0x5D4E3F, transparent: true, opacity: 0.35 })
+            );
+            ball.add(wire);
 
-        // 🆕 Antes estas dos luces daban toda la vuelta a la bola muy rápido
-        // (t*2 y t*1.5 por frame). Como la bola tiene caras planas y
-        // metálicas (flatShading), cada vez que una luz pasaba rozando una
-        // cara se veía un destello brusco de encendido/apagado — eso era el
-        // "parpadeo" que quedaba, aunque el rayo de color de atrás ya no
-        // parpadeara. Bajamos la velocidad con la que giran las luces para
-        // que el brillo se deslice suave por la bola en vez de destellar.
-        const luz1 = new THREE.PointLight(0xFFC600, 2.4, 10);
-        luz1.position.set(2, 2, 2);
-        scene.add(luz1);
-        const luz2 = new THREE.PointLight(0xA68966, 1.6, 10);
-        luz2.position.set(-2, -1, 2);
-        scene.add(luz2);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            // 🆕 Antes estas dos luces daban toda la vuelta a la bola muy rápido
+            // (t*2 y t*1.5 por frame). Como la bola tiene caras planas y
+            // metálicas (flatShading), cada vez que una luz pasaba rozando una
+            // cara se veía un destello brusco de encendido/apagado — eso era el
+            // "parpadeo" que quedaba, aunque el rayo de color de atrás ya no
+            // parpadeara. Bajamos la velocidad con la que giran las luces para
+            // que el brillo se deslice suave por la bola en vez de destellar.
+            const luz1 = new THREE.PointLight(0xFFC600, 2.4, 10);
+            luz1.position.set(2, 2, 2);
+            scene.add(luz1);
+            const luz2 = new THREE.PointLight(0xA68966, 1.6, 10);
+            luz2.position.set(-2, -1, 2);
+            scene.add(luz2);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-        let raf; let t = 0;
-        const animar = () => {
-            t += 0.01;
-            ball.rotation.y += 0.022;
-            ball.rotation.x = Math.sin(t) * 0.06;
-            luz1.position.x = Math.sin(t * 0.7) * 2.5;
-            luz1.position.z = Math.cos(t * 0.7) * 2.5;
-            luz2.position.x = Math.cos(t * 0.55) * 2.5;
-            luz2.position.z = Math.sin(t * 0.55) * 2.5;
-            renderer.render(scene, camera);
-            raf = requestAnimationFrame(animar);
-        };
-        animar();
+            let t = 0;
+            const animar = () => {
+                try {
+                    t += 0.01;
+                    ball.rotation.y += 0.022;
+                    ball.rotation.x = Math.sin(t) * 0.06;
+                    luz1.position.x = Math.sin(t * 0.7) * 2.5;
+                    luz1.position.z = Math.cos(t * 0.7) * 2.5;
+                    luz2.position.x = Math.cos(t * 0.55) * 2.5;
+                    luz2.position.z = Math.sin(t * 0.55) * 2.5;
+                    renderer.render(scene, camera);
+                    raf = requestAnimationFrame(animar);
+                } catch (err) {
+                    console.error('Bola disco 3D: se detuvo por un error, sin afectar el resto de la página.', err);
+                }
+            };
+            animar();
+        } catch (err) {
+            console.error('Bola disco 3D: no se pudo iniciar en este dispositivo, se omite sin afectar el resto de la página.', err);
+        }
 
         return () => {
-            cancelAnimationFrame(raf);
-            geometry.dispose();
-            material.dispose();
-            wire.geometry.dispose();
-            wire.material.dispose();
-            renderer.dispose();
-            if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+            if (raf) cancelAnimationFrame(raf);
+            try {
+                geometry?.dispose();
+                material?.dispose();
+                wire?.geometry?.dispose();
+                wire?.material?.dispose();
+                renderer?.dispose();
+                if (renderer && mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+            } catch (err) {
+                // limpieza best-effort — si algo no llegó a crearse, no pasa nada
+            }
         };
     }, [size]);
 
@@ -87,6 +105,34 @@ const TEMAS_PLAN = {
     3: { color: '#A68966', colorSuave: '#5D4E3F', icono: '✦', nombre: 'rumba', motivo: 'disco' },
 };
 
+// 🆕 Confeti de fondo, reutilizable en los 3 temas. En Última Rumba se ve
+// bien notorio (es el tema de fiesta); en Legado Eterno y Descanso Sereno
+// se pide "muy leve", así que sale con menos piezas y mucha más
+// transparencia. La opacidad de cada pieza queda FIJA (no se anima) — solo
+// se anima la caída (transform), igual que ya se hizo con el rayo de
+// Última Rumba, para que nunca parpadee. Las posiciones son en % (no px),
+// así se ve bien tanto en celular como en pantallas grandes.
+function ConfettiFondoMiniPlan({ piezas, leve = false }) {
+    return (
+        <>
+            {piezas.map((p, i) => (
+                <span
+                    key={i}
+                    className="absolute confeti-mini-plan"
+                    style={{
+                        top: '-6%',
+                        left: `${p.left}%`,
+                        backgroundColor: p.color,
+                        opacity: leve ? 0.25 : 0.75,
+                        animationDuration: `${p.duracion}s`,
+                        animationDelay: `${p.delay}s`,
+                    }}
+                />
+            ))}
+        </>
+    );
+}
+
 // 🆕 Efectos decorativos pequeños, uno por tema — velitas para Descanso
 // Sereno, lucecitas LED para Legado Eterno, luces de disco para Última
 // Rumba. Puramente visual (pointer-events-none, z-0): va DETRÁS de todo
@@ -98,8 +144,16 @@ function DecoracionMiniTema({ tema }) {
         const velitas = [
             { top: '10%', left: '92%' }, { top: '60%', left: '4%' }, { top: '85%', left: '88%' },
         ];
+        // 🆕 Confeti muy leve, como pediste — apenas 4 piezas, muy transparentes.
+        const confetiSereno = [
+            { left: 15, color: '#FFC600', duracion: 8, delay: 0 },
+            { left: 45, color: '#A68966', duracion: 9.5, delay: 2 },
+            { left: 70, color: '#FFE9A8', duracion: 8.5, delay: 4 },
+            { left: 88, color: '#8C6A4F', duracion: 9, delay: 1 },
+        ];
         return (
             <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+                <ConfettiFondoMiniPlan piezas={confetiSereno} leve />
                 {velitas.map((v, i) => (
                     <span
                         key={i}
@@ -117,8 +171,16 @@ function DecoracionMiniTema({ tema }) {
     }
 
     if (tema.motivo === 'tecnologia') {
+        // 🆕 Confeti muy leve también aquí, como pediste — pocas piezas y
+        // bien transparentes, para no romper el look "digital" del tema.
+        const confetiLegado = [
+            { left: 20, color: '#8C6A4F', duracion: 8.5, delay: 0.5 },
+            { left: 50, color: '#FFC600', duracion: 9, delay: 2.5 },
+            { left: 80, color: '#A68966', duracion: 8, delay: 1.5 },
+        ];
         return (
             <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+                <ConfettiFondoMiniPlan piezas={confetiLegado} leve />
                 <div
                     className="absolute inset-0 opacity-[0.08]"
                     style={{ backgroundImage: 'repeating-linear-gradient(0deg, #FFFFFF 0px, #FFFFFF 1.5px, transparent 1.5px, transparent 4px)' }}
@@ -137,8 +199,21 @@ function DecoracionMiniTema({ tema }) {
         // (parpadeo). Ahora es una sola franja larga de colores que se
         // desliza suave de un lado a otro, sin parpadear — más parecida a
         // un rayo real de luz de disco. La bola disco 3D sigue igual.
+        // 🆕 Confeti de fondo, bien notorio aquí (es el tema de fiesta) —
+        // la opacidad de cada pieza queda fija, solo se anima la caída,
+        // para no volver a meter parpadeo.
+        const confetiRumba = [
+            { left: 8, color: '#FFC600', duracion: 6, delay: 0 },
+            { left: 22, color: '#A68966', duracion: 7, delay: 1.2 },
+            { left: 38, color: '#C9A876', duracion: 6.5, delay: 2.4 },
+            { left: 55, color: '#8C6A4F', duracion: 7.5, delay: 0.6 },
+            { left: 68, color: '#FFC600', duracion: 6.2, delay: 3 },
+            { left: 82, color: '#A68966', duracion: 7.2, delay: 1.8 },
+            { left: 93, color: '#C9A876', duracion: 6.8, delay: 2.6 },
+        ];
         return (
             <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+                <ConfettiFondoMiniPlan piezas={confetiRumba} />
                 <span className="mini-rayo-disco-plan" />
                 <div className="absolute bottom-2 left-2 opacity-90 drop-shadow-lg">
                     <BolaDisco3DMiniPlan size={44} />
@@ -729,8 +804,23 @@ export default function MiPlan({
                     0% { transform: rotate(-14deg) translateX(-6%); }
                     100% { transform: rotate(-14deg) translateX(6%); }
                 }
+                /* 🆕 Confeti de fondo — cae y gira (solo transform), la
+                   opacidad de cada pieza es fija (se define inline por
+                   pieza), así que nunca parpadea. */
+                .confeti-mini-plan {
+                    width: 6px;
+                    height: 10px;
+                    border-radius: 1px;
+                    animation-name: confetiMiniPlanCae;
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                }
+                @keyframes confetiMiniPlanCae {
+                    0% { transform: translateY(0) rotate(0deg); }
+                    100% { transform: translateY(260px) rotate(360deg); }
+                }
                 @media (prefers-reduced-motion: reduce) {
-                    .mini-velita-plan, .mini-led-plan, .mini-rayo-disco-plan { animation: none !important; }
+                    .mini-velita-plan, .mini-led-plan, .mini-rayo-disco-plan, .confeti-mini-plan { animation: none !important; }
                 }
             `}</style>
         </div>
