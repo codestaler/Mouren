@@ -221,3 +221,19 @@ Mouren fue desarrollado como una propuesta tecnológica orientada a combinar la 
 ## 📄 Licencia
 
 Este proyecto fue desarrollado con fines académicos y formativos.
+
+## 📸 Capturas
+
+Las siguientes capturas muestran algunas de las principales funcionalidades de Mouren.
+
+### Página Principal (Home)
+![Captura Home](docs/capturas/home.png)
+
+### Inicio de Sesión (Login)
+![Captura Login](docs/capturas/login.png)
+
+### Proceso de Registro
+![Captura Registro](docs/capturas/registro.png)
+
+### Panel Administrativo
+![Captura Panel de Admin](docs/capturas/admin.png)
