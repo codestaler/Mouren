@@ -237,3 +237,17 @@ Las siguientes capturas muestran algunas de las principales funcionalidades de M
 
 ### Panel Administrativo
 ![Captura Panel de Admin](docs/capturas/admin.png)
+
+## Pruebas y validación
+
+La validación del proyecto Mouren debe comprobar el funcionamiento de sus principales módulos y el manejo adecuado de los datos.
+
+Se recomienda verificar los siguientes aspectos:
+
+- **Autenticación:** comprobar el inicio y cierre de sesión y el acceso según el tipo de usuario.
+- **Registro de usuarios:** validar el envío del formulario y los mensajes que aparecen cuando faltan datos o hay información incorrecta.
+- **Panel administrativo:** comprobar que las opciones disponibles correspondan a los permisos del usuario.
+- **Base de datos:** verificar que los registros se guarden y consulten correctamente.
+- **Integraciones externas:** revisar el comportamiento de los servicios conectados cuando corresponda.
+
+Estas verificaciones deben ejecutarse en un entorno de prueba y documentarse con sus resultados antes de considerarse completadas.
