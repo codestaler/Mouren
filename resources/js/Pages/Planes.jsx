@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
 import MusicAlbum from '@/Components/MusicAlbum';
 import RecuerdosCarousel from '@/Components/RecuerdosCarousel';
 import PlanesTarjetas from '@/Components/PlanesTarjetas';
@@ -47,6 +47,18 @@ const EXPERIENCIA_PRIMERO = ['tributo', 'huella'];
 // para no bloquear ningún botón ni interacción del usuario.
 // ============================================================
 
+
+const COLORES_PETALO = ['#C9A876', '#A68966', '#E3CFA8', '#8C6A4F'];
+
+function PetaloSVG({ size = 18, color = '#C9A876' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2 C17 6 19 12 12 22 C5 12 7 6 12 2 Z" fill={color} opacity="0.9" />
+            <path d="M12 5 C13 10 12.5 15 12 20" stroke="#fff" strokeOpacity="0.45" strokeWidth="0.8" fill="none" />
+        </svg>
+    );
+}
+
 // --- Descanso Sereno: pétalos cayendo por toda la pantalla ---
 function FloresPantallaCompleta({ activo }) {
     if (!activo) return null;
@@ -65,7 +77,7 @@ function FloresPantallaCompleta({ activo }) {
                     className="petalo-cae-full"
                     style={{ left: `${p.left}%`, fontSize: p.size, animationDuration: `${p.dur}s`, animationDelay: `${p.delay}s` }}
                 >
-                    🌸
+                    <PetaloSVG size={p.size} color={COLORES_PETALO[p.id % COLORES_PETALO.length]} />
                 </span>
             ))}
         </div>
@@ -236,7 +248,7 @@ function VelaInteractiva({ onToggle }) {
                         className="petalo-cae"
                         style={{ left: p.left, animationDuration: p.dur, animationDelay: p.delay }}
                     >
-                        🌸
+                        <PetaloSVG size={14} color={COLORES_PETALO[i % COLORES_PETALO.length]} />
                     </span>
                 ))}
             </div>
@@ -655,7 +667,7 @@ const ACENTO_POR_PLAN = {
 const ICONO_POR_PLAN = {
     sereno: '🕯️',
     legado: '◈',
-    tributo: '✦',
+    tributo: '=',
     huella: '🐾',
 };
 
@@ -888,6 +900,20 @@ function SeccionOpiniones() {
 const ACENTO_SERVICIOS = ['#5D4E3F', '#A68966', '#8C6A4F', '#C9A876', '#FFC600', '#6E5A3E'];
 
 export default function Planes() {
+
+    const { auth } = usePage().props;
+const [avisoLogin, setAvisoLogin] = useState(null);
+
+// ids de texto del front -> ids numéricos de tu base de datos
+const ID_PLAN_BD = { sereno: 1, legado: 2, tributo: 3, huella: 4 };
+
+const manejarInscribir = (plan) => {
+    if (!auth?.user) {
+        setAvisoLogin(plan); // sin sesión: mostramos el aviso
+        return;
+    }
+    router.visit(route('planes.inscribir', ID_PLAN_BD[plan.id]));
+};
     const [planActivo, setPlanActivo] = useState(null);
     const [serviciosAbiertos, setServiciosAbiertos] = useState([]);
 
@@ -1093,7 +1119,7 @@ export default function Planes() {
             </section>
 
             {/* --- SECCIÓN 2: TARJETAS DE PLANES (componente aparte: PlanesTarjetas.jsx) --- */}
-            <PlanesTarjetas onSeleccionarPlan={setPlanActivo} />
+            <PlanesTarjetas onSeleccionarPlan={setPlanActivo} onInscribir={manejarInscribir} />
 
             {/* --- MODAL MEJORADO --- */}
             {planActivo && (
@@ -1201,6 +1227,44 @@ export default function Planes() {
                 </div>
             )}
 
+            {avisoLogin && (
+    <div
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#5D4E3F]/60 backdrop-blur-sm"
+        onClick={() => setAvisoLogin(null)}
+    >
+        <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-[32px] p-8 max-w-sm w-full text-center shadow-2xl border-4 border-[#5D4E3F] animate-scale-up"
+        >
+            <h3 className="text-xl font-black text-[#5D4E3F] italic mb-2">Primero inicia sesión</h3>
+            <p className="text-xs text-[#5D4E3F]/70 leading-relaxed mb-6">
+                Para afiliarte al plan <strong>{avisoLogin.titulo}</strong> necesitas una cuenta.
+                Al iniciar sesión volverás directo a tu inscripción.
+            </p>
+            <div className="flex flex-col gap-2">
+                <button
+                    onClick={() => router.visit(route('planes.inscribir', ID_PLAN_BD[avisoLogin.id]))}
+                    className="bg-[#5D4E3F] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-[#A68966] transition-all"
+                >
+                    Iniciar sesión
+                </button>
+                <button
+                    onClick={() => router.visit(route('register'))}
+                    className="bg-[#FFC600] text-[#5D4E3F] text-[10px] font-black uppercase tracking-widest py-3 rounded-2xl"
+                >
+                    Crear cuenta
+                </button>
+                <button
+                    onClick={() => setAvisoLogin(null)}
+                    className="text-[10px] font-bold uppercase opacity-50 hover:opacity-100 py-2"
+                >
+                    Ahora no
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
             <MusicAlbum />
             {/* --- SECCIÓN DE VIDEO Y GUÍA DE DUELO --- */}
             <section className="bg-[#F4EDE6] flex flex-col md:flex-row items-stretch overflow-hidden border-[#A68966]/20 h-auto md:h-[600px]">
@@ -1223,7 +1287,7 @@ export default function Planes() {
                     <div className="absolute inset-0 opacity-10 z-20" style={{ backgroundImage: 'radial-gradient(#5D4E3F 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
                     {/* Adorno visual de estrella/brillo - ajustado para que sea visible */}
-                    <div className="absolute bottom-6 right-6 text-white md:text-[#FFC600] opacity-70 text-2xl z-20">✦</div>
+                    <div className="absolute bottom-6 right-6 text-white md:text-[#FFC600] opacity-70 text-2xl z-20">.</div>
                 </div>
 
                 {/* LADO DERECHO: CONTENIDO Y VIDEO (SE MANTIENE LA MISMA ALTURA) */}

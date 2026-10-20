@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { ArrowRight, Search } from 'lucide-react';
 
 // ============================================================
 // DATA DE LOS 4 PLANES — antes vivía dentro de Planes.jsx, ahora
@@ -11,7 +12,7 @@ export const planesData = [
         titulo: 'Descanso Sereno',
         precioIndividual: 5000,
         enfoque: 'Un servicio digno, esencial y respetuoso. Diseñado para brindar tranquilidad inmediata y un respaldo sólido en los momentos que más se necesita la guía experta.',
-        mouri: '/images/planes/tarjetas/sereno/logo_descanso_sereno.webp',
+        mouri: '/images/planes/tarjetas/sereno/descanso_sereno1.webp',
         tipoNombre: 'Esencial',
         unidad: 'persona',
         detalles: [
@@ -25,7 +26,7 @@ export const planesData = [
         titulo: 'Legado Eterno',
         precioIndividual: 7500,
         enfoque: 'Honrar la historia de vida con detalles que perduran. Un homenaje profundo que resalta los valores y el camino recorrido por nuestros seres queridos.',
-        mouri: '/images/planes/tarjetas/legado/logo_legado_eterno.gif',
+        mouri: '/images/planes/tarjetas/legado/legado_eterno1.webp',
         tipoNombre: 'Historia',
         unidad: 'persona',
         detalles: [
@@ -40,7 +41,7 @@ export const planesData = [
         titulo: 'Última Rumba',
         precioIndividual: 10000,
         enfoque: 'Una celebración emotiva, personal y de alta gama. Para quienes desean transformar el adiós en un evento memorable lleno de luz, música y detalles únicos.',
-        mouri: '/images/planes/tarjetas/tributo/logo_tributo.webp',
+        mouri: '/images/planes/tarjetas/tributo/ultima_rumba.webp',
         tipoNombre: 'Tributo',
         unidad: 'persona',
         detalles: [
@@ -112,7 +113,7 @@ function TiltCard({ children, className = '' }) {
 // El componente padre sigue siendo dueño del estado "planActivo";
 // aquí solo se avisa cuál tarjeta se tocó.
 // ============================================================
-export default function PlanesTarjetas({ onSeleccionarPlan }) {
+export default function PlanesTarjetas({ onSeleccionarPlan, onInscribir }) {
     return (
         <section id="seccion-planes" className="relative z-20 pt-16 pb-40 px-4 sm:px-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto">
@@ -146,8 +147,12 @@ export default function PlanesTarjetas({ onSeleccionarPlan }) {
                                 🔍 Ver especificaciones
                             </button>
 
-                            <button className="w-full bg-[#A68966] hover:bg-white hover:text-[#5D4E3F] text-white font-black py-2.5 rounded-lg transition-all text-[9px] tracking-wider shadow-lg  active:scale-95">
-                                ✍️ Iniciar afiliación
+                            <button
+                                onClick={() => onInscribir(plan)}
+                                className="group/cta w-full flex items-center justify-center gap-2 bg-[#FFC600] hover:bg-[#FFD84D] text-[#3f342a] font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.18em] shadow-[0_6px_20px_-6px_rgba(255,198,0,0.6)] hover:shadow-[0_10px_26px_-6px_rgba(255,198,0,0.75)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300"
+                            >
+                                Iniciar afiliación
+                                <ArrowRight size={14} className="transition-transform duration-300 group-hover/cta:translate-x-1" />
                             </button>
                         </div>
                     </TiltCard>
