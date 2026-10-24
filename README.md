@@ -1,239 +1,217 @@
+<div align="center">
+
 # Mouren
 
-> Plataforma web de previsión funeraria que combina tecnología, personalización y acompañamiento para facilitar la planificación de servicios funerarios y la creación de recuerdos digitales.
+**Plataforma web de previsión funeraria con espacios digitales de memoria para personas y mascotas.**
 
-## 📌 El problema
+[Ver demo en línea](https://funerariamouren.site) · [Capturas](#-capturas) · [Instalación](#-instalación-local)
 
-La planificación de servicios funerarios puede ser un proceso difícil y poco accesible, especialmente cuando las personas deben tomar decisiones importantes en momentos emocionalmente complejos.
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)
+![React](https://img.shields.io/badge/React-Inertia.js-61DAFB?logo=react&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white)
 
-Además, muchas soluciones tradicionales no ofrecen herramientas digitales para personalizar los planes, gestionar afiliados o conservar recuerdos de las personas y mascotas importantes para cada familia.
+</div>
 
-## 💡 La solución
+---
 
-**Mouren** es una plataforma web de previsión funeraria que permite gestionar planes de afiliación, beneficiarios, servicios y pagos desde un entorno digital.
+## 📌 ¿Qué es Mouren?
 
-El sistema también incorpora espacios de memoria y personalización, permitiendo conservar fotografías, cartas, canciones y otros recuerdos asociados a las personas o mascotas afiliadas.
+Mouren es una plataforma para planificar con anticipación un servicio funerario, tanto para personas como para mascotas, desde un solo lugar y sin trámites presenciales innecesarios.
 
-### ✨ Funcionalidades principales
+Planear estas cosas casi siempre pasa en el peor momento: con prisa, con dolor y con poca información. Mouren busca que esas decisiones se tomen antes, con calma, y que además se pueda dejar algo más que un contrato: fotos, cartas y canciones que acompañen el recuerdo de quienes importan a cada familia.
 
-* Registro e inicio de sesión de usuarios.
-* Gestión de planes de previsión funeraria.
-* Afiliación y administración de beneficiarios.
-* Gestión de planes para mascotas.
-* Personalización de servicios.
-* Gestión de pagos y facturas.
-* Creación y administración de recuerdos digitales.
-* Fotografías, cartas y canciones asociadas a recuerdos.
-* Panel para la gestión de usuarios y servicios.
-* Sistema de roles y permisos.
-* Notificaciones relacionadas con los planes.
-* Espacios digitales de memoria.
-* Chat de atención dentro de la plataforma.
-* Diseño adaptable a diferentes dispositivos.
+## ✨ Funcionalidades
 
-## 🛠️ Tecnologías utilizadas
+**Previsión y afiliación**
+- Registro e inicio de sesión de usuarios.
+- Planes de previsión funeraria y afiliación de beneficiarios.
+- Planes para mascotas.
+- Personalización de servicios.
 
-| Capa                  | Tecnología         |
-| --------------------- | ------------------ |
-| Backend               | Laravel 12         |
-| Lenguaje backend      | PHP 8.2            |
-| Frontend              | React              |
-| Integración           | Inertia.js         |
-| Construcción frontend | Vite               |
-| Estilos               | Tailwind CSS       |
-| Base de datos         | MySQL              |
-| Autenticación         | Laravel Sanctum    |
-| Control de versiones  | Git / GitHub       |
-| Despliegue            | Railway            |
-| Dominio               | Cloudflare         |
-| Edición de imágenes   | Intervention Image |
-| Pagos                 | Mercado Pago       |
-| Correo electrónico    | Brevo              |
+**Pagos**
+- Gestión de pagos y facturas.
+
+**Recuerdos digitales**
+- Espacios de memoria para cada persona o mascota afiliada.
+- Fotografías, cartas y canciones asociadas a cada recuerdo.
+
+**Administración y atención**
+- Panel para gestionar usuarios y servicios.
+- Roles y permisos.
+- Notificaciones relacionadas con los planes.
+- Chat de atención dentro de la plataforma.
+
+**General**
+- Diseño adaptable a distintos tamaños de pantalla.
+
+## 📸 Capturas
+
+### Página principal
+![Captura Home](docs/capturas/home.png)
+
+### Inicio de sesión
+![Captura Login](docs/capturas/login.png)
+
+### Proceso de registro
+![Captura Registro](docs/capturas/registro.png)
+
+### Panel administrativo
+![Captura Panel de Admin](docs/capturas/admin.png)
+
+## 🛠️ Tecnologías
+
+| Área | Tecnología |
+| --- | --- |
+| Backend | Laravel 12, PHP 8.2 |
+| Frontend | React, Inertia.js, Vite |
+| Estilos | Tailwind CSS |
+| Base de datos | MySQL |
+| Autenticación | Laravel Sanctum |
+| Imágenes | Intervention Image |
+| Pagos | Mercado Pago |
+| Correo | Brevo |
+| Despliegue | Railway (aplicación y base de datos) |
+| Dominio | Cloudflare |
+| Control de versiones | Git y GitHub |
 
 ## 🏗️ Arquitectura
 
-Mouren utiliza una arquitectura web en la que Laravel se encarga de la lógica del servidor y React de la interfaz de usuario.
-
-La comunicación entre ambas partes se realiza mediante **Inertia.js**, mientras que MySQL almacena la información de usuarios, planes, afiliados, servicios, pagos y recuerdos.
+Mouren es una aplicación monolítica: Laravel maneja la lógica del servidor y React construye la interfaz. **Inertia.js** conecta ambos, así que no hay una API REST separada: Laravel devuelve páginas de React directamente.
 
 ```text
-                USUARIO
-                   │
-                   ▼
-              REACT + VITE
-                   │
-                   ▼
-               INERTIA
-                   │
-                   ▼
-             LARAVEL / PHP
-                   │
-          ┌────────┴────────┐
-          ▼                 ▼
-       MYSQL          SERVICIOS EXTERNOS
-                            │
-                 ┌──────────┼──────────┐
-                 ▼          ▼          ▼
-            Mercado Pago  Brevo    Cloudflare
+   Navegador
+       │
+       ▼
+   Cloudflare  (dominio)
+       │
+       ▼
+┌─────────────────────────────┐
+│  Railway                    │
+│                             │
+│  Laravel (PHP)              │
+│    └─ Inertia ─► React/Vite │
+│         │                   │
+│         ▼                   │
+│       MySQL                 │
+└─────────────┬───────────────┘
+              │
+      ┌───────┴────────┐
+      ▼                ▼
+ Mercado Pago        Brevo
+   (pagos)           (correo)
 ```
 
-## 🚀 Instalación y ejecución
+## 💻 Instalación local
 
 ### Requisitos
 
-Para ejecutar Mouren localmente se requiere:
+- PHP 8.2 o superior
+- Composer
+- Node.js y npm
+- MySQL
+- Git
 
-* PHP 8.2 o superior.
-* Composer.
-* Node.js y npm.
-* MySQL.
-* Git.
-* Un entorno compatible con Laravel.
+### Pasos
 
-### 1. Clonar el repositorio
+**1. Clonar el repositorio**
 
 ```bash
 git clone https://github.com/codestaler/Mouren.git
 cd Mouren
 ```
 
-### 2. Instalar dependencias de PHP
+**2. Instalar dependencias**
 
 ```bash
 composer install
-```
-
-### 3. Instalar dependencias de JavaScript
-
-```bash
 npm install
 ```
 
-### 4. Configurar el archivo de entorno
-
-Crear una copia del archivo `.env.example`:
+**3. Crear el archivo de entorno**
 
 ```bash
 cp .env.example .env
 ```
 
-En Windows también puede copiarse manualmente `.env.example` como `.env`.
+En Windows puedes copiar `.env.example` y renombrarlo a `.env` a mano.
 
-Configurar en `.env` las credenciales correspondientes de la base de datos y los servicios externos utilizados por el proyecto.
-
-### 5. Generar la clave de la aplicación
+**4. Generar la clave de la aplicación**
 
 ```bash
 php artisan key:generate
 ```
 
-### 6. Configurar la base de datos
+**5. Configurar la base de datos**
 
-Crear una base de datos MySQL y configurar sus datos de conexión en el archivo `.env`.
+Crea una base de datos vacía en MySQL y completa estas variables en tu `.env`:
 
-Posteriormente ejecutar las migraciones:
+```env
+DB_DATABASE=nombre_de_tu_base
+DB_USERNAME=tu_usuario
+DB_PASSWORD=tu_contraseña
+```
+
+Luego ejecuta las migraciones:
 
 ```bash
 php artisan migrate
 ```
 
-### 7. Ejecutar el proyecto
+**6. Enlazar el almacenamiento**
 
-Iniciar el servidor de Laravel:
+Necesario para que se vean las imágenes y archivos que suben los usuarios:
+
+```bash
+php artisan storage:link
+```
+
+**7. Ejecutar el proyecto**
+
+En una terminal:
 
 ```bash
 php artisan serve
 ```
 
-En otra terminal ejecutar Vite:
+En otra:
 
 ```bash
 npm run dev
 ```
 
-Después de iniciar ambos procesos, acceder a la dirección local indicada por Laravel.
+Abre la dirección que muestra `php artisan serve` (normalmente `http://127.0.0.1:8000`).
 
-## 🌐 Demo
+> **Servicios externos:** los pagos (Mercado Pago) y el correo (Brevo) necesitan credenciales propias en el `.env`. Sin ellas, el resto de la plataforma puede ejecutarse, pero esas funciones no van a responder.
 
-**Proyecto desplegado:**
-
-https://funerariamouren.site
-
-## 📸 Capturas
-
-Las siguientes capturas muestran algunas de las principales funcionalidades de Mouren.
-
-> Las imágenes pueden agregarse posteriormente dentro de una carpeta `docs/img/` del repositorio.
-
-| Pantalla       | Descripción                                          |
-| -------------- | ---------------------------------------------------- |
-| Inicio         | Página principal de Mouren                           |
-| Planes         | Visualización de los planes disponibles              |
-| Inscripción    | Proceso de afiliación de usuarios y beneficiarios    |
-| Dashboard      | Panel principal del usuario                          |
-| Recuerdos      | Gestión de recuerdos digitales                       |
-| Administración | Gestión de información desde el panel administrativo |
+Para generar los archivos de producción: `npm run build`.
 
 ## 🔐 Seguridad
 
-Mouren implementa diferentes mecanismos orientados a proteger la información de los usuarios y controlar el acceso a las funcionalidades del sistema.
+Mouren se apoya en los mecanismos que ofrece Laravel y en algunas prácticas básicas:
 
-Entre ellos se encuentran:
+- Autenticación de usuarios con Laravel.
+- Control de acceso por roles y rutas protegidas.
+- Validación de los datos que recibe el servidor.
+- Credenciales y claves en variables de entorno (`.env`), fuera del repositorio.
 
-* Autenticación de usuarios.
-* Control de acceso mediante roles.
-* Protección de rutas.
-* Validación de información recibida.
-* Manejo de sesiones.
-* Protección de variables sensibles mediante `.env`.
-* Uso de mecanismos de autenticación proporcionados por Laravel.
-* Separación de la información sensible de las credenciales del código fuente.
+Es un proyecto formativo y no ha pasado por una auditoría de seguridad.
 
-Las credenciales y variables sensibles utilizadas durante el despliegue no forman parte del repositorio público.
+## 🌐 Demo y despliegue
 
-## ☁️ Despliegue
+**En línea:** [funerariamouren.site](https://funerariamouren.site)
 
-El proyecto fue preparado para funcionar en un entorno de producción utilizando **Railway** para el despliegue de la aplicación y la base de datos.
-
-También se configuró un dominio personalizado para facilitar el acceso a la plataforma:
-
-**https://funerariamouren.site**
+La aplicación y la base de datos están desplegadas en **Railway**, y el dominio se gestiona con **Cloudflare**.
 
 ## 👨‍💻 Autor
 
-### Angel Hung
+**Duvan Davilla** · [GitHub](https://github.com/andre05dada-cloud)
 
-Desarrollador del proyecto Mouren.
+Desarrollé Mouren como proyecto formativo del programa de **Análisis y Desarrollo de Software (ADSO)** del **SENA**. Mi trabajo abarcó el diseño y desarrollo de la aplicación (frontend y backend), la base de datos, la integración de servicios externos y el despliegue.
 
-El desarrollo incluyó el diseño y construcción de la aplicación, desarrollo frontend y backend, integración de la base de datos, implementación de funcionalidades, automatización de procesos, integración de servicios externos, pruebas, solución de errores y despliegue del proyecto.
-
-**GitHub:**
-https://github.com/codestaler
-
-## 🎓 Contexto del proyecto
-
-Proyecto formativo desarrollado como parte del programa de **Análisis y Desarrollo de Software (ADSO)** del **SENA**.
-
-Mouren fue desarrollado como una propuesta tecnológica orientada a combinar la previsión funeraria con herramientas digitales de personalización y memoria.
-
----
+La idea fue explorar cómo combinar la previsión funeraria con herramientas digitales de personalización y memoria, y llevarla hasta una aplicación funcionando en línea.
 
 ## 📄 Licencia
 
-Este proyecto fue desarrollado con fines académicos y formativos.
-
-## 📸 Capturas
-
-Las siguientes capturas muestran algunas de las principales funcionalidades de Mouren.
-
-### Página Principal (Home)
-![Captura Home](docs/capturas/home.png)
-
-### Inicio de Sesión (Login)
-![Captura Login](docs/capturas/login.png)
-
-### Proceso de Registro
-![Captura Registro](docs/capturas/registro.png)
-
-### Panel Administrativo
-![Captura Panel de Admin](docs/capturas/admin.png)
+Proyecto desarrollado con fines académicos y formativos.
