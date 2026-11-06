@@ -10,18 +10,22 @@ export default function Navbar() {
         <nav className="fixed top-0 w-full bg-[#5D4E3F] text-white flex items-center justify-between px-4 sm:px-6 z-50 h-16">
 
             {/* CONTENEDOR LOGO + ESQUINA */}
-            <div className="relative flex items-center h-full ml-1 sm:ml-4 w-56 sm:w-72 shrink-0">
-                <img
-                    src="/images/esquina-decorativa.png"
-                    className="absolute -top-5 -left-6 sm:-left-10 w-40 sm:w-52 z-10 pointer-events-none"
-                    alt="Decoración"
-                />
-                <img
-                    src="/images/logo.png"
-                    className="relative w-24 sm:w-28 z-20 -ml-6 sm:-ml-8"
-                    alt="Logo Mouren"
-                />
-            </div>
+<Link
+    href="/"
+    aria-label="Ir al inicio de Mouren"
+    className="relative flex items-center h-full ml-1 sm:ml-4 w-56 sm:w-72 shrink-0 cursor-pointer"
+>
+    <img
+        src="/images/esquina-decorativa.png"
+        className="absolute -top-5 -left-6 sm:-left-10 w-40 sm:w-52 z-10 pointer-events-none"
+        alt=""
+    />
+    <img
+        src="/images/logo.png"
+        className="relative w-24 sm:w-28 z-20 -ml-6 sm:-ml-8"
+        alt="Logo Mouren"
+    />
+</Link>
 
             {/* MENÚ DE ESCRITORIO */}
             <div className="hidden lg:flex gap-7 font-['Hepta_Slab'] text-[14px] tracking-wide">
