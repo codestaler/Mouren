@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import AdminSidebar from './AdminSidebar';
-import axios from 'axios';
 
 // Diccionario simple SOLO para esta pagina. Traducir toda la app requeriria
 // una libreria como react-i18next repartida en cada pagina.
@@ -14,8 +13,6 @@ const TEXTOS = {
         cerrarSesiones: 'Cerrar sesión en todos los dispositivos.',
         seguridad: 'Seguridad',
         cambiarPassword: 'Cambiar contraseña',
-        desactivar2FA: 'Desactivar verificación en dos pasos',
-        activar2FA: 'Activar verificación en dos pasos',
         idioma: 'Idioma',
         soporte: 'Soporte',
         personalizacion: 'Personalización',
@@ -38,8 +35,6 @@ const TEXTOS = {
         cerrarSesiones: 'Log out on all devices.',
         seguridad: 'Security',
         cambiarPassword: 'Change password',
-        desactivar2FA: 'Disable two-factor verification',
-        activar2FA: 'Enable two-factor verification',
         idioma: 'Language',
         soporte: 'Support',
         personalizacion: 'Personalization',
@@ -135,34 +130,6 @@ export default function Ajustes({ usuario, generos = [], tiposDocumento = [] }) 
         });
     };
 
-    const [modal2FA, setModal2FA] = useState(false);
-    const [qr2FA, setQr2FA] = useState(null);
-    const [codigo2FA, setCodigo2FA] = useState('');
-    const [cargando2FA, setCargando2FA] = useState(false);
-
-    const abrirModal2FA = () => {
-        setModal2FA(true);
-        setCargando2FA(true);
-        axios.get('/admin/ajustes/2fa/iniciar')
-            .then(res => setQr2FA(res.data.qr))
-            .finally(() => setCargando2FA(false));
-    };
-
-    const confirmar2FA = (e) => {
-        e.preventDefault();
-        setProcesando(true);
-        router.post('/admin/ajustes/2fa/confirmar', { codigo: codigo2FA }, {
-            preserveScroll: true,
-            onFinish: () => { setProcesando(false); setModal2FA(false); setQr2FA(null); setCodigo2FA(''); },
-        });
-    };
-
-    const desactivar2FA = () => {
-        const password = window.prompt('Ingresa tu contraseña para desactivar la verificación en dos pasos:');
-        if (!password) return;
-        router.post('/admin/ajustes/2fa/desactivar', { password }, { preserveScroll: true });
-    };
-
     const cambiarIdioma = (idioma) => router.put('/admin/ajustes/idioma', { idioma }, { preserveScroll: true });
     const cambiarTema = (tema) => router.put('/admin/ajustes/tema', { tema }, { preserveScroll: true });
     const toggleNotificaciones = () => router.put('/admin/ajustes/notificaciones', { activadas: !usuario.notificaciones_activadas }, { preserveScroll: true });
@@ -223,17 +190,6 @@ export default function Ajustes({ usuario, generos = [], tiposDocumento = [] }) 
                                 className="w-full py-2.5 rounded-xl bg-[#56473A] text-white text-[11px] font-black hover:brightness-110 transition">
                                 {t.cambiarPassword}
                             </button>
-                            {usuario.dos_pasos_activo ? (
-                                <button onClick={desactivar2FA}
-                                    className="w-full py-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 text-[11px] font-black hover:bg-red-100 transition">
-                                    {t.desactivar2FA}
-                                </button>
-                            ) : (
-                                <button onClick={abrirModal2FA}
-                                    className="w-full py-2.5 rounded-xl bg-[#56473A] text-white text-[11px] font-black hover:brightness-110 transition">
-                                    {t.activar2FA}
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -347,33 +303,6 @@ export default function Ajustes({ usuario, generos = [], tiposDocumento = [] }) 
                         <div className="flex gap-2 text-[10px] font-black uppercase pt-2">
                             <button type="submit" disabled={procesando} className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50">{procesando ? 'Guardando...' : 'Confirmar'}</button>
                             <button type="button" onClick={() => setModalPassword(false)} className="flex-1 py-2.5 bg-gray-200 text-gray-700 rounded-xl">Cancelar</button>
-                        </div>
-                    </form>
-                </div>
-            )}
-
-            {modal2FA && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                    <form onSubmit={confirmar2FA} className="bg-[#FDFBF7] dark:bg-[#2E2720] p-6 rounded-[28px] max-w-sm w-full border-2 border-[#60533E] dark:border-[#4A4033] shadow-2xl space-y-3">
-                        <h3 className="font-black text-sm uppercase text-[#60533E] dark:text-[#D9B44A]">Activar Verificación en Dos Pasos</h3>
-                        <p className="text-[10px] text-[#A68966] dark:text-[#C2B49A]">Escanea el código con Google Authenticator (o similar) y luego ingresa el código de 6 dígitos.</p>
-
-                        {cargando2FA && <p className="text-xs italic text-center py-6">Generando código QR...</p>}
-                        {qr2FA && (
-                            <div className="flex justify-center bg-white p-3 rounded-xl border border-[#D9CEB6]" dangerouslySetInnerHTML={{ __html: qr2FA }} />
-                        )}
-
-                        <input
-                            value={codigo2FA}
-                            onChange={e => setCodigo2FA(e.target.value)}
-                            placeholder="Código de 6 dígitos"
-                            maxLength={6}
-                            className="w-full p-2.5 bg-white dark:bg-[#221D17] dark:text-[#EDE4D3] border border-[#D9CEB6] dark:border-[#4A4033] rounded-xl text-xs font-bold text-center tracking-widest"
-                            required
-                        />
-                        <div className="flex gap-2 text-[10px] font-black uppercase pt-2">
-                            <button type="submit" disabled={procesando} className="flex-1 py-2.5 bg-[#60533E] text-white rounded-xl disabled:opacity-50">{procesando ? 'Verificando...' : 'Confirmar'}</button>
-                            <button type="button" onClick={() => { setModal2FA(false); setQr2FA(null); }} className="flex-1 py-2.5 bg-gray-200 text-gray-700 rounded-xl">Cancelar</button>
                         </div>
                     </form>
                 </div>
